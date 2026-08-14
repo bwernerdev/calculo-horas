@@ -10,6 +10,7 @@ let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"target":528,"
 settings.break = FIXED_BREAK_MINUTES;
 let pendingPhotos = { entrada:"", saida:"" };
 let capturedPhoto = "";
+let cameraStream;
 
 function localDate(date = new Date()) { const offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
 function escapeCell(value) { const text = String(value ?? ""); return /[";,\n]/.test(text) ? `"${text.replaceAll('"','""')}"` : text; }
@@ -76,37 +77,34 @@ function updatePhotoPreview() {
     $(`#${kind === "entrada" ? "entry" : "exit"}-photo-preview`).hidden=!pendingPhotos[kind];
     $(`#${kind === "entrada" ? "entry" : "exit"}-photo-image`).src=pendingPhotos[kind] || "";
   }
-  $("#point-photo").value="";
 }
-function compressPhoto(file) {
-  return new Promise((resolve,reject)=>{
-    if (!file.type.startsWith("image/")) return reject(new Error("arquivo inválido"));
-    const reader=new FileReader();
-    reader.onerror=()=>reject(new Error("falha na leitura"));
-    reader.onload=()=>{
-      const image=new Image();
-      image.onerror=()=>reject(new Error("imagem inválida"));
-      image.onload=()=>{
-        const maxSize=720, scale=Math.min(1,maxSize/Math.max(image.width,image.height));
-        const canvas=document.createElement("canvas"); canvas.width=Math.round(image.width*scale); canvas.height=Math.round(image.height*scale);
-        canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
-        resolve(canvas.toDataURL("image/jpeg",0.65));
-      };
-      image.src=reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
+function stopCamera() {
+  if (cameraStream) cameraStream.getTracks().forEach((track)=>track.stop());
+  cameraStream=undefined; $("#camera-preview").srcObject=null;
 }
-
-$("#point-photo").addEventListener("change",async(event)=>{
-  const file=event.target.files[0]; if (!file) return;
-  try { capturedPhoto=await compressPhoto(file); $("#photo-type-dialog").showModal(); }
-  catch (error) { showToast("Não foi possível processar essa foto.","error"); event.target.value=""; }
+$("#open-camera").addEventListener("click",async()=>{
+  if (!navigator.mediaDevices?.getUserMedia) return showToast("A câmera interna não é suportada neste navegador.","error");
+  try {
+    cameraStream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:"environment" } }, audio:false });
+    $("#camera-preview").srcObject=cameraStream; $("#camera-dialog").showModal(); await $("#camera-preview").play();
+  } catch (error) { stopCamera(); showToast("Não foi possível acessar a câmera. Verifique a permissão do aplicativo.","error"); }
 });
+$("#capture-photo").addEventListener("click",()=>{
+  const video=$("#camera-preview");
+  if (!video.videoWidth || !video.videoHeight) return showToast("A câmera ainda está carregando. Tente novamente.","error");
+  const maxSize=720, scale=Math.min(1,maxSize/Math.max(video.videoWidth,video.videoHeight));
+  const canvas=document.createElement("canvas"); canvas.width=Math.round(video.videoWidth*scale); canvas.height=Math.round(video.videoHeight*scale);
+  canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height); capturedPhoto=canvas.toDataURL("image/jpeg",0.65);
+  stopCamera(); $("#camera-dialog").close(); $("#photo-type-dialog").showModal();
+});
+function closeCamera() { stopCamera(); if ($("#camera-dialog").open) $("#camera-dialog").close(); }
+$("#camera-close").addEventListener("click",closeCamera);
+$("#camera-dialog").addEventListener("cancel",(event)=>{ event.preventDefault(); closeCamera(); });
+document.addEventListener("visibilitychange",()=>{ if (document.hidden && cameraStream) closeCamera(); });
 document.querySelectorAll("[data-photo-type]").forEach((button)=>button.addEventListener("click",()=>{
   const kind=button.dataset.photoType; pendingPhotos[kind]=capturedPhoto; capturedPhoto=""; $("#photo-type-dialog").close(); updatePhotoPreview(); showToast(`Foto de ${kind} anexada.`);
 }));
-function cancelPhotoType() { capturedPhoto=""; $("#photo-type-dialog").close(); $("#point-photo").value=""; }
+function cancelPhotoType() { capturedPhoto=""; $("#photo-type-dialog").close(); }
 $("#photo-type-cancel").addEventListener("click",cancelPhotoType);
 $("#photo-type-dialog").addEventListener("cancel",(event)=>{ event.preventDefault(); cancelPhotoType(); });
 $("#photo-preview").addEventListener("click",(event)=>{ const kind=event.target.dataset.removePhoto; if (kind) { pendingPhotos[kind]=""; updatePhotoPreview(); showToast(`Foto de ${kind} removida.`); } });

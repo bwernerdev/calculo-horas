@@ -38,7 +38,7 @@
 
     <aside class="privacy-notice" aria-label="Privacidade dos dados">
       <span class="privacy-notice__icon" aria-hidden="true">🔒</span>
-      <div><strong>Seus dados e fotos ficam somente neste navegador.</strong><p>Nenhum registro ou imagem é enviado para servidores. Para evitar perdas ao limpar os dados do navegador, baixe um backup JSON regularmente.</p></div>
+      <div><strong>Seus dados e fotos ficam somente neste aplicativo.</strong><p>As imagens não são salvas na galeria nem enviadas para servidores. Para evitar perdas ao limpar os dados do navegador, baixe um backup JSON regularmente.</p></div>
     </aside>
 
     <section class="panel entry-panel">
@@ -62,11 +62,10 @@
           <label class="field work-field"><span>Intervalo fixo (min)</span><input id="break-time" type="number" value="60" readonly aria-readonly="true"></label>
         </div>
         <div class="mobile-photo-field">
-          <label class="photo-capture">
+          <button id="open-camera" class="photo-capture" type="button">
             <span class="photo-capture__icon" aria-hidden="true">📷</span>
             <span><strong>Fotografar o ponto</strong><small>Use a câmera para anexar um comprovante a este dia.</small></span>
-            <input id="point-photo" class="visually-hidden" type="file" accept="image/*" capture="environment">
-          </label>
+          </button>
           <div id="photo-preview" class="photo-preview" hidden>
             <div id="entry-photo-preview" class="photo-preview__item" hidden><img id="entry-photo-image" alt="Prévia da foto de entrada"><div><strong>Foto de entrada</strong><button type="button" data-remove-photo="entrada">Remover</button></div></div>
             <div id="exit-photo-preview" class="photo-preview__item" hidden><img id="exit-photo-image" alt="Prévia da foto de saída"><div><strong>Foto de saída</strong><button type="button" data-remove-photo="saida">Remover</button></div></div>
@@ -126,6 +125,11 @@
       <button class="button button--primary" type="button" data-photo-type="saida">Saída</button>
       <button id="photo-type-cancel" class="button button--ghost" type="button">Cancelar</button>
     </div>
+  </dialog>
+  <dialog id="camera-dialog" class="camera-dialog" aria-labelledby="camera-title">
+    <div class="photo-dialog__header"><h2 id="camera-title">Fotografar o ponto</h2><button id="camera-close" class="icon-button" type="button" aria-label="Fechar câmera">×</button></div>
+    <video id="camera-preview" autoplay playsinline muted aria-label="Prévia da câmera"></video>
+    <div class="camera-dialog__actions"><button id="capture-photo" class="button button--primary" type="button">Capturar foto</button></div>
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="calculations.js"></script>
