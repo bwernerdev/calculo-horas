@@ -11,6 +11,8 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 - Edição e exclusão de registros
 - Exportação em CSV e PDF
 - Backup e restauração em JSON
+- Aviso de privacidade e armazenamento exclusivamente local
+- Confirmações em modal e notificações não intrusivas
 - Tema claro e escuro
 - Layout responsivo
 
@@ -19,6 +21,16 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 Abra o `index.html` no navegador ou acesse a versão publicada no GitHub Pages.
 
 Os registros ficam armazenados localmente no navegador por meio de `localStorage`.
+
+## Testes
+
+Com o Node.js instalado, execute:
+
+```bash
+npm test
+```
+
+Os testes cobrem jornada com virada de dia, intervalos, faltas, dias abonados, previsão de saída e somatória dos saldos.
 
 ## Tecnologias
 

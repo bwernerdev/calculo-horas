@@ -31,6 +31,8 @@ h1,h2 { margin:0; letter-spacing:-.035em; } h1 { font-size:clamp(1.9rem,5vw,3rem
 :root:not([data-theme="dark"]) .summary-card--accent .value-negative,
 [data-theme="dark"] .summary-card--accent .value-negative { color:#ffe0dd!important; }
 .panel { margin-top:20px; padding:clamp(20px,4vw,32px); border-radius:20px; }
+.privacy-notice { display:flex; align-items:flex-start; gap:13px; margin:20px 0; padding:16px 18px; border:1px solid color-mix(in srgb,var(--primary) 25%,var(--line)); border-radius:14px; color:var(--primary-dark); background:var(--primary-soft); }
+.privacy-notice__icon { font-size:1.25rem; } .privacy-notice strong { display:block; font-size:.9rem; } .privacy-notice p { margin:4px 0 0; color:var(--muted); font-size:.82rem; line-height:1.5; }
 .panel__header { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:25px; }
 .settings { display:grid; grid-template-columns:1fr 1fr auto; align-items:end; gap:14px; margin:-5px 0 24px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--surface-2); }
 .form-grid { display:grid; grid-template-columns:1.15fr 1.25fr repeat(3,1fr); gap:14px; }
@@ -41,6 +43,7 @@ input:focus,select:focus { border-color:var(--primary); box-shadow:0 0 0 3px var
 .actions,.toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; } .actions { margin-top:20px; }
 .button { min-height:44px; padding:0 17px; border:0; border-radius:10px; color:var(--text); font-weight:800; cursor:pointer; transition:transform .15s ease; }
 .button:hover { transform:translateY(-1px); } .button--primary { color:#fff; background:#3157d5; } .button--secondary { color:var(--primary-dark); background:var(--primary-soft); } .button--ghost { border:1px solid var(--line); background:transparent; }
+.button--danger { color:#fff; background:#b42318; }
 .month-filter { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.82rem; font-weight:750; } .month-filter input { width:auto; min-height:44px; }
 .table-wrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; font-size:.86rem; }
 th,td { padding:14px 12px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
@@ -51,6 +54,15 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 .table-action--delete { color:var(--danger); background:var(--danger-bg); }
 .empty-state { margin:28px 0 5px; color:var(--muted); text-align:center; }
 .error-message { margin:14px 0 0; color:var(--danger); font-size:.88rem; font-weight:750; }
+.confirm-dialog { width:min(440px,calc(100% - 32px)); padding:26px; border:1px solid var(--line); border-radius:18px; color:var(--text); background:var(--surface); box-shadow:0 24px 70px rgba(0,0,0,.28); }
+.confirm-dialog::backdrop { background:rgba(7,12,24,.58); backdrop-filter:blur(3px); }
+.confirm-dialog__icon { display:grid; place-items:center; width:42px; height:42px; margin-bottom:16px; border-radius:50%; color:var(--danger); background:var(--danger-bg); font-size:1.2rem; font-weight:900; }
+.confirm-dialog h2 { font-size:1.3rem; } .confirm-dialog p { margin:10px 0 22px; color:var(--muted); line-height:1.55; }
+.confirm-dialog__actions { display:flex; justify-content:flex-end; gap:10px; }
+.toast-region { position:fixed; z-index:20; right:22px; bottom:22px; display:grid; gap:10px; width:min(380px,calc(100% - 32px)); pointer-events:none; }
+.toast { padding:14px 16px; border:1px solid var(--line); border-left:4px solid var(--primary); border-radius:11px; color:var(--text); background:var(--surface); box-shadow:var(--shadow); font-size:.88rem; font-weight:700; animation:toast-in .2s ease-out; }
+.toast--success { border-left-color:var(--success); } .toast--error { border-left-color:var(--danger); }
+@keyframes toast-in { from { opacity:0; transform:translateY(10px); } }
 [hidden] { display:none!important; }
 .visually-hidden { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
 @media (max-width:900px) { .summary-grid { grid-template-columns:repeat(2,1fr); } .form-grid { grid-template-columns:repeat(2,1fr); } .settings { grid-template-columns:1fr 1fr; } }

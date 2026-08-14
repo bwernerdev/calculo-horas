@@ -3,24 +3,14 @@ const SETTINGS_KEY = "controle-horas-config-v1";
 const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"Férias", falta:"Falta" };
 const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
+const { toMinutes, toClock, duration, signed } = HoursCalculator;
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"target":528,"break":60,"theme":"light"}');
 
 function localDate(date = new Date()) { const offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
-function toMinutes(time) { const [h,m] = time.split(":").map(Number); return h * 60 + m; }
-function toClock(minutes) { minutes = ((minutes % 1440) + 1440) % 1440; return `${String(Math.floor(minutes/60)).padStart(2,"0")}:${String(minutes%60).padStart(2,"0")}`; }
-function duration(minutes) { const value = Math.abs(minutes); return `${Math.floor(value/60)}h ${String(value%60).padStart(2,"0")}min`; }
-function signed(minutes) { return `${minutes > 0 ? "+" : minutes < 0 ? "-" : ""}${duration(minutes)}`; }
 function escapeCell(value) { const text = String(value ?? ""); return /[";,\n]/.test(text) ? `"${text.replaceAll('"','""')}"` : text; }
 
-function calculate(record) {
-  if (record.type === "falta") return { worked:0, balance:-settings.target };
-  if (record.type !== "trabalho") return { worked:0, balance:0 };
-  let end = toMinutes(record.end); const start = toMinutes(record.start);
-  if (end <= start) end += 1440;
-  const worked = end - start - Number(record.break);
-  return { worked, balance:worked - settings.target };
-}
+function calculate(record) { return HoursCalculator.calculate(record,settings.target); }
 
 function updateForecast() {
   const visible = $("#day-type").value === "trabalho";
@@ -40,11 +30,7 @@ function render() {
     return `<tr><td>${date}</td><td><span class="tag">${TYPES[record.type]}</span></td><td>${record.start || "—"}</td><td>${record.end || "—"}</td><td>${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td>${duration(calc.worked)}</td><td class="${css}">${signed(calc.balance)}</td><td><button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
   }).join("");
   $("#empty-state").hidden = list.length > 0;
-  const totals = list.reduce((sum,record) => {
-    const calc=calculate(record); sum.worked+=calc.worked; sum.balance+=calc.balance;
-    if (calc.balance>0) sum.positive+=calc.balance; if (calc.balance<0) sum.negative+=calc.balance;
-    return sum;
-  }, {worked:0,balance:0,positive:0,negative:0});
+  const totals = HoursCalculator.summarize(list,settings.target);
   $("#monthly-worked").textContent = duration(totals.worked); $("#monthly-balance").textContent = signed(totals.balance);
   $("#monthly-positive").textContent = `+${duration(totals.positive)}`;
   $("#monthly-negative").textContent = `-${duration(totals.negative)}`;
@@ -58,14 +44,27 @@ function resetForm() {
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; updateForecast();
 }
 function showError(message) { $("#error-message").textContent=message; $("#error-message").hidden=false; }
+function showToast(message,type="success") {
+  const toast=document.createElement("div"); toast.className=`toast toast--${type}`; toast.textContent=message;
+  $("#toast-region").append(toast); setTimeout(()=>toast.remove(),4000);
+}
+function requestConfirmation(message) {
+  const dialog=$("#confirm-dialog"), accept=$("#confirm-accept"), cancel=$("#confirm-cancel");
+  $("#confirm-message").textContent=message; dialog.showModal();
+  return new Promise((resolve)=>{
+    const finish=(answer)=>{ accept.removeEventListener("click",onAccept); cancel.removeEventListener("click",onCancel); dialog.removeEventListener("cancel",onCancel); dialog.close(); resolve(answer); };
+    const onAccept=()=>finish(true), onCancel=(event)=>{ event.preventDefault(); finish(false); };
+    accept.addEventListener("click",onAccept); cancel.addEventListener("click",onCancel); dialog.addEventListener("cancel",onCancel);
+  });
+}
 
 form.addEventListener("submit", (event) => {
   event.preventDefault(); const type=$("#day-type").value;
   const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? Number($("#break-time").value) : 0 };
   if (type==="trabalho") { if (!record.start || !record.end) return showError("Informe os horários de entrada e saída."); if (calculate(record).worked < 0) return showError("O intervalo não pode superar a jornada."); }
   if (records.find((item) => item.date===record.date && item.id!==record.id)) return showError("Já existe um registro para esta data. Edite o registro existente.");
-  const index=records.findIndex((item) => item.id===record.id); if (index>=0) records[index]=record; else records.push(record);
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); resetForm(); render();
+  const index=records.findIndex((item) => item.id===record.id), editing=index>=0; if (editing) records[index]=record; else records.push(record);
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); resetForm(); render(); showToast(editing ? "Registro atualizado com sucesso." : "Jornada registrada com sucesso.");
 });
 
 function editRecord(id) {
@@ -74,9 +73,9 @@ function editRecord(id) {
   if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=record.break;
   $("#form-title").textContent="Editar jornada"; $("#submit-button").textContent="Salvar alteração"; $("#cancel-edit").hidden=false; updateForecast(); scrollTo({top:0,behavior:"smooth"});
 }
-$("#records-body").addEventListener("click", (event) => {
+$("#records-body").addEventListener("click", async(event) => {
   const edit=event.target.dataset.edit, remove=event.target.dataset.delete; if (edit) editRecord(edit);
-  if (remove && confirm("Excluir este registro?")) { records=records.filter((item)=>item.id!==remove); localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); render(); }
+  if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) { records=records.filter((item)=>item.id!==remove); localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); render(); showToast("Registro excluído."); }
 });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
@@ -103,7 +102,7 @@ function pdfText(value) {
 
 function buildPdf() {
   const list=filteredRecords();
-  const totals=list.reduce((sum,record)=>{ const calc=calculate(record); sum.worked+=calc.worked; sum.balance+=calc.balance; if (calc.balance>0) sum.positive+=calc.balance; if (calc.balance<0) sum.negative+=calc.balance; return sum; },{worked:0,balance:0,positive:0,negative:0});
+  const totals=HoursCalculator.summarize(list,settings.target);
   const rows=list.map((record)=>({record,calc:calculate(record)}));
   const pages=[]; let position=0;
   if (!rows.length) pages.push([]);
@@ -185,12 +184,12 @@ $("#json-file").addEventListener("change",async(event)=>{
       return { id:String(item.id), date:item.data, type:item.tipo, start:item.entrada || "", end:item.saida || "", break:Number(item.intervaloMinutos) || 0 };
     });
     if (new Set(imported.map((item)=>item.id)).size!==imported.length || new Set(imported.map((item)=>item.date)).size!==imported.length) throw new Error("registros duplicados");
-    if (!confirm(`Restaurar ${imported.length} registro(s)? Os dados atuais serão substituídos.`)) return;
+    if (!await requestConfirmation(`Restaurar ${imported.length} registro(s)? Os dados atuais serão substituídos.`)) return;
     records=imported; settings={ target:config.metaDiariaMinutos, break:config.intervaloPadraoMinutos, theme:config.tema==="dark" ? "dark" : "light" };
     localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
     $("#daily-target").value=toClock(settings.target); $("#default-break").value=settings.break; applyTheme(); resetForm(); render();
-    alert("Backup restaurado com sucesso.");
-  } catch (error) { alert("Não foi possível importar: o arquivo não é um backup válido."); }
+    showToast("Backup restaurado com sucesso.");
+  } catch (error) { showToast("Não foi possível importar: o arquivo não é um backup válido.","error"); }
   finally { event.target.value=""; }
 });
 

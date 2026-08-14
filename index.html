@@ -28,6 +28,11 @@
       <article class="summary-card"><span>Meta diária</span><strong id="target-summary">8h 48min</strong></article>
     </section>
 
+    <aside class="privacy-notice" aria-label="Privacidade dos dados">
+      <span class="privacy-notice__icon" aria-hidden="true">🔒</span>
+      <div><strong>Seus dados ficam somente neste navegador.</strong><p>Nenhum registro é enviado para servidores. Para evitar perdas ao limpar os dados do navegador, baixe um backup JSON regularmente.</p></div>
+    </aside>
+
     <section class="panel entry-panel">
       <div class="panel__header">
         <div><span class="eyebrow">Novo apontamento</span><h2 id="form-title">Registrar jornada</h2></div>
@@ -77,6 +82,17 @@
       </div>
     </section>
   </main>
+  <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <div class="confirm-dialog__icon" aria-hidden="true">!</div>
+    <h2 id="confirm-title">Confirmar ação</h2>
+    <p id="confirm-message"></p>
+    <div class="confirm-dialog__actions">
+      <button id="confirm-cancel" class="button button--ghost" type="button">Cancelar</button>
+      <button id="confirm-accept" class="button button--danger" type="button">Confirmar</button>
+    </div>
+  </dialog>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="calculations.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
