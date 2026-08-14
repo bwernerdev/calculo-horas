@@ -1,4 +1,4 @@
-const CACHE_NAME = "banco-horas-v3";
+const CACHE_NAME = "banco-horas-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -29,12 +29,12 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
+    fetch(event.request).then((response) => {
       if (response.ok) {
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
       }
       return response;
-    }).catch(() => event.request.mode === "navigate" ? caches.match("./index.html") : Response.error()))
+    }).catch(() => caches.match(event.request).then((cached) => cached || (event.request.mode === "navigate" ? caches.match("./index.html") : Response.error())))
   );
 });
