@@ -47,6 +47,8 @@ Use as seguintes configurações:
 
 - Build command: `npm run build`
 - Build output directory / assets directory: `dist`
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/`
 
 O build copia somente os arquivos públicos e impede que `node_modules`, testes ou arquivos internos do Git sejam enviados como assets.
 
