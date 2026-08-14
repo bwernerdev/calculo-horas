@@ -88,6 +88,7 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 @media (max-width:900px) { .summary-grid { grid-template-columns:repeat(2,1fr); } .form-grid { grid-template-columns:repeat(2,1fr); } .settings { grid-template-columns:1fr 1fr; } }
 @media (max-width:768px) {
   .entry-panel { padding-inline:16px; }
+  #export-csv { display:none; }
   .entry-panel .panel__header { align-items:stretch; }
   .entry-panel #settings-toggle { width:100%; }
   #hours-form { display:block; width:100%; min-width:0; max-width:100%; }
