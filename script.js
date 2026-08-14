@@ -226,7 +226,8 @@ function buildPdf() {
 $("#export-pdf").addEventListener("click",()=>downloadFile(buildPdf(),`relatorio-horas-${$("#month-filter").value}.pdf`,"application/pdf"));
 
 function downloadFile(content, filename, type) {
-  const link=document.createElement("a"); link.href=URL.createObjectURL(new Blob([content],{type})); link.download=filename; link.click(); URL.revokeObjectURL(link.href);
+  const link=document.createElement("a"), url=URL.createObjectURL(new Blob([content],{type}));
+  link.href=url; link.download=filename; link.hidden=true; document.body.append(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
 $("#export-json").addEventListener("click",()=>{
