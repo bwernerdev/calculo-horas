@@ -49,7 +49,6 @@
 
       <form id="settings-form" class="settings" hidden>
         <label class="field"><span>Meta diária</span><input id="daily-target" type="time" value="08:48" required></label>
-        <label class="field"><span>Intervalo padrão (min)</span><input id="default-break" type="number" min="0" value="60" required></label>
         <button class="button button--secondary" type="submit">Salvar configuração</button>
       </form>
 
@@ -60,7 +59,7 @@
           <label class="field"><span>Tipo de dia</span><select id="day-type"><option value="trabalho">Dia trabalhado</option><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="ferias">Férias</option><option value="falta">Falta</option></select></label>
           <label class="field work-field"><span>Entrada</span><input id="start-time" type="time" value="08:00"></label>
           <label class="field work-field"><span>Saída</span><input id="end-time" type="time" value="17:48"></label>
-          <label class="field work-field"><span>Intervalo (min)</span><input id="break-time" type="number" min="0" value="60"></label>
+          <label class="field work-field"><span>Intervalo fixo (min)</span><input id="break-time" type="number" value="60" readonly aria-readonly="true"></label>
         </div>
         <div class="mobile-photo-field">
           <label class="photo-capture">

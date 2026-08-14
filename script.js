@@ -4,8 +4,10 @@ const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"F
 const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
 const { toMinutes, toClock, duration, signed } = HoursCalculator;
+const FIXED_BREAK_MINUTES = 60;
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"target":528,"break":60,"theme":"light"}');
+settings.break = FIXED_BREAK_MINUTES;
 let pendingPhoto = "";
 
 function localDate(date = new Date()) { const offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
@@ -47,7 +49,7 @@ function render() {
 }
 
 function resetForm() {
-  form.reset(); $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=settings.break;
+  form.reset(); $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhoto=""; updatePhotoPreview(); updateForecast();
 }
@@ -101,7 +103,7 @@ $("#photo-dialog").addEventListener("close",()=>$("#photo-dialog-image").removeA
 
 form.addEventListener("submit", (event) => {
   event.preventDefault(); const type=$("#day-type").value;
-  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? Number($("#break-time").value) : 0, photo:pendingPhoto };
+  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photo:pendingPhoto };
   if (type==="trabalho") { if (!record.start || !record.end) return showError("Informe os horários de entrada e saída."); if (calculate(record).worked < 0) return showError("O intervalo não pode superar a jornada."); }
   if (records.find((item) => item.date===record.date && item.id!==record.id)) return showError("Já existe um registro para esta data. Edite o registro existente.");
   const index=records.findIndex((item) => item.id===record.id), editing=index>=0, previous=[...records]; if (editing) records[index]=record; else records.push(record);
@@ -112,7 +114,7 @@ form.addEventListener("submit", (event) => {
 function editRecord(id) {
   const record=records.find((item)=>item.id===id); if (!record) return;
   $("#editing-id").value=record.id; $("#work-date").value=record.date; $("#day-type").value=record.type;
-  if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=record.break;
+  if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=FIXED_BREAK_MINUTES;
   pendingPhoto=record.photo || ""; updatePhotoPreview(); $("#form-title").textContent="Editar jornada"; $("#submit-button").textContent="Salvar alteração"; $("#cancel-edit").hidden=false; updateForecast(); scrollTo({top:0,behavior:"smooth"});
 }
 function showRecordPhoto(id) {
@@ -127,11 +129,11 @@ $("#records-body").addEventListener("click", async(event) => {
 $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto); });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
-$("#settings-form").addEventListener("submit",(event)=>{ event.preventDefault(); settings.target=toMinutes($("#daily-target").value); settings.break=Number($("#default-break").value); localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); $("#settings-form").hidden=true; resetForm(); render(); });
+$("#settings-form").addEventListener("submit",(event)=>{ event.preventDefault(); settings.target=toMinutes($("#daily-target").value); settings.break=FIXED_BREAK_MINUTES; localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); $("#settings-form").hidden=true; resetForm(); render(); });
 $("#day-type").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
 $("#month-filter").addEventListener("change",render); $("#cancel-edit").addEventListener("click",resetForm);
 form.addEventListener("reset",()=>setTimeout(()=>{
-  $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=settings.break;
+  $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhoto=""; updatePhotoPreview(); updateForecast();
 }));
@@ -212,7 +214,7 @@ $("#export-json").addEventListener("click",()=>{
   const backup={
     versao:1,
     exportadoEm:new Date().toISOString(),
-    configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:settings.break, tema:settings.theme },
+    configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:settings.theme },
     registros:records.map((record)=>({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, foto:record.photo || "" }))
   };
   downloadFile(JSON.stringify(backup,null,2),`backup-horas-${localDate()}.json`,"application/json;charset=utf-8");
@@ -234,16 +236,16 @@ $("#json-file").addEventListener("change",async(event)=>{
     });
     if (new Set(imported.map((item)=>item.id)).size!==imported.length || new Set(imported.map((item)=>item.date)).size!==imported.length) throw new Error("registros duplicados");
     if (!await requestConfirmation(`Restaurar ${imported.length} registro(s)? Os dados atuais serão substituídos.`)) return;
-    records=imported; settings={ target:config.metaDiariaMinutos, break:config.intervaloPadraoMinutos, theme:config.tema==="dark" ? "dark" : "light" };
+    records=imported; settings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light" };
     localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
-    $("#daily-target").value=toClock(settings.target); $("#default-break").value=settings.break; applyTheme(); resetForm(); render();
+    $("#daily-target").value=toClock(settings.target); applyTheme(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
   } catch (error) { showToast("Não foi possível importar: o arquivo não é um backup válido.","error"); }
   finally { event.target.value=""; }
 });
 
 $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target);
-$("#default-break").value=settings.break; $("#break-time").value=settings.break; applyTheme(); updateForecast(); render();
+$("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
 
 let deferredInstallPrompt;
 const installButton=$("#install-app");
