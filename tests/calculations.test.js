@@ -45,6 +45,6 @@ test("posterga a saída quando há saldo negativo", () => {
   assert.deepEqual(suggestExit("08:00",TARGET,60,-60), { baseExit:"17:48", suggestedExit:"18:48", worked:588, remainingBalance:0, limited:false });
 });
 
-test("limita a compensação negativa a dez horas trabalhadas", () => {
-  assert.deepEqual(suggestExit("08:00",TARGET,60,-180), { baseExit:"17:48", suggestedExit:"19:00", worked:600, remainingBalance:-108, limited:true });
+test("mantém margem preventiva de quinze minutos abaixo de dez horas", () => {
+  assert.deepEqual(suggestExit("08:00",TARGET,60,-180,585), { baseExit:"17:48", suggestedExit:"18:45", worked:585, remainingBalance:-123, limited:true });
 });

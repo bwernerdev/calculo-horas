@@ -5,7 +5,7 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 ## Funcionalidades
 
 - Cálculo de saldo diário com meta configurável
-- Sugestão de saída baseada no saldo mensal, limitada a 10h trabalhadas por dia
+- Sugestão de saída baseada no saldo mensal, limitada preventivamente a 9h45 trabalhadas por dia
 - Somatório de horas positivas, negativas e saldo líquido
 - Registro de folgas, feriados, férias e faltas
 - Captura mobile de fotos de entrada e saída vinculadas ao registro

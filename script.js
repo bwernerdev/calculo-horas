@@ -6,6 +6,7 @@ const form = $("#hours-form");
 const { toMinutes, toClock, duration, signed } = HoursCalculator;
 const FIXED_BREAK_MINUTES = 60;
 const MAX_DAILY_WORK_MINUTES = 10 * 60;
+const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"target":528,"break":60,"theme":"light"}');
 settings.break = FIXED_BREAK_MINUTES;
@@ -27,9 +28,9 @@ function updateForecast() {
   const date=$("#work-date").value, month=date.slice(0,7), editingId=$("#editing-id").value;
   const monthRecords=records.filter((record)=>record.date.startsWith(month) && record.id!==editingId);
   const currentBalance=HoursCalculator.summarize(monthRecords,settings.target).balance;
-  const suggestion=HoursCalculator.suggestExit($("#start-time").value,settings.target,FIXED_BREAK_MINUTES,currentBalance,MAX_DAILY_WORK_MINUTES);
+  const suggestion=HoursCalculator.suggestExit($("#start-time").value,settings.target,FIXED_BREAK_MINUTES,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
   const balanceClass=currentBalance>0 ? "value-positive" : currentBalance<0 ? "value-negative" : "";
-  const pending=suggestion.worked===MAX_DAILY_WORK_MINUTES && suggestion.remainingBalance<0 ? `<span class="forecast__warning">Limite diário de 10h aplicado. Saldo restante: <b>${signed(suggestion.remainingBalance)}</b></span>` : "";
+  const pending=suggestion.worked===SUGGESTED_DAILY_LIMIT_MINUTES && suggestion.remainingBalance<0 ? `<span class="forecast__warning"><b>Margem preventiva de 15 min aplicada</b> antes do limite de 10h. Saldo restante: <b>${signed(suggestion.remainingBalance)}</b></span>` : "";
   $("#exit-forecast").innerHTML = `<span>Saída-base: <b>${suggestion.baseExit}</b></span><span>Saldo atual: <b class="${balanceClass}">${signed(currentBalance)}</b></span><strong>Saída sugerida: ${suggestion.suggestedExit}</strong>${pending}`;
 }
 
