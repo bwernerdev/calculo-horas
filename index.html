@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Controle mensal de jornada e banco de horas.">
+  <title>Meu Banco de Horas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><span class="eyebrow">Controle de jornada</span><h1>Meu banco de horas</h1></div>
+    <button id="theme-toggle" class="icon-button" type="button" aria-label="Alternar tema">🌙</button>
+  </header>
+
+  <main class="page-shell">
+    <section class="summary-grid" aria-label="Resumo do mês">
+      <article class="summary-card summary-card--accent"><span>Saldo do mês</span><strong id="monthly-balance">0h 00min</strong></article>
+      <article class="summary-card summary-card--positive"><span>Horas positivas</span><strong id="monthly-positive">+0h 00min</strong></article>
+      <article class="summary-card summary-card--negative"><span>Horas negativas</span><strong id="monthly-negative">-0h 00min</strong></article>
+      <article class="summary-card"><span>Total trabalhado</span><strong id="monthly-worked">0h 00min</strong></article>
+      <article class="summary-card"><span>Dias registrados</span><strong id="registered-days">0</strong></article>
+      <article class="summary-card"><span>Meta diária</span><strong id="target-summary">8h 48min</strong></article>
+    </section>
+
+    <section class="panel entry-panel">
+      <div class="panel__header">
+        <div><span class="eyebrow">Novo apontamento</span><h2 id="form-title">Registrar jornada</h2></div>
+        <button id="settings-toggle" class="button button--ghost" type="button">⚙ Configurar jornada</button>
+      </div>
+
+      <form id="settings-form" class="settings" hidden>
+        <label class="field"><span>Meta diária</span><input id="daily-target" type="time" value="08:48" required></label>
+        <label class="field"><span>Intervalo padrão (min)</span><input id="default-break" type="number" min="0" value="60" required></label>
+        <button class="button button--secondary" type="submit">Salvar configuração</button>
+      </form>
+
+      <form id="hours-form">
+        <input id="editing-id" type="hidden">
+        <div class="form-grid">
+          <label class="field"><span>Data</span><input id="work-date" type="date" required></label>
+          <label class="field"><span>Tipo de dia</span><select id="day-type"><option value="trabalho">Dia trabalhado</option><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="ferias">Férias</option><option value="falta">Falta</option></select></label>
+          <label class="field work-field"><span>Entrada</span><input id="start-time" type="time" value="08:00"></label>
+          <label class="field work-field"><span>Saída</span><input id="end-time" type="time" value="17:48"></label>
+          <label class="field work-field"><span>Intervalo (min)</span><input id="break-time" type="number" min="0" value="60"></label>
+        </div>
+        <div id="exit-forecast" class="forecast" aria-live="polite">Saída prevista: <strong>17:48</strong></div>
+        <p id="error-message" class="error-message" role="alert" hidden></p>
+        <div class="actions">
+          <button id="submit-button" class="button button--primary" type="submit">Adicionar registro</button>
+          <button id="cancel-edit" class="button button--secondary" type="button" hidden>Cancelar edição</button>
+          <button class="button button--ghost" type="reset">Limpar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel records-panel">
+      <div class="panel__header panel__header--wrap">
+        <div><span class="eyebrow">Histórico</span><h2>Registros mensais</h2></div>
+        <div class="toolbar">
+          <label class="month-filter">Mês <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês no formato AAAA-MM" maxlength="7"></label>
+          <button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button>
+          <button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button>
+          <button id="export-json" class="button button--secondary" type="button">Baixar backup</button>
+          <button id="import-json" class="button button--secondary" type="button">Importar backup</button>
+          <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup JSON">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Data</th><th>Tipo</th><th>Entrada</th><th>Saída</th><th>Intervalo</th><th>Trabalhado</th><th>Saldo</th><th>Ações</th></tr></thead><tbody id="records-body"></tbody></table>
+        <p id="empty-state" class="empty-state">Nenhum registro neste mês.</p>
+      </div>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
