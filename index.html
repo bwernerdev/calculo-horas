@@ -4,9 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Controle mensal de jornada e banco de horas.">
+  <meta name="theme-color" content="#3157d5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Banco de Horas">
   <title>Meu Banco de Horas</title>
   <link rel="icon" type="image/webp" href="imagens/favicon.webp">
   <link rel="apple-touch-icon" sizes="180x180" href="imagens/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,7 +20,10 @@
       <img class="brand-logo" src="imagens/logo-controladoria-cds.webp" alt="Controladoria Administrativa CDS" width="1402" height="1122">
       <div><span class="eyebrow">Controle de jornada</span><h1>Meu banco de horas</h1></div>
     </div>
-    <button id="theme-toggle" class="icon-button" type="button" aria-label="Alternar tema">🌙</button>
+    <div class="topbar__actions">
+      <button id="install-app" class="button button--install" type="button" hidden>Instalar app</button>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Alternar tema">🌙</button>
+    </div>
   </header>
 
   <main class="page-shell">

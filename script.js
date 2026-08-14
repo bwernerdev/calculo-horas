@@ -125,7 +125,7 @@ form.addEventListener("reset",()=>setTimeout(()=>{
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhoto=""; updatePhotoPreview(); updateForecast();
 }));
 
-function applyTheme() { document.documentElement.dataset.theme=settings.theme; $("#theme-toggle").textContent=settings.theme==="dark" ? "☀️" : "🌙"; }
+function applyTheme() { document.documentElement.dataset.theme=settings.theme; $("#theme-toggle").textContent=settings.theme==="dark" ? "☀️" : "🌙"; document.querySelector('meta[name="theme-color"]').content=settings.theme==="dark" ? "#0d1321" : "#3157d5"; }
 $("#theme-toggle").addEventListener("click",()=>{ settings.theme=settings.theme==="dark" ? "light" : "dark"; applyTheme(); localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); });
 $("#export-csv").addEventListener("click",()=>{
   const header=["Data","Tipo","Entrada","Saída","Intervalo (min)","Trabalhado","Saldo"];
@@ -233,3 +233,26 @@ $("#json-file").addEventListener("change",async(event)=>{
 
 $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target);
 $("#default-break").value=settings.break; $("#break-time").value=settings.break; applyTheme(); updateForecast(); render();
+
+let deferredInstallPrompt;
+const installButton=$("#install-app");
+const isIos=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone=window.matchMedia("(display-mode: standalone)").matches || navigator.standalone===true;
+
+window.addEventListener("beforeinstallprompt",(event)=>{
+  event.preventDefault(); deferredInstallPrompt=event; installButton.hidden=false;
+});
+if (isIos && !isStandalone) installButton.hidden=false;
+
+installButton.addEventListener("click",async()=>{
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt(); const choice=await deferredInstallPrompt.userChoice;
+    if (choice.outcome==="accepted") showToast("Aplicativo instalado com sucesso.");
+    deferredInstallPrompt=null; installButton.hidden=true;
+  } else if (isIos) showToast("No Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.");
+});
+window.addEventListener("appinstalled",()=>{ deferredInstallPrompt=null; installButton.hidden=true; });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch((error)=>console.error("Falha ao ativar o modo offline:",error)));
+}
