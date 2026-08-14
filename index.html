@@ -30,7 +30,7 @@
 
     <aside class="privacy-notice" aria-label="Privacidade dos dados">
       <span class="privacy-notice__icon" aria-hidden="true">🔒</span>
-      <div><strong>Seus dados ficam somente neste navegador.</strong><p>Nenhum registro é enviado para servidores. Para evitar perdas ao limpar os dados do navegador, baixe um backup JSON regularmente.</p></div>
+      <div><strong>Seus dados e fotos ficam somente neste navegador.</strong><p>Nenhum registro ou imagem é enviado para servidores. Para evitar perdas ao limpar os dados do navegador, baixe um backup JSON regularmente.</p></div>
     </aside>
 
     <section class="panel entry-panel">
@@ -53,6 +53,17 @@
           <label class="field work-field"><span>Entrada</span><input id="start-time" type="time" value="08:00"></label>
           <label class="field work-field"><span>Saída</span><input id="end-time" type="time" value="17:48"></label>
           <label class="field work-field"><span>Intervalo (min)</span><input id="break-time" type="number" min="0" value="60"></label>
+        </div>
+        <div class="mobile-photo-field">
+          <label class="photo-capture">
+            <span class="photo-capture__icon" aria-hidden="true">📷</span>
+            <span><strong>Fotografar o ponto</strong><small>Use a câmera para anexar um comprovante a este dia.</small></span>
+            <input id="point-photo" class="visually-hidden" type="file" accept="image/*" capture="environment">
+          </label>
+          <div id="photo-preview" class="photo-preview" hidden>
+            <img id="photo-preview-image" alt="Prévia da foto do ponto">
+            <div><strong>Foto anexada</strong><button id="remove-photo" type="button">Remover foto</button></div>
+          </div>
         </div>
         <div id="exit-forecast" class="forecast" aria-live="polite">Saída prevista: <strong>17:48</strong></div>
         <p id="error-message" class="error-message" role="alert" hidden></p>
@@ -90,6 +101,10 @@
       <button id="confirm-cancel" class="button button--ghost" type="button">Cancelar</button>
       <button id="confirm-accept" class="button button--danger" type="button">Confirmar</button>
     </div>
+  </dialog>
+  <dialog id="photo-dialog" class="photo-dialog" aria-labelledby="photo-dialog-title">
+    <div class="photo-dialog__header"><h2 id="photo-dialog-title">Foto do ponto</h2><button id="photo-dialog-close" class="icon-button" type="button" aria-label="Fechar foto">×</button></div>
+    <img id="photo-dialog-image" alt="Foto anexada ao registro de ponto">
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="calculations.js"></script>
