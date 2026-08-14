@@ -43,5 +43,14 @@
     }, { worked: 0, balance: 0, positive: 0, negative: 0 });
   }
 
-  return { toMinutes, toClock, duration, signed, calculate, summarize };
+  function suggestExit(start, targetMinutes, breakMinutes, currentBalance, maxWorkedMinutes = 600) {
+    const desiredWorked = targetMinutes - currentBalance;
+    const worked = Math.max(0, Math.min(desiredWorked, maxWorkedMinutes));
+    const baseExit = toClock(toMinutes(start) + targetMinutes + breakMinutes);
+    const suggestedExit = toClock(toMinutes(start) + worked + breakMinutes);
+    const remainingBalance = currentBalance + worked - targetMinutes;
+    return { baseExit, suggestedExit, worked, remainingBalance, limited: worked !== desiredWorked };
+  }
+
+  return { toMinutes, toClock, duration, signed, calculate, summarize, suggestExit };
 });

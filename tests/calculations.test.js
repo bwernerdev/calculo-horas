@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { calculate, summarize, toClock } = require("../calculations.js");
+const { calculate, summarize, suggestExit, toClock } = require("../calculations.js");
 
 const TARGET = 8 * 60 + 48;
 
@@ -35,4 +35,16 @@ test("soma separadamente horas positivas, negativas e saldo líquido", () => {
 
 test("calcula a saída prevista com virada de dia", () => {
   assert.equal(toClock(22 * 60 + TARGET + 60), "07:48");
+});
+
+test("antecipa a saída quando há saldo positivo", () => {
+  assert.deepEqual(suggestExit("08:00",TARGET,60,60), { baseExit:"17:48", suggestedExit:"16:48", worked:468, remainingBalance:0, limited:false });
+});
+
+test("posterga a saída quando há saldo negativo", () => {
+  assert.deepEqual(suggestExit("08:00",TARGET,60,-60), { baseExit:"17:48", suggestedExit:"18:48", worked:588, remainingBalance:0, limited:false });
+});
+
+test("limita a compensação negativa a dez horas trabalhadas", () => {
+  assert.deepEqual(suggestExit("08:00",TARGET,60,-180), { baseExit:"17:48", suggestedExit:"19:00", worked:600, remainingBalance:-108, limited:true });
 });

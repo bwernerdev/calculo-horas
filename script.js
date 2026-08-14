@@ -5,6 +5,7 @@ const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
 const { toMinutes, toClock, duration, signed } = HoursCalculator;
 const FIXED_BREAK_MINUTES = 60;
+const MAX_DAILY_WORK_MINUTES = 10 * 60;
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"target":528,"break":60,"theme":"light"}');
 settings.break = FIXED_BREAK_MINUTES;
@@ -23,8 +24,13 @@ function updateForecast() {
   document.querySelectorAll(".work-field").forEach((field) => field.hidden = !visible);
   $("#exit-forecast").hidden = !visible;
   if (!visible || !$("#start-time").value) return;
-  const forecast = toMinutes($("#start-time").value) + settings.target + Number($("#break-time").value || 0);
-  $("#exit-forecast").innerHTML = `Saída prevista: <strong>${toClock(forecast)}</strong>`;
+  const date=$("#work-date").value, month=date.slice(0,7), editingId=$("#editing-id").value;
+  const monthRecords=records.filter((record)=>record.date.startsWith(month) && record.id!==editingId);
+  const currentBalance=HoursCalculator.summarize(monthRecords,settings.target).balance;
+  const suggestion=HoursCalculator.suggestExit($("#start-time").value,settings.target,FIXED_BREAK_MINUTES,currentBalance,MAX_DAILY_WORK_MINUTES);
+  const balanceClass=currentBalance>0 ? "value-positive" : currentBalance<0 ? "value-negative" : "";
+  const pending=suggestion.worked===MAX_DAILY_WORK_MINUTES && suggestion.remainingBalance<0 ? `<span class="forecast__warning">Limite diário de 10h aplicado. Saldo restante: <b>${signed(suggestion.remainingBalance)}</b></span>` : "";
+  $("#exit-forecast").innerHTML = `<span>Saída-base: <b>${suggestion.baseExit}</b></span><span>Saldo atual: <b class="${balanceClass}">${signed(currentBalance)}</b></span><strong>Saída sugerida: ${suggestion.suggestedExit}</strong>${pending}`;
 }
 
 function filteredRecords() { return records.filter((record) => record.date.startsWith($("#month-filter").value)).sort((a,b) => b.date.localeCompare(a.date)); }
@@ -50,6 +56,7 @@ function render() {
   $("#monthly-negative").textContent = `-${duration(totals.negative)}`;
   $("#monthly-balance").className = totals.balance > 0 ? "value-positive" : totals.balance < 0 ? "value-negative" : "";
   $("#registered-days").textContent = list.length; $("#target-summary").textContent = duration(settings.target);
+  updateForecast();
 }
 
 function resetForm() {
@@ -114,7 +121,7 @@ $("#photo-dialog").addEventListener("close",()=>$("#photo-dialog-image").removeA
 form.addEventListener("submit", (event) => {
   event.preventDefault(); const type=$("#day-type").value;
   const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photos:{...pendingPhotos} };
-  if (type==="trabalho") { if (!record.start || !record.end) return showError("Informe os horários de entrada e saída."); if (calculate(record).worked < 0) return showError("O intervalo não pode superar a jornada."); }
+  if (type==="trabalho") { if (!record.start || !record.end) return showError("Informe os horários de entrada e saída."); const worked=calculate(record).worked; if (worked < 0) return showError("O intervalo não pode superar a jornada."); if (worked > MAX_DAILY_WORK_MINUTES) return showError("A jornada não pode ultrapassar 10 horas trabalhadas no dia."); }
   if (records.find((item) => item.date===record.date && item.id!==record.id)) return showError("Já existe um registro para esta data. Edite o registro existente.");
   const index=records.findIndex((item) => item.id===record.id), editing=index>=0, previous=[...records]; if (editing) records[index]=record; else records.push(record);
   try { localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); } catch (error) { records=previous; return showError("Não há espaço suficiente no navegador para salvar esta foto. Tente remover fotos antigas."); }
@@ -141,7 +148,7 @@ $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
 $("#settings-form").addEventListener("submit",(event)=>{ event.preventDefault(); settings.target=toMinutes($("#daily-target").value); settings.break=FIXED_BREAK_MINUTES; localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); $("#settings-form").hidden=true; resetForm(); render(); });
-$("#day-type").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
+$("#day-type").addEventListener("change",updateForecast); $("#work-date").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
 $("#month-filter").addEventListener("change",render); $("#cancel-edit").addEventListener("click",resetForm);
 form.addEventListener("reset",()=>setTimeout(()=>{
   $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
