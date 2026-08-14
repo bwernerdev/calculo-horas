@@ -7,7 +7,7 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 - Cálculo de saldo diário com meta configurável
 - Somatório de horas positivas, negativas e saldo líquido
 - Registro de folgas, feriados, férias e faltas
-- Captura mobile de foto do ponto vinculada ao registro
+- Captura mobile de fotos de entrada e saída vinculadas ao registro
 - Instalação como PWA no celular ou computador
 - Funcionamento offline após o primeiro acesso
 - Histórico mensal salvo no navegador

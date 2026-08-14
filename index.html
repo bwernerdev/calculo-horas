@@ -68,8 +68,8 @@
             <input id="point-photo" class="visually-hidden" type="file" accept="image/*" capture="environment">
           </label>
           <div id="photo-preview" class="photo-preview" hidden>
-            <img id="photo-preview-image" alt="Prévia da foto do ponto">
-            <div><strong>Foto anexada</strong><button id="remove-photo" type="button">Remover foto</button></div>
+            <div id="entry-photo-preview" class="photo-preview__item" hidden><img id="entry-photo-image" alt="Prévia da foto de entrada"><div><strong>Foto de entrada</strong><button type="button" data-remove-photo="entrada">Remover</button></div></div>
+            <div id="exit-photo-preview" class="photo-preview__item" hidden><img id="exit-photo-image" alt="Prévia da foto de saída"><div><strong>Foto de saída</strong><button type="button" data-remove-photo="saida">Remover</button></div></div>
           </div>
         </div>
         <div id="exit-forecast" class="forecast" aria-live="polite">Saída prevista: <strong>17:48</strong></div>
@@ -116,6 +116,16 @@
   <dialog id="photo-dialog" class="photo-dialog" aria-labelledby="photo-dialog-title">
     <div class="photo-dialog__header"><h2 id="photo-dialog-title">Foto do ponto</h2><button id="photo-dialog-close" class="icon-button" type="button" aria-label="Fechar foto">×</button></div>
     <img id="photo-dialog-image" alt="Foto anexada ao registro de ponto">
+  </dialog>
+  <dialog id="photo-type-dialog" class="confirm-dialog" aria-labelledby="photo-type-title">
+    <div class="confirm-dialog__icon photo-type-icon" aria-hidden="true">📷</div>
+    <h2 id="photo-type-title">Esta foto é de qual ponto?</h2>
+    <p>Selecione o momento correspondente para anexar a imagem ao registro.</p>
+    <div class="photo-type-actions">
+      <button class="button button--secondary" type="button" data-photo-type="entrada">Entrada</button>
+      <button class="button button--primary" type="button" data-photo-type="saida">Saída</button>
+      <button id="photo-type-cancel" class="button button--ghost" type="button">Cancelar</button>
+    </div>
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
   <script src="calculations.js"></script>

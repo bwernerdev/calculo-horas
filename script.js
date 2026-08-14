@@ -8,12 +8,14 @@ const FIXED_BREAK_MINUTES = 60;
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"target":528,"break":60,"theme":"light"}');
 settings.break = FIXED_BREAK_MINUTES;
-let pendingPhoto = "";
+let pendingPhotos = { entrada:"", saida:"" };
+let capturedPhoto = "";
 
 function localDate(date = new Date()) { const offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
 function escapeCell(value) { const text = String(value ?? ""); return /[";,\n]/.test(text) ? `"${text.replaceAll('"','""')}"` : text; }
 
 function calculate(record) { return HoursCalculator.calculate(record,settings.target); }
+function recordPhotos(record) { return record.photos || { entrada:record.photo || "", saida:"" }; }
 
 function updateForecast() {
   const visible = $("#day-type").value === "trabalho";
@@ -30,15 +32,16 @@ function render() {
   $("#records-body").innerHTML = list.map((record) => {
     const calc = calculate(record); const css = calc.balance > 0 ? "value-positive" : calc.balance < 0 ? "value-negative" : "";
     const date = new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
-    const photoButton=record.photo ? `<button class="table-action" data-photo="${record.id}">Ver foto</button> ` : "";
-    return `<tr><td>${date}</td><td><span class="tag">${TYPES[record.type]}</span></td><td>${record.start || "—"}</td><td>${record.end || "—"}</td><td>${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td>${duration(calc.worked)}</td><td class="${css}">${signed(calc.balance)}</td><td>${photoButton}<button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
+    const photos=recordPhotos(record);
+    const photoButtons=[photos.entrada ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="entrada">Entrada</button>` : "",photos.saida ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="saida">Saída</button>` : ""].filter(Boolean).join(" ");
+    return `<tr><td>${date}</td><td><span class="tag">${TYPES[record.type]}</span></td><td>${record.start || "—"}</td><td>${record.end || "—"}</td><td>${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td>${duration(calc.worked)}</td><td class="${css}">${signed(calc.balance)}</td><td>${photoButtons} <button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
   }).join("");
   $("#empty-state").hidden = list.length > 0;
-  const photos=list.filter((record)=>record.photo);
+  const photos=list.flatMap((record)=>Object.entries(recordPhotos(record)).filter(([,photo])=>photo).map(([kind,photo])=>({record,kind,photo})));
   $("#photo-history").hidden=photos.length===0; $("#photo-count").textContent=`${photos.length} ${photos.length===1 ? "foto" : "fotos"}`;
-  $("#photo-gallery").innerHTML=photos.map((record)=>{
+  $("#photo-gallery").innerHTML=photos.map(({record,kind,photo})=>{
     const date=new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
-    return `<button class="photo-card" type="button" data-view-photo="${record.id}" aria-label="Ver foto de ${date}"><img src="${record.photo}" alt="" loading="lazy"><span class="photo-card__info"><strong>${date}</strong><small>${TYPES[record.type]}</small></span></button>`;
+    return `<button class="photo-card" type="button" data-view-photo="${record.id}" data-photo-kind="${kind}" aria-label="Ver foto de ${kind} de ${date}"><img src="${photo}" alt="" loading="lazy"><span class="photo-card__info"><strong>${date}</strong><small>${kind === "entrada" ? "Entrada" : "Saída"} · ${TYPES[record.type]}</small></span></button>`;
   }).join("");
   const totals = HoursCalculator.summarize(list,settings.target);
   $("#monthly-worked").textContent = duration(totals.worked); $("#monthly-balance").textContent = signed(totals.balance);
@@ -51,7 +54,7 @@ function render() {
 function resetForm() {
   form.reset(); $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
-  $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhoto=""; updatePhotoPreview(); updateForecast();
+  $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhotos={entrada:"",saida:""}; capturedPhoto=""; updatePhotoPreview(); updateForecast();
 }
 function showError(message) { $("#error-message").textContent=message; $("#error-message").hidden=false; }
 function showToast(message,type="success") {
@@ -68,8 +71,11 @@ function requestConfirmation(message) {
   });
 }
 function updatePhotoPreview() {
-  $("#photo-preview").hidden=!pendingPhoto;
-  $("#photo-preview-image").src=pendingPhoto || "";
+  $("#photo-preview").hidden=!pendingPhotos.entrada && !pendingPhotos.saida;
+  for (const kind of ["entrada","saida"]) {
+    $(`#${kind === "entrada" ? "entry" : "exit"}-photo-preview`).hidden=!pendingPhotos[kind];
+    $(`#${kind === "entrada" ? "entry" : "exit"}-photo-image`).src=pendingPhotos[kind] || "";
+  }
   $("#point-photo").value="";
 }
 function compressPhoto(file) {
@@ -94,16 +100,22 @@ function compressPhoto(file) {
 
 $("#point-photo").addEventListener("change",async(event)=>{
   const file=event.target.files[0]; if (!file) return;
-  try { pendingPhoto=await compressPhoto(file); updatePhotoPreview(); showToast("Foto anexada ao registro."); }
+  try { capturedPhoto=await compressPhoto(file); $("#photo-type-dialog").showModal(); }
   catch (error) { showToast("Não foi possível processar essa foto.","error"); event.target.value=""; }
 });
-$("#remove-photo").addEventListener("click",()=>{ pendingPhoto=""; updatePhotoPreview(); showToast("Foto removida do registro."); });
+document.querySelectorAll("[data-photo-type]").forEach((button)=>button.addEventListener("click",()=>{
+  const kind=button.dataset.photoType; pendingPhotos[kind]=capturedPhoto; capturedPhoto=""; $("#photo-type-dialog").close(); updatePhotoPreview(); showToast(`Foto de ${kind} anexada.`);
+}));
+function cancelPhotoType() { capturedPhoto=""; $("#photo-type-dialog").close(); $("#point-photo").value=""; }
+$("#photo-type-cancel").addEventListener("click",cancelPhotoType);
+$("#photo-type-dialog").addEventListener("cancel",(event)=>{ event.preventDefault(); cancelPhotoType(); });
+$("#photo-preview").addEventListener("click",(event)=>{ const kind=event.target.dataset.removePhoto; if (kind) { pendingPhotos[kind]=""; updatePhotoPreview(); showToast(`Foto de ${kind} removida.`); } });
 $("#photo-dialog-close").addEventListener("click",()=>$("#photo-dialog").close());
 $("#photo-dialog").addEventListener("close",()=>$("#photo-dialog-image").removeAttribute("src"));
 
 form.addEventListener("submit", (event) => {
   event.preventDefault(); const type=$("#day-type").value;
-  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photo:pendingPhoto };
+  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photos:{...pendingPhotos} };
   if (type==="trabalho") { if (!record.start || !record.end) return showError("Informe os horários de entrada e saída."); if (calculate(record).worked < 0) return showError("O intervalo não pode superar a jornada."); }
   if (records.find((item) => item.date===record.date && item.id!==record.id)) return showError("Já existe um registro para esta data. Edite o registro existente.");
   const index=records.findIndex((item) => item.id===record.id), editing=index>=0, previous=[...records]; if (editing) records[index]=record; else records.push(record);
@@ -115,18 +127,19 @@ function editRecord(id) {
   const record=records.find((item)=>item.id===id); if (!record) return;
   $("#editing-id").value=record.id; $("#work-date").value=record.date; $("#day-type").value=record.type;
   if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=FIXED_BREAK_MINUTES;
-  pendingPhoto=record.photo || ""; updatePhotoPreview(); $("#form-title").textContent="Editar jornada"; $("#submit-button").textContent="Salvar alteração"; $("#cancel-edit").hidden=false; updateForecast(); scrollTo({top:0,behavior:"smooth"});
+  pendingPhotos={...recordPhotos(record)}; updatePhotoPreview(); $("#form-title").textContent="Editar jornada"; $("#submit-button").textContent="Salvar alteração"; $("#cancel-edit").hidden=false; updateForecast(); scrollTo({top:0,behavior:"smooth"});
 }
-function showRecordPhoto(id) {
+function showRecordPhoto(id,kind) {
   const record=records.find((item)=>item.id===id);
-  if (record?.photo) { $("#photo-dialog-image").src=record.photo; $("#photo-dialog").showModal(); }
+  const photo=record ? recordPhotos(record)[kind] : "";
+  if (photo) { $("#photo-dialog-title").textContent=`Foto de ${kind}`; $("#photo-dialog-image").src=photo; $("#photo-dialog").showModal(); }
 }
 $("#records-body").addEventListener("click", async(event) => {
   const edit=event.target.dataset.edit, remove=event.target.dataset.delete, photo=event.target.dataset.photo; if (edit) editRecord(edit);
-  if (photo) showRecordPhoto(photo);
+  if (photo) showRecordPhoto(photo,event.target.dataset.photoKind);
   if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) { records=records.filter((item)=>item.id!==remove); localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); render(); showToast("Registro excluído."); }
 });
-$("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto); });
+$("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
 $("#settings-form").addEventListener("submit",(event)=>{ event.preventDefault(); settings.target=toMinutes($("#daily-target").value); settings.break=FIXED_BREAK_MINUTES; localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); $("#settings-form").hidden=true; resetForm(); render(); });
@@ -135,7 +148,7 @@ $("#month-filter").addEventListener("change",render); $("#cancel-edit").addEvent
 form.addEventListener("reset",()=>setTimeout(()=>{
   $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
-  $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhoto=""; updatePhotoPreview(); updateForecast();
+  $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhotos={entrada:"",saida:""}; capturedPhoto=""; updatePhotoPreview(); updateForecast();
 }));
 
 function applyTheme() { document.documentElement.dataset.theme=settings.theme; $("#theme-toggle").textContent=settings.theme==="dark" ? "☀️" : "🌙"; document.querySelector('meta[name="theme-color"]').content=settings.theme==="dark" ? "#0d1321" : "#3157d5"; }
@@ -215,7 +228,7 @@ $("#export-json").addEventListener("click",()=>{
     versao:1,
     exportadoEm:new Date().toISOString(),
     configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:settings.theme },
-    registros:records.map((record)=>({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, foto:record.photo || "" }))
+    registros:records.map((record)=>({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, fotos:recordPhotos(record) }))
   };
   downloadFile(JSON.stringify(backup,null,2),`backup-horas-${localDate()}.json`,"application/json;charset=utf-8");
 });
@@ -231,8 +244,9 @@ $("#json-file").addEventListener("change",async(event)=>{
     const imported=backup.registros.map((item)=>{
       if (!/^[A-Za-z0-9-]+$/.test(String(item.id)) || !/^\d{4}-\d{2}-\d{2}$/.test(item.data) || Number.isNaN(Date.parse(`${item.data}T12:00:00`)) || !TYPES[item.tipo]) throw new Error("registro inválido");
       if (item.tipo==="trabalho" && (!/^\d{2}:\d{2}$/.test(item.entrada) || !/^\d{2}:\d{2}$/.test(item.saida) || !Number.isFinite(Number(item.intervaloMinutos)))) throw new Error("jornada inválida");
-      if (item.foto && (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(item.foto) || item.foto.length>1500000)) throw new Error("foto inválida");
-      return { id:String(item.id), date:item.data, type:item.tipo, start:item.entrada || "", end:item.saida || "", break:Number(item.intervaloMinutos) || 0, photo:item.foto || "" };
+      const photos=item.fotos || { entrada:item.foto || "", saida:"" };
+      for (const kind of ["entrada","saida"]) if (photos[kind] && (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photos[kind]) || photos[kind].length>1500000)) throw new Error("foto inválida");
+      return { id:String(item.id), date:item.data, type:item.tipo, start:item.entrada || "", end:item.saida || "", break:Number(item.intervaloMinutos) || 0, photos:{ entrada:photos.entrada || "", saida:photos.saida || "" } };
     });
     if (new Set(imported.map((item)=>item.id)).size!==imported.length || new Set(imported.map((item)=>item.date)).size!==imported.length) throw new Error("registros duplicados");
     if (!await requestConfirmation(`Restaurar ${imported.length} registro(s)? Os dados atuais serão substituídos.`)) return;
