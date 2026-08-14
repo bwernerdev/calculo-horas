@@ -41,17 +41,6 @@ npm test
 
 Os testes cobrem jornada com virada de dia, intervalos, faltas, dias abonados, previsão de saída e somatória dos saldos.
 
-## Deploy no Cloudflare
-
-Use as seguintes configurações:
-
-- Build command: `npm run build`
-- Build output directory / assets directory: `dist`
-- Deploy command: `npx wrangler deploy`
-- Root directory: `/`
-
-O build copia somente os arquivos públicos e impede que `node_modules`, testes ou arquivos internos do Git sejam enviados como assets.
-
 ## Tecnologias
 
 HTML, CSS e JavaScript, sem dependências externas.
