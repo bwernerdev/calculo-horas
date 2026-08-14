@@ -61,6 +61,12 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 .table-action { padding:6px 8px; border:0; border-radius:7px; color:var(--primary-dark); background:var(--primary-soft); cursor:pointer; }
 .table-action--delete { color:var(--danger); background:var(--danger-bg); }
 .empty-state { margin:28px 0 5px; color:var(--muted); text-align:center; }
+.photo-history { margin-top:28px; padding-top:24px; border-top:1px solid var(--line); }
+.photo-history__heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; } .photo-history__heading h3 { margin:0; font-size:1rem; } .photo-history__heading span { color:var(--muted); font-size:.78rem; font-weight:700; }
+.photo-gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(135px,1fr)); gap:12px; }
+.photo-card { padding:0; overflow:hidden; border:1px solid var(--line); border-radius:12px; color:var(--text); background:var(--surface-2); text-align:left; cursor:pointer; transition:transform .15s ease,border-color .15s ease; }
+.photo-card:hover { border-color:var(--primary); transform:translateY(-2px); } .photo-card img { display:block; width:100%; aspect-ratio:4/3; object-fit:cover; }
+.photo-card__info { display:block; padding:9px 10px; } .photo-card__info strong,.photo-card__info small { display:block; } .photo-card__info strong { font-size:.8rem; } .photo-card__info small { margin-top:2px; color:var(--muted); font-size:.7rem; }
 .error-message { margin:14px 0 0; color:var(--danger); font-size:.88rem; font-weight:750; }
 .confirm-dialog { width:min(440px,calc(100% - 32px)); padding:26px; border:1px solid var(--line); border-radius:18px; color:var(--text); background:var(--surface); box-shadow:0 24px 70px rgba(0,0,0,.28); }
 .confirm-dialog::backdrop { background:rgba(7,12,24,.58); backdrop-filter:blur(3px); }

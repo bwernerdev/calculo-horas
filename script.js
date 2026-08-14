@@ -28,10 +28,16 @@ function render() {
   $("#records-body").innerHTML = list.map((record) => {
     const calc = calculate(record); const css = calc.balance > 0 ? "value-positive" : calc.balance < 0 ? "value-negative" : "";
     const date = new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
-    const photoButton=record.photo ? `<button class="table-action" data-photo="${record.id}">Foto</button> ` : "";
+    const photoButton=record.photo ? `<button class="table-action" data-photo="${record.id}">Ver foto</button> ` : "";
     return `<tr><td>${date}</td><td><span class="tag">${TYPES[record.type]}</span></td><td>${record.start || "—"}</td><td>${record.end || "—"}</td><td>${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td>${duration(calc.worked)}</td><td class="${css}">${signed(calc.balance)}</td><td>${photoButton}<button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
   }).join("");
   $("#empty-state").hidden = list.length > 0;
+  const photos=list.filter((record)=>record.photo);
+  $("#photo-history").hidden=photos.length===0; $("#photo-count").textContent=`${photos.length} ${photos.length===1 ? "foto" : "fotos"}`;
+  $("#photo-gallery").innerHTML=photos.map((record)=>{
+    const date=new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
+    return `<button class="photo-card" type="button" data-view-photo="${record.id}" aria-label="Ver foto de ${date}"><img src="${record.photo}" alt="" loading="lazy"><span class="photo-card__info"><strong>${date}</strong><small>${TYPES[record.type]}</small></span></button>`;
+  }).join("");
   const totals = HoursCalculator.summarize(list,settings.target);
   $("#monthly-worked").textContent = duration(totals.worked); $("#monthly-balance").textContent = signed(totals.balance);
   $("#monthly-positive").textContent = `+${duration(totals.positive)}`;
@@ -109,11 +115,16 @@ function editRecord(id) {
   if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=record.break;
   pendingPhoto=record.photo || ""; updatePhotoPreview(); $("#form-title").textContent="Editar jornada"; $("#submit-button").textContent="Salvar alteração"; $("#cancel-edit").hidden=false; updateForecast(); scrollTo({top:0,behavior:"smooth"});
 }
+function showRecordPhoto(id) {
+  const record=records.find((item)=>item.id===id);
+  if (record?.photo) { $("#photo-dialog-image").src=record.photo; $("#photo-dialog").showModal(); }
+}
 $("#records-body").addEventListener("click", async(event) => {
   const edit=event.target.dataset.edit, remove=event.target.dataset.delete, photo=event.target.dataset.photo; if (edit) editRecord(edit);
-  if (photo) { const record=records.find((item)=>item.id===photo); if (record?.photo) { $("#photo-dialog-image").src=record.photo; $("#photo-dialog").showModal(); } }
+  if (photo) showRecordPhoto(photo);
   if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) { records=records.filter((item)=>item.id!==remove); localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); render(); showToast("Registro excluído."); }
 });
+$("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto); });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
 $("#settings-form").addEventListener("submit",(event)=>{ event.preventDefault(); settings.target=toMinutes($("#daily-target").value); settings.break=Number($("#default-break").value); localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); $("#settings-form").hidden=true; resetForm(); render(); });
