@@ -25,7 +25,7 @@ test("dimensiona a interface para viewport e áreas seguras mobile", () => {
   assert.match(css, /100dvh/);
   assert.match(css, /safe-area-inset-top/);
   assert.match(css, /max-height:600px/);
-  assert.match(css, /\.auth-card input \{ min-height:48px; font-size:16px; \}/);
+  assert.match(css, /\.auth-card input,\.password-dialog input \{ min-height:48px; font-size:16px; \}/);
 });
 
 test("mantém manifesto e arquivos essenciais no cache offline", () => {

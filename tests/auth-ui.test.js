@@ -39,3 +39,12 @@ test("lembra o acesso sem armazenar a senha", () => {
   assert.match(script, /localStorage\.setItem\(REMEMBERED_EMAIL_KEY, email\)/);
   assert.doesNotMatch(script, /localStorage\.setItem\([^,]*password/i);
 });
+
+test("permite ao usuário autenticado alterar a própria senha", () => {
+  assert.match(html, /id="change-password-button"/);
+  assert.match(html, /id="current-password"[^>]*autocomplete="current-password"/);
+  assert.match(html, /id="account-password-confirmation"/);
+  assert.match(script, /signInWithPassword\(\{ email: user\.email, password: currentPassword \}\)/);
+  assert.match(script, /auth\.updateUser\(\{ password \}\)/);
+  assert.match(script, /A senha atual está incorreta/);
+});

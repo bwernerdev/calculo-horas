@@ -393,6 +393,7 @@ document.querySelectorAll("[data-toggle-password]").forEach((button) => button.a
 }));
 $("#signup-password").addEventListener("input", () => updatePasswordStrength($("#signup-password"), $("#signup-password-strength")));
 $("#new-password").addEventListener("input", () => updatePasswordStrength($("#new-password"), $("#setup-password-strength")));
+$("#account-new-password").addEventListener("input", () => updatePasswordStrength($("#account-new-password"), $("#account-password-strength")));
 $("#signup-form").addEventListener("submit", async (event) => {
   event.preventDefault(); setSignupMessage("");
   const email = $("#signup-email").value.trim();
@@ -447,6 +448,35 @@ $("#password-setup-form").addEventListener("submit", async (event) => {
   window.history.replaceState({}, document.title, window.location.pathname);
   await loadApplication(data.user);
   showToast("Senha definida com sucesso.");
+});
+function closeChangePasswordDialog() {
+  $("#change-password-form").reset();
+  $("#change-password-message").hidden = true;
+  $("#account-password-strength").querySelectorAll("li").forEach((item) => item.classList.remove("password-rule--valid"));
+  if ($("#change-password-dialog").open) $("#change-password-dialog").close();
+}
+$("#change-password-button").addEventListener("click", () => { $("#change-password-dialog").showModal(); $("#current-password").focus(); });
+$("#change-password-cancel").addEventListener("click", closeChangePasswordDialog);
+$("#change-password-dialog").addEventListener("cancel", (event) => { event.preventDefault(); closeChangePasswordDialog(); });
+$("#change-password-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const currentPassword = $("#current-password").value;
+  const password = $("#account-new-password").value;
+  const confirmation = $("#account-password-confirmation").value;
+  const message = $("#change-password-message");
+  message.hidden = true;
+  if (!isStrongPassword(password)) { message.textContent = "Use pelo menos 8 caracteres, uma letra maiúscula e um número."; message.hidden = false; return; }
+  if (password !== confirmation) { message.textContent = "As senhas não coincidem."; message.hidden = false; return; }
+  if (password === currentPassword) { message.textContent = "A nova senha deve ser diferente da senha atual."; message.hidden = false; return; }
+  const submit = event.submitter; submit.disabled = true; submit.textContent = "Alterando...";
+  const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+  if (userError || !user?.email) { submit.disabled = false; submit.textContent = "Salvar nova senha"; message.textContent = "Sua sessão expirou. Entre novamente."; message.hidden = false; return; }
+  const { error: verifyError } = await supabaseClient.auth.signInWithPassword({ email: user.email, password: currentPassword });
+  if (verifyError) { submit.disabled = false; submit.textContent = "Salvar nova senha"; message.textContent = "A senha atual está incorreta."; message.hidden = false; return; }
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  submit.disabled = false; submit.textContent = "Salvar nova senha";
+  if (error) { message.textContent = translateAuthError(error); message.hidden = false; return; }
+  closeChangePasswordDialog(); showToast("Senha alterada com sucesso.");
 });
 $("#logout-button").addEventListener("click", async () => { await supabaseClient.auth.signOut(); showAuthentication(); });
 supabaseClient.auth.onAuthStateChange((_event, session) => {
