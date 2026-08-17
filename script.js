@@ -11,8 +11,8 @@ const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
 const authLinkType = new URLSearchParams(window.location.hash.slice(1)).get("type") || new URLSearchParams(window.location.search).get("type");
 let requiresPasswordSetup = authLinkType === "invite" || authLinkType === "recovery";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-let turnstileWidgetId = null;
-let captchaToken = "";
+const turnstileWidgetIds = { login: null, signup: null, recovery: null };
+const captchaTokens = { login: "", signup: "", recovery: "" };
 let turnstileScriptPromise = null;
 let repository;
 let useCases;
@@ -341,14 +341,24 @@ function loadTurnstileScript() {
   });
   return turnstileScriptPromise;
 }
-async function renderTurnstile() {
-  if (!TURNSTILE_SITE_KEY || turnstileWidgetId !== null) return;
-  const container = $("#turnstile-container"); container.hidden = false; container.textContent = "Carregando validação contra robôs...";
+function setCaptchaMessage(flow, message) {
+  if (flow === "login") setAuthMessage(message);
+  else if (flow === "signup") setSignupMessage(message);
+  else setRecoveryMessage(message);
+}
+function resetTurnstile(flow) {
+  if (turnstileWidgetIds[flow] !== null && window.turnstile) window.turnstile.reset(turnstileWidgetIds[flow]);
+  captchaTokens[flow] = "";
+}
+async function renderTurnstile(flow) {
+  if (!TURNSTILE_SITE_KEY || turnstileWidgetIds[flow] !== null) return;
+  const container = $(`#${flow}-turnstile-container`); container.hidden = false; container.textContent = "Carregando validação contra robôs...";
   try {
     const turnstile = await loadTurnstileScript();
-    if ($("#signup-form").hidden || turnstileWidgetId !== null) return;
+    const formId = flow === "login" ? "auth-form" : `${flow}-form`;
+    if ($(`#${formId}`).hidden || turnstileWidgetIds[flow] !== null) return;
     container.textContent = "";
-    turnstileWidgetId = turnstile.render(container, {
+    turnstileWidgetIds[flow] = turnstile.render(container, {
       sitekey: TURNSTILE_SITE_KEY,
       theme: settings.theme,
       size: container.clientWidth < 300 ? "compact" : "flexible",
@@ -356,11 +366,11 @@ async function renderTurnstile() {
       execution: "render",
       retry: "auto",
       "refresh-expired": "auto",
-      callback: (token) => { captchaToken = token; },
-      "expired-callback": () => { captchaToken = ""; },
-      "error-callback": () => { captchaToken = ""; setSignupMessage("Não foi possível carregar a validação contra robôs. Tente novamente."); }
+      callback: (token) => { captchaTokens[flow] = token; },
+      "expired-callback": () => { captchaTokens[flow] = ""; },
+      "error-callback": () => { captchaTokens[flow] = ""; setCaptchaMessage(flow, "Não foi possível carregar a validação contra robôs. Tente novamente."); }
     });
-  } catch { container.textContent = "Validação indisponível."; setSignupMessage("Não foi possível carregar a validação contra robôs. Verifique sua conexão."); }
+  } catch { container.textContent = "Validação indisponível."; setCaptchaMessage(flow, "Não foi possível carregar a validação contra robôs. Verifique sua conexão."); }
 }
 function selectAuthTab(tab) {
   const signup = tab === "signup";
@@ -370,10 +380,11 @@ function selectAuthTab(tab) {
   $("#login-tab").setAttribute("aria-selected", String(!signup));
   $("#signup-tab").setAttribute("aria-selected", String(signup));
   (signup ? $("#signup-email") : $("#auth-email")).focus();
-  if (signup) renderTurnstile();
+  renderTurnstile(signup ? "signup" : "login");
 }
 function showAuthentication() {
   applyTheme(); $("#auth-screen").hidden = false; $("#password-setup-screen").hidden = true; $("#app-content").hidden = true; $("#logout-button").hidden = true;
+  renderTurnstile("login");
 }
 function showPasswordSetup() {
   applyTheme(); $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = false; $("#app-content").hidden = true; $("#logout-button").hidden = false;
@@ -397,7 +408,10 @@ async function restoreSession() {
 $("#auth-form").addEventListener("submit", async (event) => {
   event.preventDefault(); setAuthMessage("");
   const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (TURNSTILE_SITE_KEY && !captchaTokens.login) { setAuthMessage("Confirme que você não é um robô."); return; }
+  const options = captchaTokens.login ? { captchaToken: captchaTokens.login } : undefined;
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password, options });
+  resetTurnstile("login");
   if (error) setAuthMessage(translateAuthError(error));
 });
 $("#login-tab").addEventListener("click", () => selectAuthTab("login"));
@@ -405,13 +419,18 @@ $("#signup-tab").addEventListener("click", () => selectAuthTab("signup"));
 $("#forgot-password-button").addEventListener("click", () => {
   $("#auth-form").hidden = true; $("#signup-form").hidden = true; $("#recovery-form").hidden = false;
   $("#recovery-email").value = $("#auth-email").value; $("#recovery-email").focus();
+  renderTurnstile("recovery");
 });
 $("#recovery-back-button").addEventListener("click", () => selectAuthTab("login"));
 $("#recovery-form").addEventListener("submit", async (event) => {
   event.preventDefault(); setRecoveryMessage("");
   const email = $("#recovery-email").value.trim();
+  if (TURNSTILE_SITE_KEY && !captchaTokens.recovery) { setRecoveryMessage("Confirme que você não é um robô."); return; }
   const submit = event.submitter; submit.disabled = true; submit.textContent = "Enviando...";
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}${window.location.pathname}` });
+  const options = { redirectTo: `${window.location.origin}${window.location.pathname}` };
+  if (captchaTokens.recovery) options.captchaToken = captchaTokens.recovery;
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, options);
+  resetTurnstile("recovery");
   submit.disabled = false; submit.textContent = "Enviar link";
   setRecoveryMessage(error ? translateAuthError(error) : "Link enviado. Confira sua caixa de entrada e o spam.", error ? "error" : "success");
 });
@@ -435,14 +454,14 @@ $("#signup-form").addEventListener("submit", async (event) => {
     setSignupMessage("As senhas não coincidem.");
     return;
   }
-  if (TURNSTILE_SITE_KEY && !captchaToken) { setSignupMessage("Confirme que você não é um robô."); return; }
+  if (TURNSTILE_SITE_KEY && !captchaTokens.signup) { setSignupMessage("Confirme que você não é um robô."); return; }
   const button = $("#signup-button");
   button.disabled = true; button.textContent = "Criando conta...";
   const options = { emailRedirectTo: `${window.location.origin}${window.location.pathname}` };
-  if (captchaToken) options.captchaToken = captchaToken;
+  if (captchaTokens.signup) options.captchaToken = captchaTokens.signup;
   const { data, error } = await supabaseClient.auth.signUp({ email, password, options });
   button.disabled = false; button.textContent = "Criar conta";
-  if (turnstileWidgetId !== null) { window.turnstile.reset(turnstileWidgetId); captchaToken = ""; }
+  resetTurnstile("signup");
   if (error) { setSignupMessage(translateAuthError(error)); return; }
   $("#resend-confirmation-button").hidden = Boolean(data.session);
   setSignupMessage(

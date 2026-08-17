@@ -39,6 +39,7 @@
         <p>Use seu e-mail e senha para acessar seus registros em qualquer dispositivo.</p>
         <label class="field"><span>E-mail</span><input id="auth-email" type="email" autocomplete="email" required></label>
         <div class="field"><label for="auth-password">Senha</label><span class="password-control"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required><button class="password-toggle" type="button" data-toggle-password="auth-password" aria-label="Mostrar senha">Mostrar</button></span></div>
+        <div id="login-turnstile-container" class="turnstile-container" hidden></div>
         <p id="auth-message" class="error-message" role="alert" hidden></p>
         <button class="button button--primary" type="submit">Entrar</button>
         <button id="forgot-password-button" class="text-button" type="button">Esqueci minha senha</button>
@@ -50,7 +51,7 @@
         <div class="field"><label for="signup-password">Senha</label><span class="password-control"><input id="signup-password" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="signup-password" aria-label="Mostrar senha">Mostrar</button></span></div>
         <ul id="signup-password-strength" class="password-strength" aria-live="polite"><li data-rule="length">Pelo menos 8 caracteres</li><li data-rule="uppercase">Uma letra maiúscula</li><li data-rule="number">Um número</li></ul>
         <div class="field"><label for="signup-password-confirmation">Confirmar senha</label><span class="password-control"><input id="signup-password-confirmation" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="signup-password-confirmation" aria-label="Mostrar senha">Mostrar</button></span></div>
-        <div id="turnstile-container" class="turnstile-container" hidden></div>
+        <div id="signup-turnstile-container" class="turnstile-container" hidden></div>
         <p id="signup-message" class="error-message" role="alert" hidden></p>
         <button id="signup-button" class="button button--primary" type="submit">Criar conta</button>
         <button id="resend-confirmation-button" class="text-button" type="button" hidden>Reenviar confirmação</button>
@@ -59,6 +60,7 @@
         <h2>Recupere sua senha</h2>
         <p>Enviaremos um link para você definir uma nova senha.</p>
         <label class="field"><span>E-mail</span><input id="recovery-email" type="email" autocomplete="email" required></label>
+        <div id="recovery-turnstile-container" class="turnstile-container" hidden></div>
         <p id="recovery-message" class="error-message" role="alert" hidden></p>
         <button class="button button--primary" type="submit">Enviar link</button>
         <button id="recovery-back-button" class="text-button" type="button">Voltar para o login</button>

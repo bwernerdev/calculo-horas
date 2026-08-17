@@ -36,3 +36,11 @@ test("integra Turnstile sem expor chave secreta", () => {
   assert.match(script, /Carregando validação contra robôs/);
   assert.doesNotMatch(script, /TURNSTILE_SECRET/);
 });
+
+test("protege login, cadastro e recuperação com Turnstile", () => {
+  assert.match(html, /id="login-turnstile-container"/);
+  assert.match(html, /id="signup-turnstile-container"/);
+  assert.match(html, /id="recovery-turnstile-container"/);
+  assert.match(script, /signInWithPassword\(\{ email, password, options \}\)/);
+  assert.match(script, /options\.captchaToken = captchaTokens\.recovery/);
+});
