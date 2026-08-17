@@ -42,6 +42,7 @@ test("lembra o acesso sem armazenar a senha", () => {
 
 test("permite ao usuário autenticado alterar a própria senha", () => {
   assert.match(html, /id="change-password-button"/);
+  assert.match(html, /id="change-password-button"[\s\S]*id="logout-button"/);
   assert.match(html, /id="current-password"[^>]*autocomplete="current-password"/);
   assert.match(html, /id="account-password-confirmation"/);
   assert.match(script, /signInWithPassword\(\{ email: user\.email, password: currentPassword \}\)/);

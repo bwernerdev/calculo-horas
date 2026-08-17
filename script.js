@@ -342,10 +342,10 @@ function selectAuthTab(tab) {
   (signup ? $("#signup-email") : $("#auth-email")).focus();
 }
 function showAuthentication() {
-  applyTheme(); $("#auth-screen").hidden = false; $("#password-setup-screen").hidden = true; $("#app-content").hidden = true; $("#logout-button").hidden = true;
+  applyTheme(); $("#auth-screen").hidden = false; $("#password-setup-screen").hidden = true; $("#app-content").hidden = true; $("#logout-button").hidden = true; $("#change-password-button").hidden = true;
 }
 function showPasswordSetup() {
-  applyTheme(); $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = false; $("#app-content").hidden = true; $("#logout-button").hidden = false;
+  applyTheme(); $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = false; $("#app-content").hidden = true; $("#logout-button").hidden = false; $("#change-password-button").hidden = true;
 }
 async function loadApplication(user) {
   repository = HoursRepository.createSupabaseRepository(supabaseClient, user.id);
@@ -354,7 +354,7 @@ async function loadApplication(user) {
     [records, settings] = await Promise.all([repository.findAllRecords(), useCases.getSettings()]);
     $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target);
     $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
-    $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false;
+    $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
   } catch (error) { showAuthentication(); setAuthMessage(`Não foi possível carregar seus dados: ${error.message}`); }
 }
 async function restoreSession() {
