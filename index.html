@@ -38,7 +38,7 @@
         <h2 id="auth-title">Entre no seu banco de horas</h2>
         <p>Use seu e-mail e senha para acessar seus registros em qualquer dispositivo.</p>
         <label class="field"><span>E-mail</span><input id="auth-email" type="email" autocomplete="email" required></label>
-        <label class="field"><span>Senha</span><span class="password-control"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required><button class="password-toggle" type="button" data-toggle-password="auth-password" aria-label="Mostrar senha">Mostrar</button></span></label>
+        <div class="field"><label for="auth-password">Senha</label><span class="password-control"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required><button class="password-toggle" type="button" data-toggle-password="auth-password" aria-label="Mostrar senha">Mostrar</button></span></div>
         <p id="auth-message" class="error-message" role="alert" hidden></p>
         <button class="button button--primary" type="submit">Entrar</button>
         <button id="forgot-password-button" class="text-button" type="button">Esqueci minha senha</button>
@@ -47,9 +47,9 @@
         <h2>Crie sua conta</h2>
         <p>Preencha seus dados e confirme a senha para começar.</p>
         <label class="field"><span>E-mail</span><input id="signup-email" type="email" autocomplete="email" required></label>
-        <label class="field"><span>Senha</span><span class="password-control"><input id="signup-password" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="signup-password" aria-label="Mostrar senha">Mostrar</button></span></label>
+        <div class="field"><label for="signup-password">Senha</label><span class="password-control"><input id="signup-password" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="signup-password" aria-label="Mostrar senha">Mostrar</button></span></div>
         <ul id="signup-password-strength" class="password-strength" aria-live="polite"><li data-rule="length">Pelo menos 8 caracteres</li><li data-rule="uppercase">Uma letra maiúscula</li><li data-rule="number">Um número</li></ul>
-        <label class="field"><span>Confirmar senha</span><span class="password-control"><input id="signup-password-confirmation" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="signup-password-confirmation" aria-label="Mostrar senha">Mostrar</button></span></label>
+        <div class="field"><label for="signup-password-confirmation">Confirmar senha</label><span class="password-control"><input id="signup-password-confirmation" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="signup-password-confirmation" aria-label="Mostrar senha">Mostrar</button></span></div>
         <div id="turnstile-container" class="turnstile-container" hidden></div>
         <p id="signup-message" class="error-message" role="alert" hidden></p>
         <button id="signup-button" class="button button--primary" type="submit">Criar conta</button>
@@ -70,9 +70,9 @@
       <span class="eyebrow">Primeiro acesso</span>
       <h2 id="password-setup-title">Defina sua senha</h2>
       <p>Crie uma senha pessoal para concluir o acesso à sua conta.</p>
-      <label class="field"><span>Nova senha</span><span class="password-control"><input id="new-password" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="new-password" aria-label="Mostrar senha">Mostrar</button></span></label>
+      <div class="field"><label for="new-password">Nova senha</label><span class="password-control"><input id="new-password" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="new-password" aria-label="Mostrar senha">Mostrar</button></span></div>
       <ul id="setup-password-strength" class="password-strength" aria-live="polite"><li data-rule="length">Pelo menos 8 caracteres</li><li data-rule="uppercase">Uma letra maiúscula</li><li data-rule="number">Um número</li></ul>
-      <label class="field"><span>Confirmar senha</span><span class="password-control"><input id="confirm-password" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="confirm-password" aria-label="Mostrar senha">Mostrar</button></span></label>
+      <div class="field"><label for="confirm-password">Confirmar senha</label><span class="password-control"><input id="confirm-password" type="password" autocomplete="new-password" minlength="8" required><button class="password-toggle" type="button" data-toggle-password="confirm-password" aria-label="Mostrar senha">Mostrar</button></span></div>
       <p id="password-setup-message" class="error-message" role="alert" hidden></p>
       <button class="button button--primary" type="submit">Salvar senha e entrar</button>
     </form>
@@ -118,8 +118,8 @@
             <span><strong>Fotografar o ponto</strong><small>Use a câmera para anexar um comprovante a este dia.</small></span>
           </button>
           <div id="photo-preview" class="photo-preview" hidden>
-            <div id="entry-photo-preview" class="photo-preview__item" hidden><img id="entry-photo-image" alt="Prévia da foto de entrada"><div><strong>Foto de entrada</strong><button type="button" data-remove-photo="entrada">Remover</button></div></div>
-            <div id="exit-photo-preview" class="photo-preview__item" hidden><img id="exit-photo-image" alt="Prévia da foto de saída"><div><strong>Foto de saída</strong><button type="button" data-remove-photo="saida">Remover</button></div></div>
+            <div id="entry-photo-preview" class="photo-preview__item" hidden><img id="entry-photo-image" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Prévia da foto de entrada"><div><strong>Foto de entrada</strong><button type="button" data-remove-photo="entrada">Remover</button></div></div>
+            <div id="exit-photo-preview" class="photo-preview__item" hidden><img id="exit-photo-image" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Prévia da foto de saída"><div><strong>Foto de saída</strong><button type="button" data-remove-photo="saida">Remover</button></div></div>
           </div>
         </div>
         <div id="exit-forecast" class="forecast" aria-live="polite">Saída prevista: <strong>17:48</strong></div>
@@ -165,7 +165,7 @@
   </dialog>
   <dialog id="photo-dialog" class="photo-dialog" aria-labelledby="photo-dialog-title">
     <div class="photo-dialog__header"><h2 id="photo-dialog-title">Foto do ponto</h2><button id="photo-dialog-close" class="icon-button" type="button" aria-label="Fechar foto">×</button></div>
-    <img id="photo-dialog-image" alt="Foto anexada ao registro de ponto">
+    <img id="photo-dialog-image" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Foto anexada ao registro de ponto">
   </dialog>
   <dialog id="photo-type-dialog" class="confirm-dialog" aria-labelledby="photo-type-title">
     <div class="confirm-dialog__icon photo-type-icon" aria-hidden="true">📷</div>
@@ -179,7 +179,7 @@
   </dialog>
   <dialog id="camera-dialog" class="camera-dialog" aria-labelledby="camera-title">
     <div class="photo-dialog__header"><h2 id="camera-title">Fotografar o ponto</h2><button id="camera-close" class="icon-button" type="button" aria-label="Fechar câmera">×</button></div>
-    <video id="camera-preview" autoplay playsinline muted aria-label="Prévia da câmera"></video>
+    <video id="camera-preview" playsinline muted></video>
     <div class="camera-dialog__actions"><button id="capture-photo" class="button button--primary" type="button">Capturar foto</button></div>
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
