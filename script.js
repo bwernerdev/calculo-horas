@@ -343,19 +343,24 @@ function loadTurnstileScript() {
 }
 async function renderTurnstile() {
   if (!TURNSTILE_SITE_KEY || turnstileWidgetId !== null) return;
-  const container = $("#turnstile-container"); container.hidden = false;
+  const container = $("#turnstile-container"); container.hidden = false; container.textContent = "Carregando validação contra robôs...";
   try {
     const turnstile = await loadTurnstileScript();
     if ($("#signup-form").hidden || turnstileWidgetId !== null) return;
+    container.textContent = "";
     turnstileWidgetId = turnstile.render(container, {
       sitekey: TURNSTILE_SITE_KEY,
       theme: settings.theme,
       size: container.clientWidth < 300 ? "compact" : "flexible",
+      appearance: "always",
+      execution: "render",
+      retry: "auto",
+      "refresh-expired": "auto",
       callback: (token) => { captchaToken = token; },
       "expired-callback": () => { captchaToken = ""; },
       "error-callback": () => { captchaToken = ""; setSignupMessage("Não foi possível carregar a validação contra robôs. Tente novamente."); }
     });
-  } catch { setSignupMessage("Não foi possível carregar a validação contra robôs. Verifique sua conexão."); }
+  } catch { container.textContent = "Validação indisponível."; setSignupMessage("Não foi possível carregar a validação contra robôs. Verifique sua conexão."); }
 }
 function selectAuthTab(tab) {
   const signup = tab === "signup";

@@ -32,5 +32,7 @@ test("integra Turnstile sem expor chave secreta", () => {
   assert.match(script, /captchaToken/);
   assert.match(script, /container\.clientWidth < 300 \? "compact" : "flexible"/);
   assert.match(script, /script\.onload/);
+  assert.match(script, /appearance: "always"/);
+  assert.match(script, /Carregando validação contra robôs/);
   assert.doesNotMatch(script, /TURNSTILE_SECRET/);
 });
