@@ -4,34 +4,25 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 
 ## Funcionalidades
 
-- Cálculo de saldo diário com meta configurável
-- Sugestão de saída baseada no saldo mensal, limitada preventivamente a 9h45 trabalhadas por dia
-- Somatório de horas positivas, negativas e saldo líquido
+- Autenticação por e-mail com cadastro, confirmação, recuperação e troca de senha
+- Registros e configurações privados por usuário com Supabase e Row Level Security
+- Fotos privadas de entrada e saída no Supabase Storage
+- Cálculo de saldo diário e mensal com meta configurável
+- Sugestão de saída limitada preventivamente a 9h45 trabalhadas
 - Registro de folgas, feriados, férias e faltas
-- Captura mobile de fotos de entrada e saída vinculadas ao registro
-- Câmera interna sem salvar imagens na galeria do dispositivo
-- Instalação como PWA no celular ou computador
-- Funcionamento offline após o primeiro acesso
-- Histórico mensal salvo no navegador
-- Edição e exclusão de registros
 - Exportação em CSV e PDF
-- Backup e restauração em JSON
-- Aviso de privacidade e armazenamento exclusivamente local
-- Confirmações em modal e notificações não intrusivas
-- Tema claro e escuro
-- Layout responsivo
+- Backup e restauração transacional em JSON
+- Instalação como PWA, tema claro/escuro e layout responsivo
 
-## Como usar
+## Publicação
 
-Abra o `index.html` no navegador ou acesse a versão publicada no GitHub Pages.
+O site está preparado para o Cloudflare Pages. Antes de publicar uma versão que altere banco ou segurança, siga [CONFIGURACAO-SUPABASE-CLOUDFLARE.md](CONFIGURACAO-SUPABASE-CLOUDFLARE.md).
 
-Os registros ficam armazenados localmente no navegador por meio de `localStorage`.
+A aplicação depende de conexão com o Supabase para autenticar e sincronizar dados. O Service Worker mantém os arquivos básicos da interface em cache, mas registros não podem ser alterados offline.
 
-## Instalação
+## Desenvolvimento
 
-No Android ou em navegadores compatíveis, use o botão **Instalar app**. No iPhone, abra pelo Safari e escolha **Compartilhar > Adicionar à Tela de Início**.
-
-## Testes
+Os arquivos são HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS é carregada no navegador.
 
 Com o Node.js instalado, execute:
 
@@ -39,8 +30,4 @@ Com o Node.js instalado, execute:
 npm test
 ```
 
-Os testes cobrem jornada com virada de dia, intervalos, faltas, dias abonados, previsão de saída e somatória dos saldos.
-
-## Tecnologias
-
-HTML, CSS e JavaScript, sem dependências externas.
+Os testes cobrem cálculos, autenticação, backup, operações de repositório, segurança, PWA e comportamento mobile.

@@ -1,5 +1,3 @@
-const STORAGE_KEY = "controle-horas-registros-v1";
-const SETTINGS_KEY = "controle-horas-config-v1";
 const THEME_PREFERENCE_KEY = "controle-horas-tema-v1";
 const REMEMBERED_EMAIL_KEY = "controle-horas-email-v1";
 const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"Férias", falta:"Falta" };
@@ -9,9 +7,14 @@ const { toMinutes, toClock, duration, signed } = HoursCalculator;
 const FIXED_BREAK_MINUTES = 60;
 const MAX_DAILY_WORK_MINUTES = 10 * 60;
 const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
+const MAX_BACKUP_FILE_BYTES = 50 * 1024 * 1024;
+const MAX_BACKUP_RECORDS = 5000;
+const MAX_BACKUP_PHOTO_LENGTH = 2_790_000;
 const authLinkType = new URLSearchParams(window.location.hash.slice(1)).get("type") || new URLSearchParams(window.location.search).get("type");
 let requiresPasswordSetup = authLinkType === "invite" || authLinkType === "recovery";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
+});
 let repository;
 let useCases;
 let records = [];
@@ -19,6 +22,9 @@ let settings = { target: 528, break: FIXED_BREAK_MINUTES, theme: localStorage.ge
 let pendingPhotos = { entrada:"", saida:"" };
 let capturedPhoto = "";
 let cameraStream;
+let loadedUserId = "";
+let applicationLoad;
+let applicationGeneration = 0;
 
 const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || "";
 $("#auth-email").value = rememberedEmail;
@@ -132,14 +138,16 @@ $("#photo-dialog").addEventListener("close",()=>$("#photo-dialog-image").removeA
 form.addEventListener("submit", async (event) => {
   event.preventDefault(); const type=$("#day-type").value;
   const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photos:{...pendingPhotos} };
+  const submit=event.submitter || $("#submit-button"), originalText=submit.textContent;
+  submit.disabled=true; submit.textContent="Salvando...";
   try {
-    const result=await useCases.saveRecord(record,settings.target);
+    const result=await useCases.saveRecord(record,settings.target,records);
     records=result.records;
     resetForm(); render(); showToast(result.editing ? "Registro atualizado com sucesso." : "Jornada registrada com sucesso.");
   } catch (error) {
     const message=error instanceof Error ? error.message : "Não há espaço suficiente no navegador para salvar esta foto. Tente remover fotos antigas.";
     showError(message);
-  }
+  } finally { submit.disabled=false; if (submit.isConnected) submit.textContent=$("#editing-id").value ? originalText : "Adicionar registro"; }
 });
 
 function editRecord(id) {
@@ -156,12 +164,21 @@ function showRecordPhoto(id,kind) {
 $("#records-body").addEventListener("click", async(event) => {
   const edit=event.target.dataset.edit, remove=event.target.dataset.delete, photo=event.target.dataset.photo; if (edit) editRecord(edit);
   if (photo) showRecordPhoto(photo,event.target.dataset.photoKind);
-  if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) { records=await useCases.deleteRecord(remove); render(); showToast("Registro excluído."); }
+  if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) {
+    const button=event.target; button.disabled=true;
+    try { records=await useCases.deleteRecord(remove,records); render(); showToast("Registro excluído."); }
+    catch (error) { button.disabled=false; showToast(error.message || "Não foi possível excluir o registro.","error"); }
+  }
 });
 $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
-$("#settings-form").addEventListener("submit",async (event)=>{ event.preventDefault(); settings=await useCases.saveSettings({ ...settings, target:toMinutes($("#daily-target").value) }); $("#settings-form").hidden=true; resetForm(); render(); });
+$("#settings-form").addEventListener("submit",async (event)=>{
+  event.preventDefault(); const submit=event.submitter; submit.disabled=true;
+  try { settings=await useCases.saveSettings({ ...settings, target:toMinutes($("#daily-target").value) }); $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva."); }
+  catch (error) { showToast(error.message || "Não foi possível salvar a configuração.","error"); }
+  finally { submit.disabled=false; }
+});
 $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
 $("#month-filter").addEventListener("change",render); $("#cancel-edit").addEventListener("click",resetForm);
 form.addEventListener("reset",()=>setTimeout(()=>{
@@ -173,9 +190,13 @@ form.addEventListener("reset",()=>setTimeout(()=>{
 function applyTheme() { document.documentElement.dataset.theme=settings.theme; localStorage.setItem(THEME_PREFERENCE_KEY,settings.theme); $("#theme-toggle").textContent=settings.theme==="dark" ? "☀️" : "🌙"; document.querySelector('meta[name="theme-color"]').content=settings.theme==="dark" ? "#0d1321" : "#3157d5"; }
 $("#theme-toggle").addEventListener("click",async ()=>{
   const theme=settings.theme==="dark" ? "light" : "dark";
-  if (useCases) settings=await useCases.saveSettings({ ...settings, theme });
-  else settings={ ...settings, theme };
-  applyTheme();
+  $("#theme-toggle").disabled=true;
+  try {
+    if (useCases) settings=await useCases.saveSettings({ ...settings, theme });
+    else settings={ ...settings, theme };
+    applyTheme();
+  } catch (error) { showToast(error.message || "Não foi possível alterar o tema.","error"); }
+  finally { $("#theme-toggle").disabled=false; }
 });
 $("#export-csv").addEventListener("click",()=>{
   const header=["Data","Tipo","Entrada","Saída","Intervalo (min)","Trabalhado","Saldo"];
@@ -255,6 +276,33 @@ async function photoAsDataUrl(value) {
   return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
 }
 
+function isValidCalendarDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year,month,day]=value.split("-").map(Number);
+  const date=new Date(Date.UTC(year,month-1,day));
+  return date.getUTCFullYear()===year && date.getUTCMonth()===month-1 && date.getUTCDate()===day;
+}
+function isValidClockTime(value) { return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value); }
+function parseBackupRecord(item,targetMinutes) {
+  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!item || !uuid.test(String(item.id)) || !isValidCalendarDate(item.data) || !Object.hasOwn(TYPES,item.tipo)) throw new Error("Há um registro com identificação, data ou tipo inválido.");
+  const breakMinutes=Number(item.intervaloMinutos);
+  if (!Number.isInteger(breakMinutes) || breakMinutes<0 || breakMinutes>MAX_DAILY_WORK_MINUTES) throw new Error(`O intervalo de ${item.data} é inválido.`);
+  const record={ id:String(item.id), date:item.data, type:item.tipo, start:item.entrada || "", end:item.saida || "", break:item.tipo==="trabalho" ? breakMinutes : 0, photos:{ entrada:"", saida:"" } };
+  if (item.tipo==="trabalho") {
+    if (!isValidClockTime(record.start) || !isValidClockTime(record.end)) throw new Error(`A jornada de ${item.data} possui horários inválidos.`);
+    const worked=HoursCalculator.calculate(record,targetMinutes).worked;
+    if (worked<0 || worked>MAX_DAILY_WORK_MINUTES) throw new Error(`A jornada de ${item.data} ultrapassa os limites permitidos.`);
+  }
+  const photos=item.fotos || { entrada:item.foto || "", saida:"" };
+  for (const kind of ["entrada","saida"]) {
+    const photo=photos[kind] || "";
+    if (photo && (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo) || photo.length>MAX_BACKUP_PHOTO_LENGTH)) throw new Error(`A foto de ${kind} de ${item.data} é inválida ou excede 2 MB.`);
+    record.photos[kind]=photo;
+  }
+  return record;
+}
+
 $("#export-json").addEventListener("click",async (event)=>{
   const button = event.currentTarget; button.disabled = true; button.textContent = "Preparando backup...";
   try {
@@ -277,26 +325,28 @@ $("#export-json").addEventListener("click",async (event)=>{
 $("#import-json").addEventListener("click",()=>$("#json-file").click());
 $("#json-file").addEventListener("change",async(event)=>{
   const file=event.target.files[0]; if (!file) return;
+  const importButton=$("#import-json"); importButton.disabled=true; importButton.textContent="Validando backup...";
   try {
+    if (file.size>MAX_BACKUP_FILE_BYTES) throw new Error("O arquivo excede o limite de 50 MB.");
     const backup=JSON.parse(await file.text());
     const config=backup.configuracoes;
     if (backup.versao!==1 || !config || !Array.isArray(backup.registros)) throw new Error("estrutura inválida");
-    if (!Number.isInteger(config.metaDiariaMinutos) || config.metaDiariaMinutos<=0 || !Number.isInteger(config.intervaloPadraoMinutos) || config.intervaloPadraoMinutos<0) throw new Error("configuração inválida");
-    const imported=backup.registros.map((item)=>{
-      if (!/^[A-Za-z0-9-]+$/.test(String(item.id)) || !/^\d{4}-\d{2}-\d{2}$/.test(item.data) || Number.isNaN(Date.parse(`${item.data}T12:00:00`)) || !TYPES[item.tipo]) throw new Error("registro inválido");
-      if (item.tipo==="trabalho" && (!/^\d{2}:\d{2}$/.test(item.entrada) || !/^\d{2}:\d{2}$/.test(item.saida) || !Number.isFinite(Number(item.intervaloMinutos)))) throw new Error("jornada inválida");
-      const photos=item.fotos || { entrada:item.foto || "", saida:"" };
-      for (const kind of ["entrada","saida"]) if (photos[kind] && (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photos[kind]) || photos[kind].length>1500000)) throw new Error("foto inválida");
-      return { id:String(item.id), date:item.data, type:item.tipo, start:item.entrada || "", end:item.saida || "", break:Number(item.intervaloMinutos) || 0, photos:{ entrada:photos.entrada || "", saida:photos.saida || "" } };
-    });
+    if (backup.registros.length>MAX_BACKUP_RECORDS) throw new Error(`O backup excede ${MAX_BACKUP_RECORDS} registros.`);
+    if (!Number.isInteger(config.metaDiariaMinutos) || config.metaDiariaMinutos<1 || config.metaDiariaMinutos>MAX_DAILY_WORK_MINUTES || !Number.isInteger(config.intervaloPadraoMinutos) || config.intervaloPadraoMinutos<0 || config.intervaloPadraoMinutos>MAX_DAILY_WORK_MINUTES || !["light","dark"].includes(config.tema)) throw new Error("As configurações do backup são inválidas.");
+    const imported=backup.registros.map((item)=>parseBackupRecord(item,config.metaDiariaMinutos));
     if (new Set(imported.map((item)=>item.id)).size!==imported.length || new Set(imported.map((item)=>item.date)).size!==imported.length) throw new Error("registros duplicados");
     if (!await requestConfirmation(`Restaurar ${imported.length} registro(s)? Os dados atuais serão substituídos.`)) return;
-    records=imported; settings=await useCases.saveSettings({ target:config.metaDiariaMinutos, theme:config.tema==="dark" ? "dark" : "light" });
-    await repository.saveAllRecords(records);
+    importButton.textContent="Restaurando...";
+    const nextSettings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light" };
+    records=await repository.restoreBackup(imported,nextSettings); settings=nextSettings;
     $("#daily-target").value=toClock(settings.target); applyTheme(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
-  } catch (error) { showToast("Não foi possível importar: o arquivo não é um backup válido.","error"); }
-  finally { event.target.value=""; }
+  } catch (error) {
+    const message=String(error?.message || "Backup inválido");
+    const guidance=/restore_user_backup|schema cache/i.test(message) ? "Atualize o banco executando security-and-storage.sql no Supabase." : message;
+    showToast(`Não foi possível importar: ${guidance}`,"error");
+  }
+  finally { event.target.value=""; importButton.disabled=false; importButton.textContent="Importar backup"; }
 });
 
 function setAuthMessage(message, type = "error") {
@@ -341,21 +391,52 @@ function selectAuthTab(tab) {
   $("#signup-tab").setAttribute("aria-selected", String(signup));
   (signup ? $("#signup-email") : $("#auth-email")).focus();
 }
+function clearSensitiveState() {
+  applicationGeneration+=1;
+  if ($("#confirm-dialog").open) $("#confirm-cancel").click();
+  stopCamera();
+  document.querySelectorAll("dialog[open]").forEach((dialog)=>dialog.close());
+  repository?.dispose?.();
+  repository=undefined; useCases=undefined; loadedUserId=""; applicationLoad=undefined; records=[];
+  pendingPhotos={entrada:"",saida:""}; capturedPhoto="";
+  document.querySelectorAll('input[type="password"]').forEach((input)=>{ input.value=""; input.type="password"; });
+  document.querySelectorAll("[data-toggle-password]").forEach((button)=>{ button.textContent="Mostrar"; button.setAttribute("aria-label","Mostrar senha"); });
+  document.querySelectorAll(".password-strength li").forEach((item)=>item.classList.remove("password-rule--valid"));
+  $("#records-body").replaceChildren(); $("#photo-gallery").replaceChildren();
+  $("#photo-dialog-image").removeAttribute("src");
+  $("#entry-photo-image").src=""; $("#exit-photo-image").src="";
+  $("#change-password-form").reset();
+}
 function showAuthentication() {
+  clearSensitiveState();
   applyTheme(); $("#auth-screen").hidden = false; $("#password-setup-screen").hidden = true; $("#app-content").hidden = true; $("#logout-button").hidden = true; $("#change-password-button").hidden = true;
 }
 function showPasswordSetup() {
   applyTheme(); $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = false; $("#app-content").hidden = true; $("#logout-button").hidden = false; $("#change-password-button").hidden = true;
 }
 async function loadApplication(user) {
-  repository = HoursRepository.createSupabaseRepository(supabaseClient, user.id);
-  useCases = HoursUseCases.createHoursUseCases({ calculator: HoursCalculator, repository, fixedBreakMinutes: FIXED_BREAK_MINUTES, maxDailyWorkMinutes: MAX_DAILY_WORK_MINUTES });
+  if (loadedUserId===user.id && repository) return applicationLoad;
+  repository?.dispose?.();
+  const generation=++applicationGeneration;
+  loadedUserId=user.id;
+  const nextRepository=HoursRepository.createSupabaseRepository(supabaseClient,user.id);
+  const nextUseCases=HoursUseCases.createHoursUseCases({ calculator:HoursCalculator, repository:nextRepository, fixedBreakMinutes:FIXED_BREAK_MINUTES, maxDailyWorkMinutes:MAX_DAILY_WORK_MINUTES });
+  repository=nextRepository; useCases=nextUseCases;
+  applicationLoad=(async()=>{
   try {
-    [records, settings] = await Promise.all([repository.findAllRecords(), useCases.getSettings()]);
+    const [loadedRecords,loadedSettings] = await Promise.all([nextRepository.findAllRecords(), nextUseCases.getSettings()]);
+    if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
+    records=loadedRecords; settings=loadedSettings;
     $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target);
     $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
     $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
-  } catch (error) { showAuthentication(); setAuthMessage(`Não foi possível carregar seus dados: ${error.message}`); }
+  } catch (error) {
+    if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
+    showAuthentication(); setAuthMessage(`Não foi possível carregar seus dados: ${error.message}`);
+  }
+  finally { if (generation===applicationGeneration) applicationLoad=undefined; }
+  })();
+  return applicationLoad;
 }
 async function restoreSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -366,6 +447,7 @@ async function restoreSession() {
 $("#auth-form").addEventListener("submit", async (event) => {
   event.preventDefault(); setAuthMessage("");
   const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
+  $("#auth-password").value="";
   if ($("#remember-access").checked) localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
   else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -413,6 +495,7 @@ $("#signup-form").addEventListener("submit", async (event) => {
   const { data, error } = await supabaseClient.auth.signUp({ email, password, options });
   button.disabled = false; button.textContent = "Criar conta";
   if (error) { setSignupMessage(translateAuthError(error)); return; }
+  $("#signup-password").value=""; $("#signup-password-confirmation").value="";
   $("#resend-confirmation-button").hidden = Boolean(data.session);
   setSignupMessage(
     data.session ? "Conta criada com sucesso." : "Conta criada. Confira seu e-mail para confirmar o cadastro.",
@@ -469,20 +552,24 @@ $("#change-password-form").addEventListener("submit", async (event) => {
   if (password !== confirmation) { message.textContent = "As senhas não coincidem."; message.hidden = false; return; }
   if (password === currentPassword) { message.textContent = "A nova senha deve ser diferente da senha atual."; message.hidden = false; return; }
   const submit = event.submitter; submit.disabled = true; submit.textContent = "Alterando...";
-  const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-  if (userError || !user?.email) { submit.disabled = false; submit.textContent = "Salvar nova senha"; message.textContent = "Sua sessão expirou. Entre novamente."; message.hidden = false; return; }
-  const { error: verifyError } = await supabaseClient.auth.signInWithPassword({ email: user.email, password: currentPassword });
-  if (verifyError) { submit.disabled = false; submit.textContent = "Salvar nova senha"; message.textContent = "A senha atual está incorreta."; message.hidden = false; return; }
-  const { error } = await supabaseClient.auth.updateUser({ password });
+  const { error } = await supabaseClient.auth.updateUser({ password, current_password:currentPassword });
   submit.disabled = false; submit.textContent = "Salvar nova senha";
-  if (error) { message.textContent = translateAuthError(error); message.hidden = false; return; }
+  if (error) { message.textContent = error.code==="invalid_credentials" ? "A senha atual está incorreta." : translateAuthError(error); message.hidden = false; return; }
   closeChangePasswordDialog(); showToast("Senha alterada com sucesso.");
 });
-$("#logout-button").addEventListener("click", async () => { await supabaseClient.auth.signOut(); showAuthentication(); });
-supabaseClient.auth.onAuthStateChange((_event, session) => {
-  if (!session) showAuthentication();
-  else if (requiresPasswordSetup) showPasswordSetup();
-  else loadApplication(session.user);
+$("#logout-button").addEventListener("click", async () => {
+  $("#logout-button").disabled=true;
+  const { error }=await supabaseClient.auth.signOut();
+  $("#logout-button").disabled=false;
+  if (error) showToast(translateAuthError(error),"error");
+  else showAuthentication();
+});
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  queueMicrotask(()=>{
+    if (!session) showAuthentication();
+    else if (requiresPasswordSetup) showPasswordSetup();
+    else if (event!=="TOKEN_REFRESHED" && session.user.id!==loadedUserId) loadApplication(session.user);
+  });
 });
 restoreSession();
 

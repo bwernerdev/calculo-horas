@@ -13,7 +13,7 @@
       };
     }
 
-    async function saveRecord(record, targetMinutes) {
+    async function saveRecord(record, targetMinutes, currentRecords) {
       if (record.type === "trabalho") {
         if (!record.start || !record.end) throw new Error("Informe os horários de entrada e saída.");
         const worked = calculator.calculate(record, targetMinutes).worked;
@@ -21,25 +21,28 @@
         if (worked > maxDailyWorkMinutes) throw new Error("A jornada não pode ultrapassar 10 horas trabalhadas no dia.");
       }
 
-      const records = await repository.findAllRecords();
+      const records = Array.isArray(currentRecords) ? currentRecords : await repository.findAllRecords();
       if (records.some((item) => item.date === record.date && item.id !== record.id)) {
         throw new Error("Já existe um registro para esta data. Edite o registro existente.");
       }
+      const savedRecord = await repository.saveRecord(record);
       const index = records.findIndex((item) => item.id === record.id);
       const updatedRecords = [...records];
-      if (index >= 0) updatedRecords[index] = record;
-      else updatedRecords.push(record);
-      await repository.saveAllRecords(updatedRecords);
+      if (index >= 0) updatedRecords[index] = savedRecord;
+      else updatedRecords.push(savedRecord);
       return { records: updatedRecords, editing: index >= 0 };
     }
 
-    async function deleteRecord(id) {
-      const records = (await repository.findAllRecords()).filter((item) => item.id !== id);
-      await repository.saveAllRecords(records);
-      return records;
+    async function deleteRecord(id, currentRecords) {
+      await repository.deleteRecord(id);
+      const records = Array.isArray(currentRecords) ? currentRecords : await repository.findAllRecords();
+      return records.filter((item) => item.id !== id);
     }
 
     async function saveSettings(settings) {
+      if (!Number.isInteger(settings.target) || settings.target < 1 || settings.target > maxDailyWorkMinutes) {
+        throw new Error("A meta diária deve estar entre 1 minuto e 10 horas.");
+      }
       const nextSettings = { ...settings, break: fixedBreakMinutes };
       await repository.saveSettings(nextSettings);
       return nextSettings;
