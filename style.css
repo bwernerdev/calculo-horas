@@ -12,7 +12,23 @@ button,input,select { font:inherit; }
 .page-shell { padding-bottom:48px; }
 .auth-screen { display:grid; min-height:calc(100vh - 160px); place-items:center; padding:30px 20px 60px; }
 .auth-card { display:grid; width:min(440px,100%); gap:15px; padding:30px; border:1px solid var(--line); border-radius:20px; background:var(--surface); box-shadow:var(--shadow); }
-.auth-card h2 { font-size:1.65rem; }.auth-card>p { margin:0 0 5px; color:var(--muted); line-height:1.5; }.auth-card .button--primary { width:100%; margin-top:4px; }.auth-actions { display:flex; flex-wrap:wrap; gap:10px; }.auth-actions .button { flex:1; padding-inline:12px; }
+.auth-card h2 { font-size:1.65rem; }
+.auth-tabs { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:5px; border-radius:13px; background:var(--surface-2); }
+.auth-tab { padding:10px 12px; border:0; border-radius:9px; color:var(--muted); background:transparent; font-weight:800; cursor:pointer; }
+.auth-tab--active { color:var(--primary); background:var(--surface); box-shadow:0 2px 8px rgba(32,46,76,.1); }
+.auth-form-panel { display:grid; gap:15px; }
+.auth-form-panel[hidden] { display:none; }
+.auth-form-panel>p { margin:0 0 5px; color:var(--muted); line-height:1.5; }
+.auth-card .button--primary { width:100%; margin-top:4px; }
+.password-control { position:relative; display:block; }
+.password-control input { padding-right:76px; }
+.password-toggle { position:absolute; top:50%; right:8px; min-height:34px; padding:0 8px; transform:translateY(-50%); border:0; border-radius:7px; color:var(--primary); background:transparent; font-size:.75rem; font-weight:800; cursor:pointer; }
+.text-button { justify-self:center; padding:4px; border:0; color:var(--primary); background:transparent; font-weight:800; cursor:pointer; }
+.password-strength { display:grid; gap:5px; margin:-5px 0 0; padding:0; list-style:none; color:var(--muted); font-size:.76rem; }
+.password-strength li::before { content:"○"; margin-right:7px; }
+.password-strength li.password-rule--valid { color:var(--success); }
+.password-strength li.password-rule--valid::before { content:"✓"; }
+.turnstile-container { min-height:65px; }
 .eyebrow { display:block; margin-bottom:7px; color:var(--primary); font-size:.72rem; font-weight:850; letter-spacing:.13em; text-transform:uppercase; }
 h1,h2 { margin:0; letter-spacing:-.035em; } h1 { font-size:clamp(1.9rem,5vw,3rem); } h2 { font-size:1.45rem; }
 .icon-button { width:46px; height:46px; border:1px solid var(--line); border-radius:50%; color:var(--text); background:var(--surface); cursor:pointer; }

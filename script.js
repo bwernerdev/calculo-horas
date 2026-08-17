@@ -11,6 +11,8 @@ const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
 const authLinkType = new URLSearchParams(window.location.hash.slice(1)).get("type") || new URLSearchParams(window.location.search).get("type");
 let requiresPasswordSetup = authLinkType === "invite" || authLinkType === "recovery";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let turnstileWidgetId = null;
+let captchaToken = "";
 let repository;
 let useCases;
 let records = [];
@@ -243,14 +245,30 @@ function downloadFile(content, filename, type) {
   link.href=url; link.download=filename; link.hidden=true; document.body.append(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
-$("#export-json").addEventListener("click",()=>{
+async function photoAsDataUrl(value) {
+  if (!value || value.startsWith("data:image/")) return value || "";
+  const response = await fetch(value); if (!response.ok) throw new Error("foto indisponível");
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
+}
+
+$("#export-json").addEventListener("click",async (event)=>{
+  const button = event.currentTarget; button.disabled = true; button.textContent = "Preparando backup...";
+  try {
+    const backupRecords = [];
+    for (const record of records) {
+      const photos = recordPhotos(record);
+      backupRecords.push({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, fotos:{ entrada:await photoAsDataUrl(photos.entrada), saida:await photoAsDataUrl(photos.saida) } });
+    }
   const backup={
     versao:1,
     exportadoEm:new Date().toISOString(),
     configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:settings.theme },
-    registros:records.map((record)=>({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, fotos:recordPhotos(record) }))
+    registros:backupRecords
   };
   downloadFile(JSON.stringify(backup,null,2),`backup-horas-${localDate()}.json`,"application/json;charset=utf-8");
+  } catch { showToast("Não foi possível incluir as fotos no backup.","error"); }
+  finally { button.disabled = false; button.textContent = "Baixar backup"; }
 });
 
 $("#import-json").addEventListener("click",()=>$("#json-file").click());
@@ -282,6 +300,56 @@ function setAuthMessage(message, type = "error") {
   const element = $("#auth-message"); element.textContent = message; element.hidden = !message;
   element.className = type === "error" ? "error-message" : "auth-success";
 }
+function setSignupMessage(message, type = "error") {
+  const element = $("#signup-message"); element.textContent = message; element.hidden = !message;
+  element.className = type === "error" ? "error-message" : "auth-success";
+}
+function setRecoveryMessage(message, type = "error") {
+  const element = $("#recovery-message"); element.textContent = message; element.hidden = !message;
+  element.className = type === "error" ? "error-message" : "auth-success";
+}
+function translateAuthError(error) {
+  const translations = {
+    invalid_credentials: "E-mail ou senha incorretos.",
+    email_not_confirmed: "Confirme seu e-mail antes de entrar.",
+    user_already_exists: "Este e-mail já possui uma conta.",
+    signup_disabled: "A criação de novas contas está desativada.",
+    over_email_send_rate_limit: "Muitos e-mails foram solicitados. Aguarde alguns minutos.",
+    weak_password: "A senha não atende aos requisitos de segurança.",
+    same_password: "A nova senha deve ser diferente da senha atual.",
+    captcha_failed: "Não foi possível validar a proteção contra robôs. Tente novamente."
+  };
+  return translations[error?.code] || translations[error?.message] || "Não foi possível concluir a operação. Tente novamente.";
+}
+function passwordRules(password) {
+  return { length: password.length >= 8, uppercase: /[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ]/.test(password), number: /\d/.test(password) };
+}
+function isStrongPassword(password) { return Object.values(passwordRules(password)).every(Boolean); }
+function updatePasswordStrength(input, list) {
+  const rules = passwordRules(input.value);
+  Object.entries(rules).forEach(([rule, valid]) => list.querySelector(`[data-rule="${rule}"]`).classList.toggle("password-rule--valid", valid));
+}
+function renderTurnstile(attempt = 0) {
+  if (!TURNSTILE_SITE_KEY || turnstileWidgetId !== null) return;
+  const container = $("#turnstile-container"); container.hidden = false;
+  if (!window.turnstile) { if (attempt < 20) setTimeout(() => renderTurnstile(attempt + 1), 250); return; }
+  turnstileWidgetId = window.turnstile.render(container, {
+    sitekey: TURNSTILE_SITE_KEY,
+    theme: settings.theme,
+    callback: (token) => { captchaToken = token; },
+    "expired-callback": () => { captchaToken = ""; }
+  });
+}
+function selectAuthTab(tab) {
+  const signup = tab === "signup";
+  $("#auth-form").hidden = signup; $("#signup-form").hidden = !signup; $("#recovery-form").hidden = true;
+  $("#login-tab").classList.toggle("auth-tab--active", !signup);
+  $("#signup-tab").classList.toggle("auth-tab--active", signup);
+  $("#login-tab").setAttribute("aria-selected", String(!signup));
+  $("#signup-tab").setAttribute("aria-selected", String(signup));
+  (signup ? $("#signup-email") : $("#auth-email")).focus();
+  if (signup) renderTurnstile();
+}
 function showAuthentication() {
   applyTheme(); $("#auth-screen").hidden = false; $("#password-setup-screen").hidden = true; $("#app-content").hidden = true; $("#logout-button").hidden = true;
 }
@@ -308,17 +376,74 @@ $("#auth-form").addEventListener("submit", async (event) => {
   event.preventDefault(); setAuthMessage("");
   const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) setAuthMessage(error.message);
+  if (error) setAuthMessage(translateAuthError(error));
 });
-$("#signup-button").addEventListener("click", () => window.alert("Falar com administrador"));
+$("#login-tab").addEventListener("click", () => selectAuthTab("login"));
+$("#signup-tab").addEventListener("click", () => selectAuthTab("signup"));
+$("#forgot-password-button").addEventListener("click", () => {
+  $("#auth-form").hidden = true; $("#signup-form").hidden = true; $("#recovery-form").hidden = false;
+  $("#recovery-email").value = $("#auth-email").value; $("#recovery-email").focus();
+});
+$("#recovery-back-button").addEventListener("click", () => selectAuthTab("login"));
+$("#recovery-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); setRecoveryMessage("");
+  const email = $("#recovery-email").value.trim();
+  const submit = event.submitter; submit.disabled = true; submit.textContent = "Enviando...";
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}${window.location.pathname}` });
+  submit.disabled = false; submit.textContent = "Enviar link";
+  setRecoveryMessage(error ? translateAuthError(error) : "Link enviado. Confira sua caixa de entrada e o spam.", error ? "error" : "success");
+});
+document.querySelectorAll("[data-toggle-password]").forEach((button) => button.addEventListener("click", () => {
+  const input = document.getElementById(button.dataset.togglePassword);
+  const visible = input.type === "text"; input.type = visible ? "password" : "text";
+  button.textContent = visible ? "Mostrar" : "Ocultar"; button.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
+}));
+$("#signup-password").addEventListener("input", () => updatePasswordStrength($("#signup-password"), $("#signup-password-strength")));
+$("#new-password").addEventListener("input", () => updatePasswordStrength($("#new-password"), $("#setup-password-strength")));
+$("#signup-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); setSignupMessage("");
+  const email = $("#signup-email").value.trim();
+  const password = $("#signup-password").value;
+  const confirmation = $("#signup-password-confirmation").value;
+  if (!email || !isStrongPassword(password)) {
+    setSignupMessage("Use pelo menos 8 caracteres, uma letra maiúscula e um número.");
+    return;
+  }
+  if (password !== confirmation) {
+    setSignupMessage("As senhas não coincidem.");
+    return;
+  }
+  if (TURNSTILE_SITE_KEY && !captchaToken) { setSignupMessage("Confirme que você não é um robô."); return; }
+  const button = $("#signup-button");
+  button.disabled = true; button.textContent = "Criando conta...";
+  const options = { emailRedirectTo: `${window.location.origin}${window.location.pathname}` };
+  if (captchaToken) options.captchaToken = captchaToken;
+  const { data, error } = await supabaseClient.auth.signUp({ email, password, options });
+  button.disabled = false; button.textContent = "Criar conta";
+  if (turnstileWidgetId !== null) { window.turnstile.reset(turnstileWidgetId); captchaToken = ""; }
+  if (error) { setSignupMessage(translateAuthError(error)); return; }
+  $("#resend-confirmation-button").hidden = Boolean(data.session);
+  setSignupMessage(
+    data.session ? "Conta criada com sucesso." : "Conta criada. Confira seu e-mail para confirmar o cadastro.",
+    "success"
+  );
+});
+$("#resend-confirmation-button").addEventListener("click", async () => {
+  const email = $("#signup-email").value.trim();
+  if (!email) { setSignupMessage("Informe o e-mail usado no cadastro."); return; }
+  const button = $("#resend-confirmation-button"); button.disabled = true; button.textContent = "Reenviando...";
+  const { error } = await supabaseClient.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` } });
+  button.disabled = false; button.textContent = "Reenviar confirmação";
+  setSignupMessage(error ? translateAuthError(error) : "Confirmação reenviada. Confira também o spam.", error ? "error" : "success");
+});
 $("#password-setup-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const message = $("#password-setup-message");
   const password = $("#new-password").value;
   const confirmation = $("#confirm-password").value;
   message.hidden = true;
-  if (password.length < 8) {
-    message.textContent = "A senha deve ter pelo menos 8 caracteres."; message.hidden = false; return;
+  if (!isStrongPassword(password)) {
+    message.textContent = "Use pelo menos 8 caracteres, uma letra maiúscula e um número."; message.hidden = false; return;
   }
   if (password !== confirmation) {
     message.textContent = "As senhas não coincidem."; message.hidden = false; return;
@@ -327,7 +452,7 @@ $("#password-setup-form").addEventListener("submit", async (event) => {
   submit.disabled = true; submit.textContent = "Salvando...";
   const { data, error } = await supabaseClient.auth.updateUser({ password });
   submit.disabled = false; submit.textContent = "Salvar senha e entrar";
-  if (error) { message.textContent = error.message; message.hidden = false; return; }
+  if (error) { message.textContent = translateAuthError(error); message.hidden = false; return; }
   requiresPasswordSetup = false;
   window.history.replaceState({}, document.title, window.location.pathname);
   await loadApplication(data.user);
