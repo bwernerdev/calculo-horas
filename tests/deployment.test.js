@@ -14,6 +14,5 @@ test("define cabecalhos de seguranca compativeis com Supabase e Turnstile", () =
 });
 
 test("forca renovacao do cache para a publicacao corrigida", () => {
-  assert.match(worker, /banco-horas-v23/);
+  assert.match(worker, /banco-horas-v24/);
 });
-

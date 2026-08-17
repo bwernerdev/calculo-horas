@@ -28,7 +28,9 @@ test("oferece recuperacao, reenvio, senha visivel e forca minima", () => {
 });
 
 test("integra Turnstile sem expor chave secreta", () => {
-  assert.match(html, /challenges\.cloudflare\.com\/turnstile/);
+  assert.match(script, /challenges\.cloudflare\.com\/turnstile/);
   assert.match(script, /captchaToken/);
+  assert.match(script, /container\.clientWidth < 300 \? "compact" : "flexible"/);
+  assert.match(script, /script\.onload/);
   assert.doesNotMatch(script, /TURNSTILE_SECRET/);
 });

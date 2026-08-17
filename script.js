@@ -13,6 +13,7 @@ let requiresPasswordSetup = authLinkType === "invite" || authLinkType === "recov
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 let turnstileWidgetId = null;
 let captchaToken = "";
+let turnstileScriptPromise = null;
 let repository;
 let useCases;
 let records = [];
@@ -329,16 +330,32 @@ function updatePasswordStrength(input, list) {
   const rules = passwordRules(input.value);
   Object.entries(rules).forEach(([rule, valid]) => list.querySelector(`[data-rule="${rule}"]`).classList.toggle("password-rule--valid", valid));
 }
-function renderTurnstile(attempt = 0) {
+function loadTurnstileScript() {
+  if (window.turnstile) return Promise.resolve(window.turnstile);
+  if (turnstileScriptPromise) return turnstileScriptPromise;
+  turnstileScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true; script.onload = () => resolve(window.turnstile); script.onerror = () => reject(new Error("Turnstile indisponível"));
+    document.head.append(script);
+  });
+  return turnstileScriptPromise;
+}
+async function renderTurnstile() {
   if (!TURNSTILE_SITE_KEY || turnstileWidgetId !== null) return;
   const container = $("#turnstile-container"); container.hidden = false;
-  if (!window.turnstile) { if (attempt < 20) setTimeout(() => renderTurnstile(attempt + 1), 250); return; }
-  turnstileWidgetId = window.turnstile.render(container, {
-    sitekey: TURNSTILE_SITE_KEY,
-    theme: settings.theme,
-    callback: (token) => { captchaToken = token; },
-    "expired-callback": () => { captchaToken = ""; }
-  });
+  try {
+    const turnstile = await loadTurnstileScript();
+    if ($("#signup-form").hidden || turnstileWidgetId !== null) return;
+    turnstileWidgetId = turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: settings.theme,
+      size: container.clientWidth < 300 ? "compact" : "flexible",
+      callback: (token) => { captchaToken = token; },
+      "expired-callback": () => { captchaToken = ""; },
+      "error-callback": () => { captchaToken = ""; setSignupMessage("Não foi possível carregar a validação contra robôs. Tente novamente."); }
+    });
+  } catch { setSignupMessage("Não foi possível carregar a validação contra robôs. Verifique sua conexão."); }
 }
 function selectAuthTab(tab) {
   const signup = tab === "signup";
