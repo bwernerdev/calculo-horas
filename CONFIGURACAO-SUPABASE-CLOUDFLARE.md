@@ -30,18 +30,28 @@ Em **Authentication > Providers > Email**:
 - habilite novos cadastros;
 - mantenha a confirmação de e-mail habilitada para contas públicas.
 
-## 4. Cloudflare Turnstile
+Em **Authentication > Settings > Password security**:
 
-1. No Cloudflare, abra **Turnstile** e crie um widget para `banco-horas-controladoria.pages.dev`.
-2. Copie a **Site key** pública para `TURNSTILE_SITE_KEY` em `supabase-config.js`.
-3. No Supabase, abra a proteção contra bots/CAPTCHA da autenticação.
-4. Selecione Cloudflare Turnstile e informe a **Secret key** fornecida pelo Cloudflare.
-5. Nunca coloque a Secret key em HTML, JavaScript, GitHub ou no ZIP do site.
-6. Gere novamente o ZIP depois de preencher a Site key pública.
+- defina o mínimo de 8 caracteres;
+- exija ao menos letras maiúsculas e números, se essa opção estiver disponível no seu plano;
+- ative a proteção contra senhas vazadas, se estiver disponível no seu plano.
 
-O Turnstile só é exibido quando `TURNSTILE_SITE_KEY` está preenchida. Não habilite a exigência de CAPTCHA no Supabase antes disso.
+O site também valida localmente 8 caracteres, uma letra maiúscula e um número, tanto no cadastro quanto na definição de uma nova senha.
+
+## 4. Proteção CAPTCHA desativada
+
+Em **Authentication > Attack Protection** (ou **Bot and Abuse Protection**, conforme a versão do painel):
+
+1. Localize a proteção CAPTCHA.
+2. Desative **Enable CAPTCHA protection**.
+3. Salve a alteração.
+
+Isso é obrigatório porque o site não envia mais tokens CAPTCHA. Mantenha os limites de requisições do Supabase ativos para reduzir tentativas automatizadas.
+
+Em **Authentication > Rate Limits**, mantenha limites para cadastro, login e envio de e-mails. Para um setor pequeno, os valores padrão normalmente são suficientes; reduza-os apenas se observar abuso para não bloquear usuários legítimos.
+
+O widget antigo pode ser removido posteriormente no painel **Cloudflare > Turnstile**, pois não é mais utilizado pelo site.
 
 ## 5. Publicação
 
 Publique `banco-horas-deploy.zip` no projeto Pages e force a atualização do navegador com `Ctrl + F5`. Em um PWA instalado, feche e abra o aplicativo novamente.
-

@@ -27,20 +27,8 @@ test("oferece recuperacao, reenvio, senha visivel e forca minima", () => {
   assert.match(script, /isStrongPassword/);
 });
 
-test("integra Turnstile sem expor chave secreta", () => {
-  assert.match(script, /challenges\.cloudflare\.com\/turnstile/);
-  assert.match(script, /captchaToken/);
-  assert.match(script, /container\.clientWidth < 300 \? "compact" : "flexible"/);
-  assert.match(script, /script\.onload/);
-  assert.match(script, /appearance: "always"/);
-  assert.match(script, /Carregando validação contra robôs/);
-  assert.doesNotMatch(script, /TURNSTILE_SECRET/);
-});
-
-test("protege login, cadastro e recuperação com Turnstile", () => {
-  assert.match(html, /id="login-turnstile-container"/);
-  assert.match(html, /id="signup-turnstile-container"/);
-  assert.match(html, /id="recovery-turnstile-container"/);
-  assert.match(script, /signInWithPassword\(\{ email, password, options \}\)/);
-  assert.match(script, /options\.captchaToken = captchaTokens\.recovery/);
+test("mantém autenticação sem dependência de CAPTCHA", () => {
+  assert.doesNotMatch(html, /turnstile|captcha/i);
+  assert.doesNotMatch(script, /turnstile|captcha/i);
+  assert.match(script, /signInWithPassword\(\{ email, password \}\)/);
 });

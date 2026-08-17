@@ -1,4 +1,4 @@
-const CACHE_NAME = "banco-horas-v26";
+const CACHE_NAME = "banco-horas-v27";
 const APP_SHELL = [
   "./",
   "./index.html",
