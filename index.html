@@ -22,11 +22,35 @@
     </div>
     <div class="topbar__actions">
       <button id="install-app" class="button button--install" type="button" hidden>Instalar app</button>
+      <button id="logout-button" class="button button--ghost" type="button" hidden>Sair</button>
       <button id="theme-toggle" class="icon-button" type="button" aria-label="Alternar tema">🌙</button>
     </div>
   </header>
 
-  <main class="page-shell">
+  <section id="auth-screen" class="auth-screen" aria-labelledby="auth-title">
+    <form id="auth-form" class="auth-card">
+      <span class="eyebrow">Acesso seguro</span>
+      <h2 id="auth-title">Entre no seu banco de horas</h2>
+      <p>Use seu e-mail e senha para acessar seus registros em qualquer dispositivo.</p>
+      <label class="field"><span>E-mail</span><input id="auth-email" type="email" autocomplete="email" required></label>
+      <label class="field"><span>Senha</span><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required></label>
+      <p id="auth-message" class="error-message" role="alert" hidden></p>
+      <button class="button button--primary" type="submit">Entrar</button>
+      <div class="auth-actions"><button id="signup-button" class="button button--secondary" type="button">Criar conta</button></div>
+    </form>
+  </section>
+  <section id="password-setup-screen" class="auth-screen" aria-labelledby="password-setup-title" hidden>
+    <form id="password-setup-form" class="auth-card">
+      <span class="eyebrow">Primeiro acesso</span>
+      <h2 id="password-setup-title">Defina sua senha</h2>
+      <p>Crie uma senha pessoal para concluir o acesso à sua conta.</p>
+      <label class="field"><span>Nova senha</span><input id="new-password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="field"><span>Confirmar senha</span><input id="confirm-password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <p id="password-setup-message" class="error-message" role="alert" hidden></p>
+      <button class="button button--primary" type="submit">Salvar senha e entrar</button>
+    </form>
+  </section>
+  <main id="app-content" class="page-shell" hidden>
     <section class="summary-grid" aria-label="Resumo do mês">
       <article class="summary-card summary-card--accent"><span>Saldo do mês</span><strong id="monthly-balance">0h 00min</strong></article>
       <article class="summary-card summary-card--positive"><span>Horas positivas</span><strong id="monthly-positive">+0h 00min</strong></article>
@@ -38,7 +62,7 @@
 
     <aside class="privacy-notice" aria-label="Privacidade dos dados">
       <span class="privacy-notice__icon" aria-hidden="true">🔒</span>
-      <div><strong>Seus dados e fotos ficam somente neste aplicativo.</strong><p>As imagens não são salvas na galeria nem enviadas para servidores. Para evitar perdas ao limpar os dados do navegador, baixe um backup JSON regularmente.</p></div>
+      <div><strong>Seus dados ficam protegidos na sua conta.</strong><p>Registros e fotos são armazenados com segurança no Supabase e só podem ser acessados pela sua conta. As imagens não são salvas na galeria do dispositivo. Baixe um backup JSON regularmente.</p></div>
     </aside>
 
     <section class="panel entry-panel">
@@ -132,7 +156,11 @@
     <div class="camera-dialog__actions"><button id="capture-photo" class="button button--primary" type="button">Capturar foto</button></div>
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="calculations.js"></script>
+  <script src="repository.js"></script>
+  <script src="use-cases.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -10,6 +10,9 @@ button,input,select { font:inherit; }
 .brand-logo { width:92px; height:auto; flex:0 0 auto; object-fit:contain; }
 .topbar__actions { display:flex; align-items:center; gap:10px; }
 .page-shell { padding-bottom:48px; }
+.auth-screen { display:grid; min-height:calc(100vh - 160px); place-items:center; padding:30px 20px 60px; }
+.auth-card { display:grid; width:min(440px,100%); gap:15px; padding:30px; border:1px solid var(--line); border-radius:20px; background:var(--surface); box-shadow:var(--shadow); }
+.auth-card h2 { font-size:1.65rem; }.auth-card>p { margin:0 0 5px; color:var(--muted); line-height:1.5; }.auth-card .button--primary { width:100%; margin-top:4px; }.auth-actions { display:flex; flex-wrap:wrap; gap:10px; }.auth-actions .button { flex:1; padding-inline:12px; }
 .eyebrow { display:block; margin-bottom:7px; color:var(--primary); font-size:.72rem; font-weight:850; letter-spacing:.13em; text-transform:uppercase; }
 h1,h2 { margin:0; letter-spacing:-.035em; } h1 { font-size:clamp(1.9rem,5vw,3rem); } h2 { font-size:1.45rem; }
 .icon-button { width:46px; height:46px; border:1px solid var(--line); border-radius:50%; color:var(--text); background:var(--surface); cursor:pointer; }
@@ -73,6 +76,7 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 .photo-card:hover { border-color:var(--primary); transform:translateY(-2px); } .photo-card img { display:block; width:100%; aspect-ratio:4/3; object-fit:cover; }
 .photo-card__info { display:block; padding:9px 10px; } .photo-card__info strong,.photo-card__info small { display:block; } .photo-card__info strong { font-size:.8rem; } .photo-card__info small { margin-top:2px; color:var(--muted); font-size:.7rem; }
 .error-message { margin:14px 0 0; color:var(--danger); font-size:.88rem; font-weight:750; }
+.auth-success { margin:0; color:var(--success); font-size:.88rem; font-weight:750; }
 .confirm-dialog { width:min(440px,calc(100% - 32px)); padding:26px; border:1px solid var(--line); border-radius:18px; color:var(--text); background:var(--surface); box-shadow:0 24px 70px rgba(0,0,0,.28); }
 .confirm-dialog::backdrop { background:rgba(7,12,24,.58); backdrop-filter:blur(3px); }
 .confirm-dialog__icon { display:grid; place-items:center; width:42px; height:42px; margin-bottom:16px; border-radius:50%; color:var(--danger); background:var(--danger-bg); font-size:1.2rem; font-weight:900; }

@@ -1,9 +1,12 @@
-const CACHE_NAME = "banco-horas-v14";
+const CACHE_NAME = "banco-horas-v19";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./calculations.js",
+  "./repository.js",
+  "./use-cases.js",
+  "./supabase-config.js",
   "./script.js",
   "./manifest.webmanifest",
   "./imagens/favicon.webp",

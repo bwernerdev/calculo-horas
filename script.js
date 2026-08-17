@@ -1,5 +1,6 @@
 const STORAGE_KEY = "controle-horas-registros-v1";
 const SETTINGS_KEY = "controle-horas-config-v1";
+const THEME_PREFERENCE_KEY = "controle-horas-tema-v1";
 const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"Férias", falta:"Falta" };
 const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
@@ -7,9 +8,13 @@ const { toMinutes, toClock, duration, signed } = HoursCalculator;
 const FIXED_BREAK_MINUTES = 60;
 const MAX_DAILY_WORK_MINUTES = 10 * 60;
 const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
-let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"target":528,"break":60,"theme":"light"}');
-settings.break = FIXED_BREAK_MINUTES;
+const authLinkType = new URLSearchParams(window.location.hash.slice(1)).get("type") || new URLSearchParams(window.location.search).get("type");
+let requiresPasswordSetup = authLinkType === "invite" || authLinkType === "recovery";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let repository;
+let useCases;
+let records = [];
+let settings = { target: 528, break: FIXED_BREAK_MINUTES, theme: localStorage.getItem(THEME_PREFERENCE_KEY) === "dark" ? "dark" : "light" };
 let pendingPhotos = { entrada:"", saida:"" };
 let capturedPhoto = "";
 let cameraStream;
@@ -119,14 +124,17 @@ $("#photo-preview").addEventListener("click",(event)=>{ const kind=event.target.
 $("#photo-dialog-close").addEventListener("click",()=>$("#photo-dialog").close());
 $("#photo-dialog").addEventListener("close",()=>$("#photo-dialog-image").removeAttribute("src"));
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault(); const type=$("#day-type").value;
   const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photos:{...pendingPhotos} };
-  if (type==="trabalho") { if (!record.start || !record.end) return showError("Informe os horários de entrada e saída."); const worked=calculate(record).worked; if (worked < 0) return showError("O intervalo não pode superar a jornada."); if (worked > MAX_DAILY_WORK_MINUTES) return showError("A jornada não pode ultrapassar 10 horas trabalhadas no dia."); }
-  if (records.find((item) => item.date===record.date && item.id!==record.id)) return showError("Já existe um registro para esta data. Edite o registro existente.");
-  const index=records.findIndex((item) => item.id===record.id), editing=index>=0, previous=[...records]; if (editing) records[index]=record; else records.push(record);
-  try { localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); } catch (error) { records=previous; return showError("Não há espaço suficiente no navegador para salvar esta foto. Tente remover fotos antigas."); }
-  resetForm(); render(); showToast(editing ? "Registro atualizado com sucesso." : "Jornada registrada com sucesso.");
+  try {
+    const result=await useCases.saveRecord(record,settings.target);
+    records=result.records;
+    resetForm(); render(); showToast(result.editing ? "Registro atualizado com sucesso." : "Jornada registrada com sucesso.");
+  } catch (error) {
+    const message=error instanceof Error ? error.message : "Não há espaço suficiente no navegador para salvar esta foto. Tente remover fotos antigas.";
+    showError(message);
+  }
 });
 
 function editRecord(id) {
@@ -143,12 +151,12 @@ function showRecordPhoto(id,kind) {
 $("#records-body").addEventListener("click", async(event) => {
   const edit=event.target.dataset.edit, remove=event.target.dataset.delete, photo=event.target.dataset.photo; if (edit) editRecord(edit);
   if (photo) showRecordPhoto(photo,event.target.dataset.photoKind);
-  if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) { records=records.filter((item)=>item.id!==remove); localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); render(); showToast("Registro excluído."); }
+  if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) { records=await useCases.deleteRecord(remove); render(); showToast("Registro excluído."); }
 });
 $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
-$("#settings-form").addEventListener("submit",(event)=>{ event.preventDefault(); settings.target=toMinutes($("#daily-target").value); settings.break=FIXED_BREAK_MINUTES; localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); $("#settings-form").hidden=true; resetForm(); render(); });
+$("#settings-form").addEventListener("submit",async (event)=>{ event.preventDefault(); settings=await useCases.saveSettings({ ...settings, target:toMinutes($("#daily-target").value) }); $("#settings-form").hidden=true; resetForm(); render(); });
 $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
 $("#month-filter").addEventListener("change",render); $("#cancel-edit").addEventListener("click",resetForm);
 form.addEventListener("reset",()=>setTimeout(()=>{
@@ -157,8 +165,13 @@ form.addEventListener("reset",()=>setTimeout(()=>{
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhotos={entrada:"",saida:""}; capturedPhoto=""; updatePhotoPreview(); updateForecast();
 }));
 
-function applyTheme() { document.documentElement.dataset.theme=settings.theme; $("#theme-toggle").textContent=settings.theme==="dark" ? "☀️" : "🌙"; document.querySelector('meta[name="theme-color"]').content=settings.theme==="dark" ? "#0d1321" : "#3157d5"; }
-$("#theme-toggle").addEventListener("click",()=>{ settings.theme=settings.theme==="dark" ? "light" : "dark"; applyTheme(); localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings)); });
+function applyTheme() { document.documentElement.dataset.theme=settings.theme; localStorage.setItem(THEME_PREFERENCE_KEY,settings.theme); $("#theme-toggle").textContent=settings.theme==="dark" ? "☀️" : "🌙"; document.querySelector('meta[name="theme-color"]').content=settings.theme==="dark" ? "#0d1321" : "#3157d5"; }
+$("#theme-toggle").addEventListener("click",async ()=>{
+  const theme=settings.theme==="dark" ? "light" : "dark";
+  if (useCases) settings=await useCases.saveSettings({ ...settings, theme });
+  else settings={ ...settings, theme };
+  applyTheme();
+});
 $("#export-csv").addEventListener("click",()=>{
   const header=["Data","Tipo","Entrada","Saída","Intervalo (min)","Trabalhado","Saldo"];
   const rows=filteredRecords().map((r)=>{ const c=calculate(r); return [r.date,TYPES[r.type],r.start,r.end,r.break,duration(c.worked),signed(c.balance)]; });
@@ -257,16 +270,76 @@ $("#json-file").addEventListener("change",async(event)=>{
     });
     if (new Set(imported.map((item)=>item.id)).size!==imported.length || new Set(imported.map((item)=>item.date)).size!==imported.length) throw new Error("registros duplicados");
     if (!await requestConfirmation(`Restaurar ${imported.length} registro(s)? Os dados atuais serão substituídos.`)) return;
-    records=imported; settings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light" };
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+    records=imported; settings=await useCases.saveSettings({ target:config.metaDiariaMinutos, theme:config.tema==="dark" ? "dark" : "light" });
+    await repository.saveAllRecords(records);
     $("#daily-target").value=toClock(settings.target); applyTheme(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
   } catch (error) { showToast("Não foi possível importar: o arquivo não é um backup válido.","error"); }
   finally { event.target.value=""; }
 });
 
-$("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target);
-$("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
+function setAuthMessage(message, type = "error") {
+  const element = $("#auth-message"); element.textContent = message; element.hidden = !message;
+  element.className = type === "error" ? "error-message" : "auth-success";
+}
+function showAuthentication() {
+  applyTheme(); $("#auth-screen").hidden = false; $("#password-setup-screen").hidden = true; $("#app-content").hidden = true; $("#logout-button").hidden = true;
+}
+function showPasswordSetup() {
+  applyTheme(); $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = false; $("#app-content").hidden = true; $("#logout-button").hidden = false;
+}
+async function loadApplication(user) {
+  repository = HoursRepository.createSupabaseRepository(supabaseClient, user.id);
+  useCases = HoursUseCases.createHoursUseCases({ calculator: HoursCalculator, repository, fixedBreakMinutes: FIXED_BREAK_MINUTES, maxDailyWorkMinutes: MAX_DAILY_WORK_MINUTES });
+  try {
+    [records, settings] = await Promise.all([repository.findAllRecords(), useCases.getSettings()]);
+    $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target);
+    $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
+    $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false;
+  } catch (error) { showAuthentication(); setAuthMessage(`Não foi possível carregar seus dados: ${error.message}`); }
+}
+async function restoreSession() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) showAuthentication();
+  else if (requiresPasswordSetup) showPasswordSetup();
+  else await loadApplication(session.user);
+}
+$("#auth-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); setAuthMessage("");
+  const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) setAuthMessage(error.message);
+});
+$("#signup-button").addEventListener("click", () => window.alert("Falar com administrador"));
+$("#password-setup-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = $("#password-setup-message");
+  const password = $("#new-password").value;
+  const confirmation = $("#confirm-password").value;
+  message.hidden = true;
+  if (password.length < 8) {
+    message.textContent = "A senha deve ter pelo menos 8 caracteres."; message.hidden = false; return;
+  }
+  if (password !== confirmation) {
+    message.textContent = "As senhas não coincidem."; message.hidden = false; return;
+  }
+  const submit = event.submitter;
+  submit.disabled = true; submit.textContent = "Salvando...";
+  const { data, error } = await supabaseClient.auth.updateUser({ password });
+  submit.disabled = false; submit.textContent = "Salvar senha e entrar";
+  if (error) { message.textContent = error.message; message.hidden = false; return; }
+  requiresPasswordSetup = false;
+  window.history.replaceState({}, document.title, window.location.pathname);
+  await loadApplication(data.user);
+  showToast("Senha definida com sucesso.");
+});
+$("#logout-button").addEventListener("click", async () => { await supabaseClient.auth.signOut(); showAuthentication(); });
+supabaseClient.auth.onAuthStateChange((_event, session) => {
+  if (!session) showAuthentication();
+  else if (requiresPasswordSetup) showPasswordSetup();
+  else loadApplication(session.user);
+});
+restoreSession();
 
 let deferredInstallPrompt;
 const installButton=$("#install-app");
