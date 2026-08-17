@@ -1,6 +1,7 @@
 const STORAGE_KEY = "controle-horas-registros-v1";
 const SETTINGS_KEY = "controle-horas-config-v1";
 const THEME_PREFERENCE_KEY = "controle-horas-tema-v1";
+const REMEMBERED_EMAIL_KEY = "controle-horas-email-v1";
 const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"Férias", falta:"Falta" };
 const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
@@ -18,6 +19,10 @@ let settings = { target: 528, break: FIXED_BREAK_MINUTES, theme: localStorage.ge
 let pendingPhotos = { entrada:"", saida:"" };
 let capturedPhoto = "";
 let cameraStream;
+
+const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || "";
+$("#auth-email").value = rememberedEmail;
+$("#remember-access").checked = Boolean(rememberedEmail);
 
 function localDate(date = new Date()) { const offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
 function escapeCell(value) { const text = String(value ?? ""); return /[";,\n]/.test(text) ? `"${text.replaceAll('"','""')}"` : text; }
@@ -361,6 +366,8 @@ async function restoreSession() {
 $("#auth-form").addEventListener("submit", async (event) => {
   event.preventDefault(); setAuthMessage("");
   const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
+  if ($("#remember-access").checked) localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+  else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) setAuthMessage(translateAuthError(error));
 });

@@ -20,6 +20,14 @@ test("aplica experiência mobile por toque também em modo paisagem", () => {
   assert.match(css, /#export-csv \{ display:none; \}/);
 });
 
+test("dimensiona a interface para viewport e áreas seguras mobile", () => {
+  assert.match(html, /viewport-fit=cover/);
+  assert.match(css, /100dvh/);
+  assert.match(css, /safe-area-inset-top/);
+  assert.match(css, /max-height:600px/);
+  assert.match(css, /\.auth-card input \{ min-height:48px; font-size:16px; \}/);
+});
+
 test("mantém manifesto e arquivos essenciais no cache offline", () => {
   assert.equal(manifest.display, "standalone");
   assert.deepEqual(manifest.icons.map((icon) => icon.sizes), ["192x192", "512x512"]);

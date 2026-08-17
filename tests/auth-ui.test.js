@@ -32,3 +32,10 @@ test("mantém autenticação sem dependência de CAPTCHA", () => {
   assert.doesNotMatch(script, /turnstile|captcha/i);
   assert.match(script, /signInWithPassword\(\{ email, password \}\)/);
 });
+
+test("lembra o acesso sem armazenar a senha", () => {
+  assert.match(html, /id="remember-access"/);
+  assert.match(script, /REMEMBERED_EMAIL_KEY/);
+  assert.match(script, /localStorage\.setItem\(REMEMBERED_EMAIL_KEY, email\)/);
+  assert.doesNotMatch(script, /localStorage\.setItem\([^,]*password/i);
+});
