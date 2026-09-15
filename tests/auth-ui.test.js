@@ -3,8 +3,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const html = fs.readFileSync("index.html", "utf8");
-const script = fs.readFileSync("script.js", "utf8");
-const css = fs.readFileSync("style.css", "utf8");
+const script = fs.readFileSync("assets/js/script.js", "utf8");
+const css = fs.readFileSync("assets/css/style.css", "utf8");
 
 test("separa login e cadastro em abas acessiveis", () => {
   assert.match(html, /id="login-tab"[^>]*role="tab"/);

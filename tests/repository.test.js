@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { createLocalStorageRepository, createSupabaseRepository } = require("../repository.js");
+const { createLocalStorageRepository, createSupabaseRepository } = require("../assets/js/repository.js");
 
 function memoryStorage() {
   const values = new Map();

@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
-const repository = fs.readFileSync("repository.js", "utf8");
+const repository = fs.readFileSync("assets/js/repository.js", "utf8");
 const sql = fs.readFileSync("supabase/security-and-storage.sql", "utf8");
 
 test("armazena fotos em bucket privado por usuario", () => {

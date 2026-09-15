@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const calculator = require("../calculations.js");
-const { createHoursUseCases } = require("../use-cases.js");
+const calculator = require("../assets/js/calculations.js");
+const { createHoursUseCases } = require("../assets/js/use-cases.js");
 
 function createRepository() {
   const saved = [];

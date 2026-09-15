@@ -1,20 +1,20 @@
-const CACHE_NAME = "banco-horas-v38";
+const CACHE_NAME = "banco-horas-v39";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css",
-  "./theme-init.js",
-  "./calculations.js",
-  "./repository.js",
-  "./use-cases.js",
-  "./supabase-config.js",
-  "./script.js",
+  "./assets/css/style.css",
+  "./assets/js/theme-init.js",
+  "./assets/js/calculations.js",
+  "./assets/js/repository.js",
+  "./assets/js/use-cases.js",
+  "./assets/js/supabase-config.js",
+  "./assets/js/script.js",
   "./manifest.webmanifest",
-  "./favicon.webp",
-  "./apple-touch-icon.png",
-  "./logo-controladoria-cds.webp",
-  "./pwa-icon-192.png",
-  "./pwa-icon-512.png"
+  "./assets/images/favicon.webp",
+  "./assets/images/apple-touch-icon.png",
+  "./assets/images/logo-controladoria-cds.webp",
+  "./assets/images/pwa-icon-192.png",
+  "./assets/images/pwa-icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {

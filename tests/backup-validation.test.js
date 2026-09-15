@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
-const script = fs.readFileSync("script.js", "utf8");
+const script = fs.readFileSync("assets/js/script.js", "utf8");
 
 test("backup valida calendário, relógio, volume e fotos antes da restauração", () => {
   assert.match(script, /function isValidCalendarDate/);

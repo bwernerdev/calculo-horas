@@ -14,17 +14,10 @@ foreach ($target in @($staging, $zip)) {
   }
 }
 
-New-Item -ItemType Directory -Path (Join-Path $staging "imagens") -Force | Out-Null
+New-Item -ItemType Directory -Path $staging -Force | Out-Null
 
 $publicFiles = @(
   "index.html",
-  "style.css",
-  "theme-init.js",
-  "script.js",
-  "calculations.js",
-  "repository.js",
-  "use-cases.js",
-  "supabase-config.js",
   "service-worker.js",
   "manifest.webmanifest",
   "_headers"
@@ -34,10 +27,7 @@ foreach ($file in $publicFiles) {
   Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination (Join-Path $staging $file)
 }
 
-Get-ChildItem -LiteralPath (Join-Path $projectRoot "imagens") -File | ForEach-Object {
-  Copy-Item -LiteralPath $_.FullName -Destination (Join-Path (Join-Path $staging "imagens") $_.Name)
-  Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $staging $_.Name)
-}
+Copy-Item -LiteralPath (Join-Path $projectRoot "assets") -Destination (Join-Path $staging "assets") -Recurse
 
 Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $zip -Force
 Remove-Item -LiteralPath $staging -Recurse -Force

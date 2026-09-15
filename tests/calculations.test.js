@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { calculate, summarize, suggestExit, toClock } = require("../calculations.js");
+const { calculate, summarize, suggestExit, toClock } = require("../assets/js/calculations.js");
 
 const TARGET = 8 * 60 + 48;
 
