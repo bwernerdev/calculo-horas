@@ -1,5 +1,6 @@
 const THEME_PREFERENCE_KEY = "controle-horas-tema-v1";
 const REMEMBERED_EMAIL_KEY = "controle-horas-email-v1";
+const MANUAL_BALANCE_KEY = "controle-horas-simulador-v1";
 const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"Férias", falta:"Falta" };
 const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
@@ -51,6 +52,25 @@ function updateForecast() {
 }
 
 function filteredRecords() { return records.filter((record) => record.date.startsWith($("#month-filter").value)).sort((a,b) => b.date.localeCompare(a.date)); }
+function parseManualDuration(value) {
+  const match=String(value || "").trim().match(/^(\d{1,4}):([0-5]\d)$/);
+  return match ? Number(match[1])*60+Number(match[2]) : 0;
+}
+function manualBalanceStorageKey() { return `${MANUAL_BALANCE_KEY}:${loadedUserId || "anonymous"}:${$("#month-filter").value || "current"}`; }
+function loadManualBalance() {
+  let saved={};
+  try { saved=JSON.parse(localStorage.getItem(manualBalanceStorageKey()) || "{}"); } catch {}
+  $("#manual-positive").value=typeof saved.positive==="string" ? saved.positive : "";
+  $("#manual-negative").value=typeof saved.negative==="string" ? saved.negative : "";
+}
+function updateManualBalance(monthlyBalance) {
+  const positive=parseManualDuration($("#manual-positive").value), negative=parseManualDuration($("#manual-negative").value);
+  const adjustment=positive-negative, projected=monthlyBalance+adjustment;
+  $("#simulator-current-balance").textContent=signed(monthlyBalance);
+  $("#simulator-adjustment").textContent=signed(adjustment);
+  $("#simulator-projected-balance").textContent=signed(projected);
+  for (const [element,value] of [[$("#simulator-current-balance"),monthlyBalance],[$("#simulator-adjustment"),adjustment],[$("#simulator-projected-balance"),projected]]) element.className=value>0 ? "value-positive" : value<0 ? "value-negative" : "";
+}
 function render() {
   const list = filteredRecords();
   $("#records-body").innerHTML = list.map((record) => {
@@ -73,6 +93,7 @@ function render() {
   $("#monthly-negative").textContent = `-${duration(totals.negative)}`;
   $("#monthly-balance").className = totals.balance > 0 ? "value-positive" : totals.balance < 0 ? "value-negative" : "";
   $("#registered-days").textContent = list.length; $("#target-summary").textContent = duration(settings.target);
+  updateManualBalance(totals.balance);
   updateForecast();
 }
 
@@ -180,7 +201,14 @@ $("#settings-form").addEventListener("submit",async (event)=>{
   finally { submit.disabled=false; }
 });
 $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
-$("#month-filter").addEventListener("change",render); $("#cancel-edit").addEventListener("click",resetForm);
+$("#month-filter").addEventListener("change",()=>{ loadManualBalance(); render(); }); $("#cancel-edit").addEventListener("click",resetForm);
+for (const input of [$("#manual-positive"),$("#manual-negative")]) {
+  input.addEventListener("input",()=>{
+    localStorage.setItem(manualBalanceStorageKey(),JSON.stringify({ positive:$("#manual-positive").value, negative:$("#manual-negative").value }));
+    updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance);
+  });
+  input.addEventListener("blur",()=>{ if (input.value && !/^(\d{1,4}):([0-5]\d)$/.test(input.value.trim())) showToast("Use horas e minutos no formato 12:30.","error"); });
+}
 form.addEventListener("reset",()=>setTimeout(()=>{
   $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
@@ -191,11 +219,11 @@ function applyTheme() { document.documentElement.dataset.theme=settings.theme; l
 $("#theme-toggle").addEventListener("click",async ()=>{
   const theme=settings.theme==="dark" ? "light" : "dark";
   $("#theme-toggle").disabled=true;
+  settings={ ...settings, theme };
+  applyTheme();
   try {
-    if (useCases) settings=await useCases.saveSettings({ ...settings, theme });
-    else settings={ ...settings, theme };
-    applyTheme();
-  } catch (error) { showToast(error.message || "Não foi possível alterar o tema.","error"); }
+    if (useCases) settings=await useCases.saveSettings(settings);
+  } catch (error) { showToast("Tema salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
   finally { $("#theme-toggle").disabled=false; }
 });
 $("#export-csv").addEventListener("click",()=>{
@@ -427,7 +455,7 @@ async function loadApplication(user) {
     const [loadedRecords,loadedSettings] = await Promise.all([nextRepository.findAllRecords(), nextUseCases.getSettings()]);
     if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
     records=loadedRecords; settings=loadedSettings;
-    $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target);
+    $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target); loadManualBalance();
     $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
     $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
   } catch (error) {

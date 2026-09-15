@@ -12,6 +12,7 @@
   <link rel="icon" type="image/webp" href="favicon.webp">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <script src="theme-init.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -153,6 +154,26 @@
         <div class="photo-history__heading"><h3 id="photo-history-title">Fotos do mês</h3><span id="photo-count"></span></div>
         <div id="photo-gallery" class="photo-gallery"></div>
       </section>
+    </section>
+
+    <section class="panel balance-simulator" aria-labelledby="balance-simulator-title">
+      <div class="balance-simulator__intro">
+        <span class="eyebrow">Simulação pessoal</span>
+        <h2 id="balance-simulator-title">Projete seu saldo de horas</h2>
+        <p>Informe saldos anteriores ou ajustes que ainda não aparecem nos registros deste mês.</p>
+      </div>
+      <div class="balance-simulator__content">
+        <div class="balance-simulator__fields">
+          <label class="field"><span>Total de horas positivas</span><input id="manual-positive" type="text" inputmode="numeric" placeholder="Ex.: 12:30" autocomplete="off" aria-describedby="manual-balance-help"></label>
+          <label class="field"><span>Total de horas negativas</span><input id="manual-negative" type="text" inputmode="numeric" placeholder="Ex.: 05:15" autocomplete="off" aria-describedby="manual-balance-help"></label>
+          <p id="manual-balance-help" class="field-help">Use o formato horas:minutos. Exemplo: 12:30.</p>
+        </div>
+        <div class="balance-simulator__result" aria-live="polite">
+          <div><span>Saldo dos registros</span><strong id="simulator-current-balance">0h 00min</strong></div>
+          <div><span>Ajuste manual</span><strong id="simulator-adjustment">0h 00min</strong></div>
+          <div class="balance-simulator__total"><span>Saldo projetado</span><strong id="simulator-projected-balance">0h 00min</strong></div>
+        </div>
+      </div>
     </section>
   </main>
   <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">

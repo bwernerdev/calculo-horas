@@ -7,6 +7,7 @@ const css = fs.readFileSync("style.css", "utf8");
 const script = fs.readFileSync("script.js", "utf8");
 const worker = fs.readFileSync("service-worker.js", "utf8");
 const manifest = JSON.parse(fs.readFileSync("manifest.webmanifest", "utf8"));
+const themeInit = fs.readFileSync("theme-init.js", "utf8");
 
 test("mantém câmera interna sem seletor de arquivos ou galeria", () => {
   assert.match(script, /mediaDevices\.getUserMedia/);
@@ -31,7 +32,21 @@ test("dimensiona a interface para viewport e áreas seguras mobile", () => {
 test("mantém manifesto e arquivos essenciais no cache offline", () => {
   assert.equal(manifest.display, "standalone");
   assert.deepEqual(manifest.icons.map((icon) => icon.sizes), ["192x192", "512x512"]);
-  for (const asset of ["index.html", "style.css", "calculations.js", "script.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
+  for (const asset of ["index.html", "style.css", "theme-init.js", "calculations.js", "script.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
+});
+
+test("simula saldo manual positivo e negativo por usuário e mês", () => {
+  assert.match(html, /id="manual-positive"/);
+  assert.match(html, /id="manual-negative"/);
+  assert.match(html, /id="simulator-projected-balance"/);
+  assert.match(script, /positive-negative/);
+  assert.match(script, /MANUAL_BALANCE_KEY.*loadedUserId.*month-filter/s);
+});
+
+test("aplica a preferência de tema antes da interface e salva localmente", () => {
+  assert.match(html, /<script src="theme-init\.js"><\/script>[\s\S]*<link rel="stylesheet"/);
+  assert.match(themeInit, /localStorage\.getItem\("controle-horas-tema-v1"\)/);
+  assert.match(script, /settings=\{ \.\.\.settings, theme \};\s*applyTheme\(\);/);
 });
 
 test("usa logo transparente e adaptável aos dois temas no cabeçalho", () => {

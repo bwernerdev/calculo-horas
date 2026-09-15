@@ -19,6 +19,7 @@ New-Item -ItemType Directory -Path (Join-Path $staging "imagens") -Force | Out-N
 $publicFiles = @(
   "index.html",
   "style.css",
+  "theme-init.js",
   "script.js",
   "calculations.js",
   "repository.js",
