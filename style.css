@@ -106,6 +106,8 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 .balance-simulator__result>div { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 16px; background:var(--surface-2); }
 .balance-simulator__result span { color:var(--muted); font-size:.8rem; font-weight:750; } .balance-simulator__result strong { font-size:1rem; }
 .balance-simulator__result .balance-simulator__total { padding-block:18px; background:var(--primary-soft); } .balance-simulator__total strong { font-size:clamp(1.2rem,3vw,1.55rem); }
+.balance-simulator__result .balance-simulator__suggestion { color:#fff; background:linear-gradient(135deg,#3157d5,#2444ad); } .balance-simulator__suggestion span { color:rgba(255,255,255,.8); } .balance-simulator__suggestion strong { color:#fff; font-size:clamp(1.25rem,3vw,1.6rem); }
+.balance-simulator__warning { margin:0; padding:12px 16px; color:var(--danger); background:var(--danger-bg); font-size:.78rem; font-weight:750; line-height:1.45; }
 .error-message { margin:14px 0 0; color:var(--danger); font-size:.88rem; font-weight:750; }
 .auth-success { margin:0; color:var(--success); font-size:.88rem; font-weight:750; }
 .confirm-dialog { width:min(440px,calc(100% - 32px)); padding:26px; border:1px solid var(--line); border-radius:18px; color:var(--text); background:var(--surface); box-shadow:0 24px 70px rgba(0,0,0,.28); }

@@ -167,11 +167,17 @@
           <label class="field"><span>Total de horas positivas</span><input id="manual-positive" type="text" inputmode="numeric" placeholder="Ex.: 12:30" autocomplete="off" aria-describedby="manual-balance-help"></label>
           <label class="field"><span>Total de horas negativas</span><input id="manual-negative" type="text" inputmode="numeric" placeholder="Ex.: 05:15" autocomplete="off" aria-describedby="manual-balance-help"></label>
           <p id="manual-balance-help" class="field-help">Use o formato horas:minutos. Exemplo: 12:30.</p>
+          <label class="field"><span>Horário de entrada</span><input id="simulator-start-time" type="time" value="08:00"></label>
+          <label class="field"><span>Horário de saída</span><input id="simulator-end-time" type="time" value="17:48"></label>
+          <p class="field-help">O intervalo fixo de 60 minutos e a margem preventiva de 15 minutos antes do limite de 10 horas também são aplicados aqui.</p>
         </div>
         <div class="balance-simulator__result" aria-live="polite">
           <div><span>Saldo dos registros</span><strong id="simulator-current-balance">0h 00min</strong></div>
           <div><span>Ajuste manual</span><strong id="simulator-adjustment">0h 00min</strong></div>
           <div class="balance-simulator__total"><span>Saldo projetado</span><strong id="simulator-projected-balance">0h 00min</strong></div>
+          <div><span>Saldo após a saída informada</span><strong id="simulator-informed-balance">0h 00min</strong></div>
+          <div class="balance-simulator__suggestion"><span>Horário sugerido para sair</span><strong id="simulator-suggested-exit">17:48</strong></div>
+          <p id="simulator-limit-warning" class="balance-simulator__warning" hidden></p>
         </div>
       </div>
     </section>

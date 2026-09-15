@@ -71,6 +71,11 @@ function loadManualBalance() {
   try { saved=JSON.parse(localStorage.getItem(manualBalanceStorageKey()) || "{}"); } catch {}
   $("#manual-positive").value=remote ? manualDurationInput(remote.positive) : typeof saved.positive==="string" ? saved.positive : "";
   $("#manual-negative").value=remote ? manualDurationInput(remote.negative) : typeof saved.negative==="string" ? saved.negative : "";
+  $("#simulator-start-time").value=typeof saved.start==="string" && isValidClockTime(saved.start) ? saved.start : "08:00";
+  $("#simulator-end-time").value=typeof saved.end==="string" && isValidClockTime(saved.end) ? saved.end : "17:48";
+}
+function saveManualSimulationLocally() {
+  localStorage.setItem(manualBalanceStorageKey(),JSON.stringify({ positive:$("#manual-positive").value, negative:$("#manual-negative").value, start:$("#simulator-start-time").value, end:$("#simulator-end-time").value }));
 }
 async function syncManualBalance() {
   const month=$("#month-filter").value;
@@ -86,6 +91,24 @@ function updateManualBalance(monthlyBalance) {
   $("#simulator-adjustment").textContent=signed(adjustment);
   $("#simulator-projected-balance").textContent=signed(projected);
   for (const [element,value] of [[$("#simulator-current-balance"),monthlyBalance],[$("#simulator-adjustment"),adjustment],[$("#simulator-projected-balance"),projected]]) element.className=value>0 ? "value-positive" : value<0 ? "value-negative" : "";
+  const start=$("#simulator-start-time").value, end=$("#simulator-end-time").value;
+  const informedElement=$("#simulator-informed-balance"), suggestedElement=$("#simulator-suggested-exit"), warning=$("#simulator-limit-warning");
+  warning.hidden=true; warning.textContent="";
+  if (!isValidClockTime(start)) { informedElement.textContent="—"; informedElement.className=""; suggestedElement.textContent="—"; return; }
+  const suggestion=HoursCalculator.suggestExit(start,settings.target,FIXED_BREAK_MINUTES,projected,SUGGESTED_DAILY_LIMIT_MINUTES);
+  suggestedElement.textContent=suggestion.suggestedExit;
+  if (suggestion.worked===SUGGESTED_DAILY_LIMIT_MINUTES && suggestion.remainingBalance<0) {
+    warning.textContent=`Margem preventiva de 15 minutos aplicada antes do limite de 10 horas. Ainda restariam ${signed(suggestion.remainingBalance)}.`;
+    warning.hidden=false;
+  }
+  if (!isValidClockTime(end)) { informedElement.textContent="—"; informedElement.className=""; return; }
+  const informed=HoursCalculator.calculate({ type:"trabalho",start,end,break:FIXED_BREAK_MINUTES },settings.target);
+  if (informed.worked<0 || informed.worked>MAX_DAILY_WORK_MINUTES) {
+    informedElement.textContent="Horário inválido"; informedElement.className="value-negative";
+    warning.textContent="A saída informada deve resultar em uma jornada entre 0 e 10 horas trabalhadas."; warning.hidden=false; return;
+  }
+  const informedBalance=projected+informed.balance;
+  informedElement.textContent=signed(informedBalance); informedElement.className=informedBalance>0 ? "value-positive" : informedBalance<0 ? "value-negative" : "";
 }
 function render() {
   const list = filteredRecords();
@@ -220,12 +243,13 @@ $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEve
 $("#month-filter").addEventListener("change",()=>{ loadManualBalance(); render(); }); $("#cancel-edit").addEventListener("click",resetForm);
 for (const input of [$("#manual-positive"),$("#manual-negative")]) {
   input.addEventListener("input",()=>{
-    localStorage.setItem(manualBalanceStorageKey(),JSON.stringify({ positive:$("#manual-positive").value, negative:$("#manual-negative").value }));
+    saveManualSimulationLocally();
     updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance);
     clearTimeout(manualBalanceSaveTimer); manualBalanceSaveTimer=setTimeout(syncManualBalance,700);
   });
   input.addEventListener("blur",()=>{ if (input.value && !/^(\d{1,4}):([0-5]\d)$/.test(input.value.trim())) showToast("Use horas e minutos no formato 12:30.","error"); });
 }
+for (const input of [$("#simulator-start-time"),$("#simulator-end-time")]) input.addEventListener("input",()=>{ saveManualSimulationLocally(); updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance); });
 form.addEventListener("reset",()=>setTimeout(()=>{
   $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
