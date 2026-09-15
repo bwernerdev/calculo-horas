@@ -35,10 +35,10 @@ foreach ($file in $publicFiles) {
 
 Get-ChildItem -LiteralPath (Join-Path $projectRoot "imagens") -File | ForEach-Object {
   Copy-Item -LiteralPath $_.FullName -Destination (Join-Path (Join-Path $staging "imagens") $_.Name)
+  Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $staging $_.Name)
 }
 
 Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $zip -Force
 Remove-Item -LiteralPath $staging -Recurse -Force
 
 Write-Output $zip
-

@@ -1,4 +1,4 @@
-const CACHE_NAME = "banco-horas-v32";
+const CACHE_NAME = "banco-horas-v34";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,11 +9,11 @@ const APP_SHELL = [
   "./supabase-config.js",
   "./script.js",
   "./manifest.webmanifest",
-  "./imagens/favicon.webp",
-  "./imagens/apple-touch-icon.png",
-  "./imagens/logo-controladoria-cds.webp",
-  "./imagens/pwa-icon-192.png",
-  "./imagens/pwa-icon-512.png"
+  "./favicon.webp",
+  "./apple-touch-icon.png",
+  "./logo-controladoria-cds.webp",
+  "./pwa-icon-192.png",
+  "./pwa-icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
