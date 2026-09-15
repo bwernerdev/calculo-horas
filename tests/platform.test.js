@@ -34,10 +34,13 @@ test("mantém manifesto e arquivos essenciais no cache offline", () => {
   for (const asset of ["index.html", "style.css", "calculations.js", "script.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
 });
 
-test("usa uma logo PNG existente e compatível no cabeçalho", () => {
-  assert.match(html, /class="brand-logo"[^>]+src="apple-touch-icon\.png"/);
-  assert.ok(fs.existsSync("apple-touch-icon.png"));
-  assert.ok(worker.includes("./apple-touch-icon.png"));
+test("usa logo transparente e adaptável aos dois temas no cabeçalho", () => {
+  assert.match(html, /class="brand-logo"[^>]+src="logo-controladoria-cds\.webp"/);
+  assert.ok(fs.existsSync("logo-controladoria-cds.webp"));
+  assert.ok(fs.readFileSync("logo-controladoria-cds.webp").includes(Buffer.from("ALPH")));
+  assert.ok(worker.includes("./logo-controladoria-cds.webp"));
+  assert.match(css, /topbar__brand-copy[^}]+text-align:center/);
+  assert.match(css, /\[data-theme="dark"\] \.brand-logo[^}]+drop-shadow/);
 });
 
 test("oferece instalação específica para Android e iPhone", () => {
