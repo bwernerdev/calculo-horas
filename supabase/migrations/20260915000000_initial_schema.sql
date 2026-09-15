@@ -1,7 +1,26 @@
--- Execute este arquivo completo no Supabase SQL Editor.
+-- Baseline idempotente do banco, RLS e Storage.
 -- A transação é cancelada sem alterações se houver dados antigos incompatíveis.
 
 begin;
+
+create table if not exists public.records (
+  id text,
+  user_id uuid,
+  date date,
+  type text,
+  start_time text,
+  end_time text,
+  break_minutes integer default 0,
+  photos jsonb default '{}'::jsonb,
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.settings (
+  user_id uuid,
+  target_minutes integer default 528,
+  theme text default 'light',
+  updated_at timestamptz default now()
+);
 
 alter table public.settings
   add column if not exists balance_adjustments jsonb not null default '{}'::jsonb;
@@ -140,6 +159,11 @@ create unique index if not exists settings_user_uidx on public.settings (user_id
 
 alter table public.records enable row level security;
 alter table public.settings enable row level security;
+
+revoke all on table public.records from anon;
+revoke all on table public.settings from anon;
+grant select, insert, update, delete on table public.records to authenticated;
+grant select, insert, update, delete on table public.settings to authenticated;
 
 drop policy if exists "records_select_own" on public.records;
 drop policy if exists "records_insert_own" on public.records;

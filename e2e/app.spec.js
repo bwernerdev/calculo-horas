@@ -1,0 +1,66 @@
+const { test, expect } = require("@playwright/test");
+const fs = require("node:fs");
+
+const supabaseMock = fs.readFileSync("e2e/supabase-mock.js", "utf8");
+let server;
+
+test.beforeAll(async () => {
+  const { startStaticServer } = await import("../scripts/serve-static.mjs");
+  server = await startStaticServer(4173);
+});
+
+test.afterAll(async () => {
+  if (!server) return;
+  server?.closeAllConnections?.();
+  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+});
+
+test.beforeEach(async ({ page }) => {
+  await page.route("https://unpkg.com/@supabase/supabase-js@2", (route) => route.fulfill({
+    contentType: "text/javascript",
+    body: supabaseMock,
+  }));
+});
+
+test("abre autenticação e persiste a preferência de tema", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Entre no seu banco de horas" })).toBeVisible();
+  await page.getByRole("button", { name: "Alternar tema" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("entra na conta e registra uma jornada", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#auth-email").fill("teste@example.com");
+  await page.locator("#auth-password").fill("Senha123");
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(page.locator("#app-content")).toBeVisible();
+  await page.locator("#work-date").fill("2026-09-15");
+  await page.getByRole("button", { name: "Adicionar registro" }).click();
+  await expect(page.locator("#records-body")).toContainText("15/09/2026");
+  await expect(page.locator("#toast-region")).toContainText("Jornada registrada com sucesso");
+});
+
+test("carrega a conta e calcula a simulação pessoal", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Projete seu saldo de horas" })).toBeVisible();
+  await page.locator("#manual-positive").fill("02:00");
+  await page.locator("#manual-negative").fill("00:30");
+  await expect(page.locator("#simulator-projected-balance")).toContainText("1h 30min");
+  await expect(page.locator("#simulator-suggested-exit")).not.toHaveText("—");
+  await expect(page.locator("#update-notice")).toBeHidden();
+});
+
+test("exporta um backup JSON válido", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await page.locator("#export-json").click();
+  const download = await downloadPromise;
+  const content = JSON.parse(await fs.promises.readFile(await download.path(), "utf8"));
+  expect(content).toMatchObject({ versao: 1, registros: [] });
+});

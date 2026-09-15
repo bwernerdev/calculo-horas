@@ -1,4 +1,4 @@
-const CACHE_NAME = "banco-horas-v39";
+const CACHE_NAME = "banco-horas-v40";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,7 +7,8 @@ const APP_SHELL = [
   "./assets/js/calculations.js",
   "./assets/js/repository.js",
   "./assets/js/use-cases.js",
-  "./assets/js/supabase-config.js",
+  "./assets/js/runtime-config.js",
+  "./assets/js/monitoring.js",
   "./assets/js/script.js",
   "./manifest.webmanifest",
   "./assets/images/favicon.webp",
@@ -19,7 +20,10 @@ const APP_SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

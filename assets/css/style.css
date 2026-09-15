@@ -165,3 +165,20 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
   input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button { margin:0; -webkit-appearance:none; appearance:none; }
 }
 @media print { body { background:#fff; color:#000; } .topbar,.entry-panel,.toolbar,th:last-child,td:last-child { display:none!important; } .page-shell { width:100%; } .summary-card,.panel { box-shadow:none; border:1px solid #bbb; } .summary-grid { grid-template-columns:repeat(4,1fr); } }
+.update-notice {
+  position:fixed;
+  right:max(1rem,env(safe-area-inset-right));
+  bottom:max(1rem,env(safe-area-inset-bottom));
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  max-width:min(28rem,calc(100vw - 2rem));
+  padding:1rem;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--surface);
+  color:var(--text);
+  box-shadow:0 18px 45px rgba(15,23,42,.22);
+}
+.update-notice[hidden] { display:none; }

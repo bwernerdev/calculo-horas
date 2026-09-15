@@ -21,14 +21,18 @@ O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Sup
 
 Requisitos:
 
-- Node.js 18 ou mais recente, apenas para executar os testes;
+- Node.js 20 ou mais recente;
 - um servidor HTTP local para testar recursos do navegador e o PWA.
 
-Execute a suíte automatizada na raiz do projeto:
+Instale as dependências e execute toda a suíte:
 
 ```bash
-npm test
+npm install
+npx playwright install chromium
+npm run test:all
 ```
+
+`npm test` executa apenas os testes unitários; `npm run test:e2e` executa os testes reais de navegador.
 
 Abrir `index.html` diretamente permite uma inspeção básica, mas um servidor local representa melhor o ambiente publicado.
 
@@ -38,7 +42,8 @@ O deploy de produção é automático: cada `push` na branch `main` inicia uma p
 
 - [Configuração do Supabase](docs/CONFIGURACAO-SUPABASE.md)
 - [Deploy no Cloudflare Pages](docs/DEPLOY-CLOUDFLARE.md)
-- [Migração de segurança, banco e Storage](supabase/security-and-storage.sql)
+- [Ambientes, CI e monitoramento](docs/AMBIENTES-E-MONITORAMENTO.md)
+- [Migrações do Supabase](supabase/migrations/)
 
 A aplicação precisa de conexão com o Supabase para autenticar e sincronizar dados. O Service Worker mantém a interface básica em cache, mas não permite alterar registros offline.
 
@@ -59,4 +64,4 @@ A aplicação precisa de conexão com o Supabase para autenticar e sincronizar d
 └── tests/                       Testes automatizados
 ```
 
-`assets/js/supabase-config.js` contém somente a URL e a chave publicável do projeto. A segurança dos dados depende das políticas RLS; nunca coloque uma chave `service_role` no código do navegador.
+`assets/js/runtime-config.js` contém somente a URL, a chave publicável e os metadados do ambiente. A segurança dos dados depende das políticas RLS; nunca coloque uma chave `service_role` no código do navegador.

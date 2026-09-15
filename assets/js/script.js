@@ -13,9 +13,24 @@ const MAX_BACKUP_RECORDS = 5000;
 const MAX_BACKUP_PHOTO_LENGTH = 2_790_000;
 const authLinkType = new URLSearchParams(window.location.hash.slice(1)).get("type") || new URLSearchParams(window.location.search).get("type");
 let requiresPasswordSetup = authLinkType === "invite" || authLinkType === "recovery";
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  const configurationMessage = document.querySelector("#auth-message");
+  configurationMessage.textContent = "Este ambiente ainda não possui um Supabase de teste configurado.";
+  configurationMessage.hidden = false;
+  throw new Error("Configuração do Supabase ausente para este ambiente.");
+}
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
 });
+if (window.APP_CONFIG?.errorReporting && window.AppMonitor) {
+  AppMonitor.setReporter(async (report) => {
+    const { error } = await supabaseClient.from("client_errors").upsert(report, { onConflict:"event_id", ignoreDuplicates:true });
+    if (error) throw error;
+  });
+}
+function captureError(error, source, context = {}) {
+  window.AppMonitor?.capture(error, { source, ...context });
+}
 let repository;
 let useCases;
 let records = [];
@@ -82,7 +97,7 @@ async function syncManualBalance() {
   const manualBalances={ ...(settings.manualBalances || {}), [month]:{ positive:parseManualDuration($("#manual-positive").value), negative:parseManualDuration($("#manual-negative").value) } };
   settings={ ...settings, manualBalances };
   try { await saveSettingsQueued(settings); }
-  catch { showToast("Saldo salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
+  catch (error) { captureError(error,"manual-balance-sync"); showToast("Saldo salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
 }
 function updateManualBalance(monthlyBalance) {
   const positive=parseManualDuration($("#manual-positive").value), negative=parseManualDuration($("#manual-negative").value);
@@ -205,6 +220,7 @@ form.addEventListener("submit", async (event) => {
     records=result.records;
     resetForm(); render(); showToast(result.editing ? "Registro atualizado com sucesso." : "Jornada registrada com sucesso.");
   } catch (error) {
+    captureError(error,"record-save");
     const message=error instanceof Error ? error.message : "Não há espaço suficiente no navegador para salvar esta foto. Tente remover fotos antigas.";
     showError(message);
   } finally { submit.disabled=false; if (submit.isConnected) submit.textContent=$("#editing-id").value ? originalText : "Adicionar registro"; }
@@ -227,7 +243,7 @@ $("#records-body").addEventListener("click", async(event) => {
   if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) {
     const button=event.target; button.disabled=true;
     try { records=await useCases.deleteRecord(remove,records); render(); showToast("Registro excluído."); }
-    catch (error) { button.disabled=false; showToast(error.message || "Não foi possível excluir o registro.","error"); }
+    catch (error) { captureError(error,"record-delete"); button.disabled=false; showToast(error.message || "Não foi possível excluir o registro.","error"); }
   }
 });
 $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
@@ -236,7 +252,7 @@ $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$
 $("#settings-form").addEventListener("submit",async (event)=>{
   event.preventDefault(); const submit=event.submitter; submit.disabled=true;
   try { settings=await saveSettingsQueued({ ...settings, target:toMinutes($("#daily-target").value) }); $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva."); }
-  catch (error) { showToast(error.message || "Não foi possível salvar a configuração.","error"); }
+  catch (error) { captureError(error,"settings-save"); showToast(error.message || "Não foi possível salvar a configuração.","error"); }
   finally { submit.disabled=false; }
 });
 $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
@@ -264,7 +280,7 @@ $("#theme-toggle").addEventListener("click",async ()=>{
   applyTheme();
   try {
     if (useCases) settings=await saveSettingsQueued(settings);
-  } catch (error) { showToast("Tema salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
+  } catch (error) { captureError(error,"theme-sync"); showToast("Tema salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
   finally { $("#theme-toggle").disabled=false; }
 });
 $("#export-csv").addEventListener("click",()=>{
@@ -387,7 +403,7 @@ $("#export-json").addEventListener("click",async (event)=>{
     registros:backupRecords
   };
   downloadFile(JSON.stringify(backup,null,2),`backup-horas-${localDate()}.json`,"application/json;charset=utf-8");
-  } catch { showToast("Não foi possível incluir as fotos no backup.","error"); }
+  } catch (error) { captureError(error,"backup-export"); showToast("Não foi possível incluir as fotos no backup.","error"); }
   finally { button.disabled = false; button.textContent = "Baixar backup"; }
 });
 
@@ -414,8 +430,9 @@ $("#json-file").addEventListener("change",async(event)=>{
     $("#daily-target").value=toClock(settings.target); applyTheme(); loadManualBalance(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
   } catch (error) {
+    captureError(error,"backup-import");
     const message=String(error?.message || "Backup inválido");
-    const guidance=/restore_user_backup|schema cache/i.test(message) ? "Atualize o banco executando security-and-storage.sql no Supabase." : message;
+    const guidance=/restore_user_backup|schema cache/i.test(message) ? "Atualize o banco aplicando as migrações pendentes do Supabase." : message;
     showToast(`Não foi possível importar: ${guidance}`,"error");
   }
   finally { event.target.value=""; importButton.disabled=false; importButton.textContent="Importar backup"; }
@@ -502,7 +519,9 @@ async function loadApplication(user) {
     $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target); loadManualBalance();
     $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
     $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
+    window.AppMonitor?.flush();
   } catch (error) {
+    captureError(error,"application-load");
     if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
     showAuthentication(); setAuthMessage(`Não foi possível carregar seus dados: ${error.message}`);
   }
@@ -665,5 +684,36 @@ installButton.addEventListener("click",async()=>{
 window.addEventListener("appinstalled",()=>{ deferredInstallPrompt=null; installButton.hidden=true; });
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch((error)=>console.error("Falha ao ativar o modo offline:",error)));
+  window.addEventListener("load",async()=>{
+    const hadController=Boolean(navigator.serviceWorker.controller);
+    let reloading=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{
+      if (hadController && !reloading) { reloading=true; window.location.reload(); }
+    });
+    try {
+      const registration=await navigator.serviceWorker.register("./service-worker.js");
+      const notice=$("#update-notice");
+      const updateButton=$("#update-app");
+      const offerUpdate=()=>{
+        if (!navigator.serviceWorker.controller || !registration.waiting) return;
+        notice.hidden=false;
+        updateButton.onclick=()=>{
+          updateButton.disabled=true;
+          updateButton.textContent="Atualizando...";
+          registration.waiting.postMessage({ type:"SKIP_WAITING" });
+        };
+      };
+      if (registration.waiting) offerUpdate();
+      registration.addEventListener("updatefound",()=>{
+        const installing=registration.installing;
+        installing?.addEventListener("statechange",()=>{
+          if (installing.state==="installed") offerUpdate();
+        });
+      });
+      registration.update().catch((error)=>captureError(error,"service-worker-update"));
+    } catch (error) {
+      captureError(error,"service-worker-register");
+      console.error("Falha ao ativar o modo offline:",error);
+    }
+  });
 }

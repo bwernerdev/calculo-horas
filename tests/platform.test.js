@@ -32,7 +32,7 @@ test("dimensiona a interface para viewport e áreas seguras mobile", () => {
 test("mantém manifesto e arquivos essenciais no cache offline", () => {
   assert.equal(manifest.display, "standalone");
   assert.deepEqual(manifest.icons.map((icon) => icon.sizes), ["192x192", "512x512"]);
-  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/calculations.js", "assets/js/script.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
+  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/runtime-config.js", "assets/js/monitoring.js", "assets/js/calculations.js", "assets/js/script.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
 });
 
 test("simula saldo manual positivo e negativo por usuário e mês", () => {
@@ -68,4 +68,13 @@ test("oferece instalação específica para Android e iPhone", () => {
   assert.match(script, /beforeinstallprompt/);
   assert.match(script, /iphone\|ipad\|ipod/i);
   assert.match(script, /Adicionar à Tela de Início/);
+});
+
+test("avisa antes de ativar uma nova versão do PWA", () => {
+  assert.match(html, /id="update-notice"[^>]*hidden/);
+  assert.match(html, /id="update-app"/);
+  assert.match(worker, /SKIP_WAITING/);
+  assert.match(script, /registration\.waiting\.postMessage/);
+  assert.match(script, /controllerchange/);
+  assert.doesNotMatch(worker, /event\.waitUntil[^;]+skipWaiting/s);
 });

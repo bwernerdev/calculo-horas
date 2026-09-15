@@ -8,11 +8,12 @@ const worker = fs.readFileSync("service-worker.js", "utf8");
 test("define cabecalhos de seguranca compativeis com Supabase", () => {
   assert.match(headers, /Content-Security-Policy:/);
   assert.match(headers, /Permissions-Policy:/);
-  assert.match(headers, /https:\/\/kainqngxsiawowbaslhi\.supabase\.co/);
+  assert.match(headers, /https:\/\/\*\.supabase\.co/);
+  assert.match(headers, /wss:\/\/\*\.supabase\.co/);
   assert.doesNotMatch(headers, /challenges\.cloudflare\.com/);
   assert.match(headers, /frame-ancestors 'none'/);
 });
 
 test("forca renovacao do cache para a publicacao corrigida", () => {
-  assert.match(worker, /banco-horas-v39/);
+  assert.match(worker, /banco-horas-v40/);
 });

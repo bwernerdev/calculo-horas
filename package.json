@@ -1,8 +1,19 @@
 {
   "name": "calculo-horas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e",
+    "serve": "node scripts/serve-static.mjs",
+    "build:config": "node scripts/generate-runtime-config.mjs",
+    "healthcheck": "node scripts/healthcheck.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

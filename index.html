@@ -13,6 +13,8 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <script src="assets/js/theme-init.js"></script>
+  <script src="assets/js/runtime-config.js"></script>
+  <script src="assets/js/monitoring.js"></script>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -223,8 +225,11 @@
     <div class="camera-dialog__actions"><button id="capture-photo" class="button button--primary" type="button">Capturar foto</button></div>
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <aside id="update-notice" class="update-notice" role="status" aria-live="polite" hidden>
+    <span>Uma nova versão está disponível.</span>
+    <button id="update-app" class="button button--primary" type="button">Atualizar agora</button>
+  </aside>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="assets/js/supabase-config.js"></script>
   <script src="assets/js/calculations.js"></script>
   <script src="assets/js/repository.js"></script>
   <script src="assets/js/use-cases.js"></script>

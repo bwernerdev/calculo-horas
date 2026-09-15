@@ -7,6 +7,7 @@ const documentationFiles = [
   "README.md",
   "docs/CONFIGURACAO-SUPABASE.md",
   "docs/DEPLOY-CLOUDFLARE.md",
+  "docs/AMBIENTES-E-MONITORAMENTO.md",
 ];
 
 test("mantém válidos os links locais da documentação", () => {

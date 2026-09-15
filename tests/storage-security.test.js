@@ -3,7 +3,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const repository = fs.readFileSync("assets/js/repository.js", "utf8");
-const sql = fs.readFileSync("supabase/security-and-storage.sql", "utf8");
+const sql = fs.readFileSync("supabase/migrations/20260915000000_initial_schema.sql", "utf8");
+const monitoringSql = fs.readFileSync("supabase/migrations/20260915000100_client_error_monitoring.sql", "utf8");
 
 test("armazena fotos em bucket privado por usuario", () => {
   assert.match(repository, /storage\.from\("point-photos"\)/);
@@ -13,9 +14,19 @@ test("armazena fotos em bucket privado por usuario", () => {
   assert.match(sql, /'point-photos', 'point-photos', false/);
 });
 
+test("registra falhas sanitizadas sem liberar leitura pública", () => {
+  assert.match(monitoringSql, /create table if not exists public\.client_errors/);
+  assert.match(monitoringSql, /enable row level security/);
+  assert.match(monitoringSql, /client_errors_insert_own/);
+  assert.match(monitoringSql, /revoke all on table public\.client_errors from anon/);
+  assert.doesNotMatch(monitoringSql, /for select/i);
+});
+
 test("RLS restringe tabelas e fotos ao usuario autenticado", () => {
   assert.match(sql, /alter table public\.records enable row level security/);
   assert.match(sql, /alter table public\.settings enable row level security/);
+  assert.match(sql, /revoke all on table public\.records from anon/);
+  assert.match(sql, /grant select, insert, update, delete on table public\.settings to authenticated/);
   assert.match(sql, /storage\.foldername\(name\)/);
   assert.match(sql, /auth\.uid\(\)/);
 });

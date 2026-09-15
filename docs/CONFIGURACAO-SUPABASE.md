@@ -1,76 +1,70 @@
 # Configuração do Supabase
 
-Este guia reúne a configuração de banco, Storage e autenticação. Execute a migração antes de publicar uma versão que dependa de alterações no esquema ou nas políticas.
+O banco agora é controlado por migrações numeradas em [`supabase/migrations`](../supabase/migrations/). Novas mudanças devem ser adicionadas em outro arquivo com timestamp; não altere uma migração que já foi aplicada.
 
-## 1. Backup e migração
+## Migrações atuais
 
-1. Exporte um backup JSON pelo aplicativo.
-2. No projeto do Supabase, abra o **SQL Editor** e crie uma consulta.
-3. Copie todo o conteúdo de [`supabase/security-and-storage.sql`](../supabase/security-and-storage.sql).
-4. Execute a consulta e confirme a mensagem `Success. No rows returned`.
+1. [`20260915000000_initial_schema.sql`](../supabase/migrations/20260915000000_initial_schema.sql): tabelas, validações, índices, RLS, Storage e restauração de backup.
+2. [`20260915000100_client_error_monitoring.sql`](../supabase/migrations/20260915000100_client_error_monitoring.sql): armazenamento privado de erros sanitizados do navegador.
 
-O script usa uma transação. Se encontrar registros sem usuário, datas duplicadas ou outros dados incompatíveis, ele interrompe a execução sem aplicar parcialmente as mudanças.
+## Banco de produção já existente
 
-A migração configura:
+A primeira migração corresponde ao SQL de segurança que já foi executado manualmente. Portanto:
 
-- validações e índices das tabelas `records` e `settings`;
-- relacionamentos com `auth.users` e exclusão em cascata;
-- políticas RLS para cada usuário acessar apenas os próprios dados;
-- o campo `settings.balance_adjustments`, usado pelos saldos manuais mensais;
-- o bucket privado `point-photos`, para JPEGs de até 2 MB;
-- a função `restore_user_backup`, que restaura dados e preferências em uma transação.
+1. faça um backup JSON no aplicativo;
+2. execute apenas `20260915000100_client_error_monitoring.sql` no **SQL Editor**;
+3. confirme `Success. No rows returned`;
+4. em **Table Editor**, confirme a tabela `client_errors` com RLS habilitado.
 
-## 2. Verificações após a migração
+Se você adotar o Supabase CLI para esse banco existente, vincule o projeto e marque a migração inicial como aplicada antes de usar `db push`. Confira o estado com `supabase migration list`; não execute `db reset --linked` em produção.
+
+## Novo ambiente local ou de preview
+
+Com Supabase CLI e Docker instalados:
+
+```bash
+supabase start
+supabase db reset
+```
+
+O reset local recria o banco aplicando as migrações na ordem. Para um projeto remoto novo, vincule explicitamente o projeto, revise o plano e aplique com:
+
+```bash
+supabase link --project-ref ID_DO_PROJETO
+supabase db push --dry-run
+supabase db push
+```
+
+Nunca use `--include-seed` nem `db reset --linked` no banco de produção.
+
+## Verificações de segurança
 
 No painel do Supabase:
 
-1. Em **Storage**, confirme que `point-photos` está privado e aceita apenas JPEGs de até 2 MB.
-2. No editor de políticas, confirme que `records`, `settings` e `storage.objects` possuem somente as políticas por usuário criadas pela migração.
-3. Em **Table Editor > settings**, confirme a existência de `balance_adjustments`.
-4. Faça login no site e valide a criação, edição e exclusão de um registro com foto.
+1. confirme que `point-photos` está privado e aceita apenas JPEGs de até 2 MB;
+2. confirme as políticas por usuário de `records`, `settings` e `storage.objects`;
+3. confirme que `client_errors` permite `INSERT` autenticado, mas não possui política pública de leitura;
+4. confirme a coluna `settings.balance_adjustments`;
+5. teste login, criação e exclusão de registro, foto, saldo manual e restauração.
 
-O caminho de cada foto começa com o ID do usuário autenticado. As políticas do bucket validam essa primeira pasta.
+## Autenticação
 
-## 3. URLs de autenticação
-
-Em **Authentication > URL Configuration**, configure:
+Em **Authentication > URL Configuration**:
 
 - **Site URL:** `https://banco-horas-controladoria.pages.dev`
 - **Redirect URL:** `https://banco-horas-controladoria.pages.dev/**`
 
-Essas URLs são usadas na confirmação de e-mail e na recuperação de senha.
+No provedor de e-mail, habilite novos cadastros e confirmação de endereço. Configure senha mínima de 8 caracteres, com uma letra maiúscula e um número. Mantenha o CAPTCHA desativado, pois o aplicativo não envia tokens CAPTCHA, e preserve os limites de requisições do Supabase.
 
-## 4. E-mail e senhas
+## Chaves do navegador
 
-Em **Authentication > Providers > Email**:
-
-- habilite o provedor de e-mail e novos cadastros;
-- mantenha a confirmação de e-mail habilitada para contas públicas.
-
-Em **Authentication > Settings > Password security**:
-
-- defina o mínimo de 8 caracteres;
-- exija ao menos uma letra maiúscula e um número, quando disponível;
-- ative a proteção contra senhas vazadas, quando disponível.
-
-O aplicativo aplica localmente os mesmos requisitos no cadastro e na definição de uma nova senha.
-
-## 5. CAPTCHA e limites
-
-Em **Authentication > Attack Protection** — ou **Bot and Abuse Protection**, conforme a versão do painel — mantenha **Enable CAPTCHA protection** desativado. O aplicativo não envia tokens CAPTCHA.
-
-Mantenha ativos os limites de requisições para cadastro, login e envio de e-mails. O widget antigo do Cloudflare Turnstile pode ser removido, pois não é usado pelo site.
-
-## 6. Chave utilizada pelo navegador
-
-O arquivo [`assets/js/supabase-config.js`](../assets/js/supabase-config.js) deve conter apenas a URL e uma chave publicável (`publishable` ou `anon`). Nunca exponha a chave `service_role`: ela ignora RLS e deve permanecer somente em ambientes seguros de servidor.
+Use somente chaves `publishable` ou `anon`. Nunca exponha `service_role`. Consulte [Ambientes e monitoramento](AMBIENTES-E-MONITORAMENTO.md) para separar as credenciais de produção e preview.
 
 ## Checklist
 
 - [ ] Backup JSON exportado
-- [ ] Migração executada sem erro
+- [ ] Migrações pendentes revisadas e aplicadas
 - [ ] RLS e políticas conferidas
 - [ ] Bucket `point-photos` privado
-- [ ] URLs de autenticação configuradas
-- [ ] Cadastro, login, recuperação e fotos testados
-- [ ] Deploy realizado conforme o [guia do Cloudflare Pages](DEPLOY-CLOUDFLARE.md)
+- [ ] URLs de autenticação configuradas em cada ambiente
+- [ ] Fluxos principais testados
