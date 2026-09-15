@@ -3,6 +3,32 @@
 
 begin;
 
+alter table public.settings
+  add column if not exists balance_adjustments jsonb not null default '{}'::jsonb;
+
+create or replace function public.is_valid_balance_adjustments(value jsonb)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when jsonb_typeof(value) <> 'object' then false
+    else (
+      select count(*) <= 240 and coalesce(bool_and(
+        case
+          when entry.month !~ '^\d{4}-(0[1-9]|1[0-2])$' or jsonb_typeof(entry.balance) <> 'object' then false
+          when not (entry.balance ? 'positive' and entry.balance ? 'negative') then false
+          when (entry.balance->>'positive') !~ '^\d+$' or (entry.balance->>'negative') !~ '^\d+$' then false
+          else (entry.balance->>'positive')::numeric between 0 and 599999
+            and (entry.balance->>'negative')::numeric between 0 and 599999
+        end
+      ), true)
+      from jsonb_each(value) as entry(month, balance)
+    )
+  end;
+$$;
+
 do $$
 begin
   if exists (select 1 from public.records where user_id is null) then
@@ -92,6 +118,10 @@ begin
     alter table public.settings add constraint settings_theme_check
       check (theme in ('light', 'dark')) not valid;
   end if;
+  if not exists (select 1 from pg_constraint where conname = 'settings_balance_adjustments_check' and conrelid = 'public.settings'::regclass) then
+    alter table public.settings add constraint settings_balance_adjustments_check
+      check (public.is_valid_balance_adjustments(balance_adjustments)) not valid;
+  end if;
 end
 $$;
 
@@ -101,6 +131,7 @@ alter table public.records validate constraint records_photos_object_check;
 alter table public.records validate constraint records_work_times_check;
 alter table public.settings validate constraint settings_target_minutes_check;
 alter table public.settings validate constraint settings_theme_check;
+alter table public.settings validate constraint settings_balance_adjustments_check;
 
 create unique index if not exists records_id_uidx on public.records (id);
 create unique index if not exists records_user_date_uidx on public.records (user_id, date);
@@ -153,10 +184,12 @@ create policy "point_photos_delete_own" on storage.objects for delete to authent
 using (bucket_id = 'point-photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 -- Substitui registros e configurações em uma única transação durante a restauração.
+drop function if exists public.restore_user_backup(jsonb, integer, text);
 create or replace function public.restore_user_backup(
   p_records jsonb,
   p_target_minutes integer,
-  p_theme text
+  p_theme text,
+  p_balance_adjustments jsonb
 )
 returns void
 language plpgsql
@@ -175,6 +208,9 @@ begin
   end if;
   if p_target_minutes not between 1 and 600 or p_theme not in ('light', 'dark') then
     raise exception 'Configurações inválidas.';
+  end if;
+  if not public.is_valid_balance_adjustments(p_balance_adjustments) then
+    raise exception 'Saldos manuais inválidos.';
   end if;
 
   delete from public.records where user_id = (select auth.uid());
@@ -196,16 +232,17 @@ begin
   from jsonb_array_elements(p_records) as source(item)
   cross join lateral jsonb_populate_record(null::public.records, source.item) as parsed;
 
-  insert into public.settings (user_id, target_minutes, theme, updated_at)
-  values ((select auth.uid()), p_target_minutes, p_theme, now())
+  insert into public.settings (user_id, target_minutes, theme, balance_adjustments, updated_at)
+  values ((select auth.uid()), p_target_minutes, p_theme, p_balance_adjustments, now())
   on conflict (user_id) do update set
     target_minutes = excluded.target_minutes,
     theme = excluded.theme,
+    balance_adjustments = excluded.balance_adjustments,
     updated_at = excluded.updated_at;
 end
 $$;
 
-revoke all on function public.restore_user_backup(jsonb, integer, text) from public;
-grant execute on function public.restore_user_backup(jsonb, integer, text) to authenticated;
+revoke all on function public.restore_user_backup(jsonb, integer, text, jsonb) from public;
+grant execute on function public.restore_user_backup(jsonb, integer, text, jsonb) to authenticated;
 
 commit;

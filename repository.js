@@ -51,6 +51,7 @@
     const objectUrls = new Set();
     const bucket = client.storage.from("point-photos");
     const throwIfError = (error) => { if (error) throw new Error(error.message); };
+    const missingBalanceColumn = (error) => error && (error.code === "42703" || /balance_adjustments/i.test(error.message || ""));
     const emptyPhotos = () => ({ entrada: "", saida: "" });
     const isInlinePhoto = (value) => typeof value === "string" && value.startsWith("data:image/");
     const isDisplayUrl = (value) => typeof value === "string" && /^(?:https?:|blob:)/.test(value);
@@ -180,16 +181,22 @@
       },
 
       async getSettings() {
-        const { data, error } = await client.from("settings").select("target_minutes, theme").maybeSingle();
+        let { data, error } = await client.from("settings").select("target_minutes, theme, balance_adjustments").maybeSingle();
+        if (missingBalanceColumn(error)) ({ data, error } = await client.from("settings").select("target_minutes, theme").maybeSingle());
         throwIfError(error);
-        return data ? { target: data.target_minutes, theme: data.theme } : {};
+        return data ? { target: data.target_minutes, theme: data.theme, manualBalances:data.balance_adjustments || {} } : {};
       },
 
       async saveSettings(settings) {
-        const { error } = await client.from("settings").upsert(
-          { user_id: userId, target_minutes: settings.target, theme: settings.theme, updated_at: new Date().toISOString() },
+        const row={ user_id:userId, target_minutes:settings.target, theme:settings.theme, balance_adjustments:settings.manualBalances || {}, updated_at:new Date().toISOString() };
+        let { error } = await client.from("settings").upsert(
+          row,
           { onConflict: "user_id" }
         );
+        if (missingBalanceColumn(error)) ({ error } = await client.from("settings").upsert(
+          { user_id:row.user_id, target_minutes:row.target_minutes, theme:row.theme, updated_at:row.updated_at },
+          { onConflict:"user_id" }
+        ));
         throwIfError(error);
       },
 
@@ -202,11 +209,17 @@
           throw error;
         }
         const rows = records.map((record, index) => toRow(record, stages[index].stored));
-        const { error } = await client.rpc("restore_user_backup", {
+        let { error } = await client.rpc("restore_user_backup", {
           p_records: rows,
           p_target_minutes: settings.target,
-          p_theme: settings.theme
+          p_theme: settings.theme,
+          p_balance_adjustments: settings.manualBalances || {}
         });
+        if (error && /p_balance_adjustments|schema cache|function.*restore_user_backup/i.test(error.message || "")) ({ error } = await client.rpc("restore_user_backup", {
+          p_records:rows,
+          p_target_minutes:settings.target,
+          p_theme:settings.theme
+        }));
         if (error) {
           await cleanupStaged(stages);
           throwIfError(error);

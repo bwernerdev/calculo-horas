@@ -11,6 +11,8 @@ test("backup valida calendário, relógio, volume e fotos antes da restauração
   assert.match(script, /MAX_BACKUP_FILE_BYTES/);
   assert.match(script, /MAX_BACKUP_RECORDS/);
   assert.match(script, /MAX_BACKUP_PHOTO_LENGTH/);
+  assert.match(script, /saldosManuais:settings\.manualBalances/);
+  assert.match(script, /Os saldos manuais do backup são inválidos/);
   assert.match(script, /worked<0 \|\| worked>MAX_DAILY_WORK_MINUTES/);
 });
 

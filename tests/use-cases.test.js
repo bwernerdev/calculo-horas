@@ -40,3 +40,12 @@ test("caso de uso rejeita meta diária fora do limite", async () => {
   const useCases = createHoursUseCases({ calculator, repository });
   await assert.rejects(useCases.saveSettings({ target:601, theme:"light" }), /entre 1 minuto e 10 horas/);
 });
+
+test("caso de uso valida e recupera saldos manuais mensais", async () => {
+  const repository = createRepository();
+  repository.getSettings = async () => ({ target:528, theme:"dark", manualBalances:{ "2026-08":{ positive:120, negative:45 } } });
+  const useCases = createHoursUseCases({ calculator, repository });
+  const settings = await useCases.getSettings();
+  assert.deepEqual(settings.manualBalances,{ "2026-08":{ positive:120, negative:45 } });
+  await assert.rejects(useCases.saveSettings({ ...settings, manualBalances:{ agosto:{ positive:10, negative:0 } } }),/saldos manuais/);
+});

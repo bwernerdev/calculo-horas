@@ -55,8 +55,26 @@ test("repositório chama a função transacional ao restaurar backup", async () 
   };
   const repository=createSupabaseRepository(client,"user-1");
   const records=[{ id:"record-1", date:"2026-08-17", type:"folga", start:"", end:"", break:0, photos:{} }];
-  await repository.restoreBackup(records,{ target:528,theme:"light" });
+  await repository.restoreBackup(records,{ target:528,theme:"light",manualBalances:{ "2026-08":{ positive:90,negative:30 } } });
   assert.equal(rpcCall.name,"restore_user_backup");
   assert.equal(rpcCall.parameters.p_records.length,1);
   assert.equal(rpcCall.parameters.p_target_minutes,528);
+  assert.deepEqual(rpcCall.parameters.p_balance_adjustments,{ "2026-08":{ positive:90,negative:30 } });
+});
+
+test("repositório Supabase sincroniza os saldos manuais nas configurações", async () => {
+  let selectedColumns, savedRow;
+  const client={
+    storage:{ from:()=>({}) },
+    from:()=>({
+      select:(columns)=>{ selectedColumns=columns; return { maybeSingle:async()=>({ data:{ target_minutes:528,theme:"dark",balance_adjustments:{ "2026-09":{ positive:75,negative:15 } } },error:null }) }; },
+      upsert:async(row)=>{ savedRow=row; return { error:null }; }
+    })
+  };
+  const repository=createSupabaseRepository(client,"user-1");
+  const settings=await repository.getSettings();
+  assert.match(selectedColumns,/balance_adjustments/);
+  assert.deepEqual(settings.manualBalances,{ "2026-09":{ positive:75,negative:15 } });
+  await repository.saveSettings(settings);
+  assert.deepEqual(savedRow.balance_adjustments,settings.manualBalances);
 });

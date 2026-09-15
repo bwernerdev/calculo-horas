@@ -28,5 +28,9 @@ test("aplica integridade, índices, limites e restauração transacional", () =>
   assert.match(sql, /file_size_limit/);
   assert.match(sql, /allowed_mime_types/);
   assert.match(sql, /function public\.restore_user_backup/);
+  assert.match(sql, /settings_balance_adjustments_check/);
+  assert.match(sql, /p_balance_adjustments jsonb/);
+  assert.match(sql, /from jsonb_each\(value\)/);
+  assert.doesNotMatch(sql, /jsonb_object_length/);
   assert.match(repository, /client\.rpc\("restore_user_backup"/);
 });

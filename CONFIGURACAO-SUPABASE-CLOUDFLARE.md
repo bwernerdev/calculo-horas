@@ -13,7 +13,7 @@ Siga esta ordem antes de publicar a versão nova.
 7. Em **Storage**, confirme que existe o bucket privado `point-photos`, limitado a imagens JPEG de até 2 MB.
 8. Em **Authentication > Policies**, confirme que `records` e `settings` não possuem políticas antigas ou públicas além das políticas por usuário criadas pelo script.
 
-O SQL também cria índices, relacionamentos com `auth.users`, validações de integridade e a função `restore_user_backup`. Essa função é obrigatória para que a importação substitua registros e configurações em uma única transação, sem apagar o backup anterior em caso de falha.
+O SQL também cria índices, relacionamentos com `auth.users`, validações de integridade, o campo `settings.balance_adjustments` e a função `restore_user_backup`. O novo campo sincroniza os saldos manuais mensais entre dispositivos. A função é obrigatória para que a importação substitua registros, configurações e esses saldos em uma única transação, sem apagar o backup anterior em caso de falha.
 
 O caminho de cada foto começa com o ID do usuário. As políticas do bucket validam essa primeira pasta.
 

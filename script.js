@@ -19,13 +19,15 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_
 let repository;
 let useCases;
 let records = [];
-let settings = { target: 528, break: FIXED_BREAK_MINUTES, theme: localStorage.getItem(THEME_PREFERENCE_KEY) === "dark" ? "dark" : "light" };
+let settings = { target:528, break:FIXED_BREAK_MINUTES, theme:localStorage.getItem(THEME_PREFERENCE_KEY) === "dark" ? "dark" : "light", manualBalances:{} };
 let pendingPhotos = { entrada:"", saida:"" };
 let capturedPhoto = "";
 let cameraStream;
 let loadedUserId = "";
 let applicationLoad;
 let applicationGeneration = 0;
+let manualBalanceSaveTimer;
+let settingsSaveChain=Promise.resolve();
 
 const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || "";
 $("#auth-email").value = rememberedEmail;
@@ -57,11 +59,25 @@ function parseManualDuration(value) {
   return match ? Number(match[1])*60+Number(match[2]) : 0;
 }
 function manualBalanceStorageKey() { return `${MANUAL_BALANCE_KEY}:${loadedUserId || "anonymous"}:${$("#month-filter").value || "current"}`; }
+function saveSettingsQueued(nextSettings) {
+  const operation=settingsSaveChain.catch(()=>{}).then(()=>useCases.saveSettings(nextSettings));
+  settingsSaveChain=operation;
+  return operation;
+}
+function manualDurationInput(minutes) { return minutes ? `${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}` : ""; }
 function loadManualBalance() {
+  const remote=settings.manualBalances?.[$("#month-filter").value];
   let saved={};
   try { saved=JSON.parse(localStorage.getItem(manualBalanceStorageKey()) || "{}"); } catch {}
-  $("#manual-positive").value=typeof saved.positive==="string" ? saved.positive : "";
-  $("#manual-negative").value=typeof saved.negative==="string" ? saved.negative : "";
+  $("#manual-positive").value=remote ? manualDurationInput(remote.positive) : typeof saved.positive==="string" ? saved.positive : "";
+  $("#manual-negative").value=remote ? manualDurationInput(remote.negative) : typeof saved.negative==="string" ? saved.negative : "";
+}
+async function syncManualBalance() {
+  const month=$("#month-filter").value;
+  const manualBalances={ ...(settings.manualBalances || {}), [month]:{ positive:parseManualDuration($("#manual-positive").value), negative:parseManualDuration($("#manual-negative").value) } };
+  settings={ ...settings, manualBalances };
+  try { await saveSettingsQueued(settings); }
+  catch { showToast("Saldo salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
 }
 function updateManualBalance(monthlyBalance) {
   const positive=parseManualDuration($("#manual-positive").value), negative=parseManualDuration($("#manual-negative").value);
@@ -196,7 +212,7 @@ $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
 $("#settings-form").addEventListener("submit",async (event)=>{
   event.preventDefault(); const submit=event.submitter; submit.disabled=true;
-  try { settings=await useCases.saveSettings({ ...settings, target:toMinutes($("#daily-target").value) }); $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva."); }
+  try { settings=await saveSettingsQueued({ ...settings, target:toMinutes($("#daily-target").value) }); $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva."); }
   catch (error) { showToast(error.message || "Não foi possível salvar a configuração.","error"); }
   finally { submit.disabled=false; }
 });
@@ -206,6 +222,7 @@ for (const input of [$("#manual-positive"),$("#manual-negative")]) {
   input.addEventListener("input",()=>{
     localStorage.setItem(manualBalanceStorageKey(),JSON.stringify({ positive:$("#manual-positive").value, negative:$("#manual-negative").value }));
     updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance);
+    clearTimeout(manualBalanceSaveTimer); manualBalanceSaveTimer=setTimeout(syncManualBalance,700);
   });
   input.addEventListener("blur",()=>{ if (input.value && !/^(\d{1,4}):([0-5]\d)$/.test(input.value.trim())) showToast("Use horas e minutos no formato 12:30.","error"); });
 }
@@ -222,7 +239,7 @@ $("#theme-toggle").addEventListener("click",async ()=>{
   settings={ ...settings, theme };
   applyTheme();
   try {
-    if (useCases) settings=await useCases.saveSettings(settings);
+    if (useCases) settings=await saveSettingsQueued(settings);
   } catch (error) { showToast("Tema salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
   finally { $("#theme-toggle").disabled=false; }
 });
@@ -342,7 +359,7 @@ $("#export-json").addEventListener("click",async (event)=>{
   const backup={
     versao:1,
     exportadoEm:new Date().toISOString(),
-    configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:settings.theme },
+    configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:settings.theme, saldosManuais:settings.manualBalances || {} },
     registros:backupRecords
   };
   downloadFile(JSON.stringify(backup,null,2),`backup-horas-${localDate()}.json`,"application/json;charset=utf-8");
@@ -365,9 +382,12 @@ $("#json-file").addEventListener("change",async(event)=>{
     if (new Set(imported.map((item)=>item.id)).size!==imported.length || new Set(imported.map((item)=>item.date)).size!==imported.length) throw new Error("registros duplicados");
     if (!await requestConfirmation(`Restaurar ${imported.length} registro(s)? Os dados atuais serão substituídos.`)) return;
     importButton.textContent="Restaurando...";
-    const nextSettings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light" };
+    const manualBalances=config.saldosManuais || {};
+    if (!manualBalances || typeof manualBalances!=="object" || Array.isArray(manualBalances) || Object.keys(manualBalances).length>240 || Object.entries(manualBalances).some(([month,balance])=>!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(month) || !Number.isInteger(balance?.positive) || balance.positive<0 || balance.positive>599999 || !Number.isInteger(balance?.negative) || balance.negative<0 || balance.negative>599999)) throw new Error("Os saldos manuais do backup são inválidos.");
+    const nextSettings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light", manualBalances };
     records=await repository.restoreBackup(imported,nextSettings); settings=nextSettings;
-    $("#daily-target").value=toClock(settings.target); applyTheme(); resetForm(); render();
+    for (const [month,balance] of Object.entries(manualBalances)) localStorage.setItem(`${MANUAL_BALANCE_KEY}:${loadedUserId}:${month}`,JSON.stringify({ positive:manualDurationInput(balance.positive), negative:manualDurationInput(balance.negative) }));
+    $("#daily-target").value=toClock(settings.target); applyTheme(); loadManualBalance(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
   } catch (error) {
     const message=String(error?.message || "Backup inválido");
