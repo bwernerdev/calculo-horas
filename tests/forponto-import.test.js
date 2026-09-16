@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseRows } = require("../assets/js/forponto-import.js");
+const { parseRows, parsePdfPages } = require("../assets/js/forponto-import.js");
 
 test("separa blocos com as mesmas datas e calcula o intervalo real", () => {
   const blocks = parseRows([
@@ -63,4 +63,24 @@ test("aceita intervalo diferente de 60 minutos e feriado explícito", () => {
   ]);
   assert.equal(block.days[0].record.type, "feriado");
   assert.equal(block.days[1].record.break, 45);
+});
+
+test("PDF usa as mesmas regras do XLSX e ignora páginas de resumo repetidas", () => {
+  const item=(str,x,y)=>({ str, transform:[1,0,0,1,x,y] });
+  const detailed=[
+    item("16/08/2026 Dom-Folg",39.8,487.6),
+    item("17/08/2026 Seg-Norm",39.8,475.6),item("07:41",196.8,475.6),item("11:30",226,475.6),item("12:30",255.1,475.6),item("16:19",284.3,475.6),
+    item("19/08/2026 Qua-Norm",39.8,463.6),item("08:02",196.8,463.6),item("12:24",226,463.6),item("-05:20",607.5,463.6),
+    item("03/09/2026 Qui-Norm",39.8,451.6),item("COMPENSA DIA",217,451.6),item("-08:00",607.5,451.6),
+    item("05/09/2026 Sáb-Norm",39.8,439.6),item("08:00",196.8,439.6),item("12:17",226,439.6),item("00:17",607.5,439.6),
+    item("06/09/2026 Dom-Norm",39.8,427.6),item("08:00",196.8,427.6),item("12:00",226,427.6),item("13:00",255.1,427.6)
+  ];
+  const summary=[item("16/08/2026 Dom",39.8,487.6),item("17/08/2026 Seg",39.8,475.6),item("-05:20",607.5,475.6)];
+  const [block]=parsePdfPages([{ items:detailed,width:792 },{ items:summary,width:792 }]);
+  assert.equal(block.days.length,6);
+  assert.deepEqual(block.days.map((day)=>day.status),["ready","ready","ready","ready","ready","skipped"]);
+  assert.equal(block.days[1].record.break,60);
+  assert.equal(block.days[2].record.importData.officialBalanceMinutes,-320);
+  assert.equal(block.days[3].record.type,"compensacao");
+  assert.equal(block.days[4].record.importData.officialBalanceMinutes,17);
 });

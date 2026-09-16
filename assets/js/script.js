@@ -610,7 +610,7 @@ $("#forponto-file").addEventListener("change",async(event)=>{
     $("#forponto-dialog").showModal();
   } catch (error) {
     captureError(error,"forponto-parse");
-    showToast(error.message || "Não foi possível ler o relatório XLSX.","error");
+    showToast(error.message || "Não foi possível ler o relatório XLSX ou PDF.","error");
   } finally { event.target.value=""; button.disabled=false; }
 });
 $("#forponto-confirm").addEventListener("click",async()=>{

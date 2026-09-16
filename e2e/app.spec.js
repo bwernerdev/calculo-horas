@@ -2,6 +2,34 @@ const { test, expect } = require("@playwright/test");
 const fs = require("node:fs");
 const { zipSync, strToU8 } = require("fflate");
 
+function forpontoPdfFixture() {
+  const text=(value,x,y)=>`BT /F1 9 Tf 1 0 0 1 ${x} ${y} Tm (${value}) Tj ET`;
+  const detailed=[
+    text("16/08/2026 Dom-Folg",39.8,487.6),
+    text("17/08/2026 Seg-Norm",39.8,475.6),text("08:00",196.8,475.6),text("12:00",226,475.6),text("12:45",255.1,475.6),text("17:00",284.3,475.6),text("00:30",607.5,475.6),
+    text("18/08/2026 Ter-Norm",39.8,463.6),text("08:00",196.8,463.6),text("12:00",226,463.6),text("-05:20",607.5,463.6),
+    text("19/08/2026 Qua-Norm",39.8,451.6),text("COMPENSA DIA",217,451.6),text("-08:00",607.5,451.6),
+    text("15/09/2026 Ter-Norm",39.8,439.6),text("08:00",196.8,439.6),text("12:00",226,439.6),text("13:00",255.1,439.6),text("17:48",284.3,439.6)
+  ].join("\n");
+  const summary=[text("16/08/2026 Dom",39.8,487.6),text("17/08/2026 Seg",39.8,475.6)].join("\n");
+  const objects=[];
+  objects[1]="<< /Type /Catalog /Pages 2 0 R >>";
+  objects[2]="<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>";
+  objects[3]="<< /Type /Page /Parent 2 0 R /MediaBox [0 0 792 612] /Resources << /Font << /F1 7 0 R >> >> /Contents 4 0 R >>";
+  objects[4]=`<< /Length ${Buffer.byteLength(detailed)} >>\nstream\n${detailed}\nendstream`;
+  objects[5]="<< /Type /Page /Parent 2 0 R /MediaBox [0 0 792 612] /Resources << /Font << /F1 7 0 R >> >> /Contents 6 0 R >>";
+  objects[6]=`<< /Length ${Buffer.byteLength(summary)} >>\nstream\n${summary}\nendstream`;
+  objects[7]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+  let pdf="%PDF-1.4\n";
+  const offsets=[0];
+  for (let id=1;id<objects.length;id++) { offsets[id]=Buffer.byteLength(pdf); pdf+=`${id} 0 obj\n${objects[id]}\nendobj\n`; }
+  const xref=Buffer.byteLength(pdf);
+  pdf+=`xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  for (let id=1;id<objects.length;id++) pdf+=`${String(offsets[id]).padStart(10,"0")} 00000 n \n`;
+  pdf+=`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return Buffer.from(pdf);
+}
+
 const supabaseMock = fs.readFileSync("e2e/supabase-mock.js", "utf8");
 let server;
 
@@ -249,6 +277,29 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
   expect(backup.registros.find((record)=>record.data==="2026-08-19")).toMatchObject({
     tipo:"compensacao", dadosImportacao:{ officialBalanceMinutes:-480 }
   });
+});
+
+test("importa PDF Forponto com as mesmas regras do XLSX", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  const pdf={ name:"forponto.pdf", mimeType:"application/pdf", buffer:forpontoPdfFixture() };
+  await page.locator("#forponto-file").setInputFiles(pdf);
+  await expect(page.locator("#forponto-dialog")).toBeVisible();
+  await page.locator("#forponto-block").selectOption("0");
+  await expect(page.locator("#forponto-summary")).toContainText("5 novo(s)");
+  await expect(page.locator("#forponto-preview-body")).toContainText("2 marcações; saldo final -05:20");
+  await page.locator("#forponto-confirm").click();
+  await expect(page.locator("#history-date-from")).toHaveValue("2026-08-16");
+  await expect(page.locator("#history-date-to")).toHaveValue("2026-09-15");
+  await expect(page.locator("#records-body tr")).toHaveCount(5);
+  await expect(page.locator("#records-body")).toContainText("45 min");
+  await expect(page.locator("#records-body")).toContainText("-8h 00min");
+  await page.locator("#forponto-file").setInputFiles(pdf);
+  await page.locator("#forponto-block").selectOption("0");
+  await expect(page.locator("#forponto-confirm")).toBeDisabled();
+  await page.locator("#forponto-update-existing").check();
+  await expect(page.locator("#forponto-summary")).toContainText("5 para atualizar");
 });
 
 test("aplica automaticamente o período dos registros restaurados de um backup", async ({ page }) => {

@@ -5,6 +5,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createForpontoImporter() {
   const MAX_FILE_BYTES = 5 * 1024 * 1024;
   const MAX_XML_BYTES = 8 * 1024 * 1024;
+  const MAX_PDF_PAGES = 50;
+  const MAX_PDF_ITEMS_PER_PAGE = 10000;
   const clock = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
   const dateCell = /^(\d{2})\/(\d{2})\/(\d{4})\s*(.*)$/;
 
@@ -144,8 +146,58 @@
     });
   }
 
+  function pdfRows(items, width = 792) {
+    const scale=792/width;
+    const positioned=items.filter((item)=>Array.isArray(item.transform) && Number.isFinite(item.transform[4]) && Number.isFinite(item.transform[5]))
+      .map((item)=>({ text:String(item.str || "").trim(), x:item.transform[4]*scale, y:item.transform[5] }));
+    const anchors=positioned.filter((item)=>dateCell.test(item.text) && item.x<180).sort((a,b)=>b.y-a.y);
+    return anchors.map((anchor)=>{
+      const line=positioned.filter((item)=>Math.abs(item.y-anchor.y)<2.5);
+      const label=line.filter((item)=>item!==anchor && item.x>anchor.x && item.x<175).sort((a,b)=>a.x-b.x).map((item)=>item.text).join(" ");
+      const row={ A:anchor.text+(label ? " "+label : ""), F:"", G:"", H:"", I:"", S:"" };
+      const columns=[{ x:196.8,key:"F" },{ x:226,key:"G" },{ x:255.1,key:"H" },{ x:284.3,key:"I" }];
+      for (const item of line) {
+        if (item.x<180 || item.x>310 || (!clock.test(item.text) && !/^COMPENSA DIA$/i.test(item.text))) continue;
+        const nearest=columns.reduce((best,column)=>Math.abs(column.x-item.x)<Math.abs(best.x-item.x) ? column : best);
+        if (Math.abs(nearest.x-item.x)<=18) row[nearest.key]=item.text;
+      }
+      const saldo=line.filter((item)=>item.x>=590).sort((a,b)=>a.x-b.x).map((item)=>item.text).join("");
+      if (/^[+-]?\d{1,3}:[0-5]\d$/.test(saldo)) row.S=saldo;
+      return row;
+    });
+  }
+
+  function parsePdfPages(pages) {
+    const pageRows=pages.map((page)=>pdfRows(page.items,page.width));
+    const detailed=pageRows.filter((rows)=>rows.some((row)=>/\s\S+-\S+/.test(row.A) || [row.F,row.G,row.H,row.I].some(Boolean)));
+    const blocks=parseRows(detailed.flat());
+    if (!blocks.length) throw new Error("Nenhum dia detalhado reconhecido no PDF. Use o relatório Forponto com texto selecionável, não uma digitalização.");
+    return blocks;
+  }
+
+  async function parsePdfFile(file) {
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    if (String.fromCharCode(...bytes.slice(0,5))!=="%PDF-") throw new Error("O arquivo selecionado não é um PDF válido.");
+    const pdfjs=await import(new URL("./assets/js/vendor/pdf.min.mjs",document.baseURI).href);
+    pdfjs.GlobalWorkerOptions.workerSrc=new URL("./assets/js/vendor/pdf.worker.min.mjs",document.baseURI).href;
+    const task=pdfjs.getDocument({ data:bytes, isEvalSupported:false, verbosity:pdfjs.VerbosityLevel.ERRORS });
+    try {
+      const document=await task.promise;
+      if (document.numPages>MAX_PDF_PAGES) throw new Error("O PDF excede o limite de 50 páginas.");
+      const pages=[];
+      for (let number=1;number<=document.numPages;number++) {
+        const page=await document.getPage(number);
+        const content=await page.getTextContent();
+        if (content.items.length>MAX_PDF_ITEMS_PER_PAGE) throw new Error("O PDF contém texto demais para importar com segurança.");
+        pages.push({ items:content.items, width:page.view[2]-page.view[0] });
+      }
+      return parsePdfPages(pages);
+    } finally { await task.destroy(); }
+  }
+
   async function parseFile(file, unzip) {
-    if (!/\.xlsx$/i.test(file.name) || file.size > MAX_FILE_BYTES) throw new Error("Selecione um arquivo XLSX de até 5 MB.");
+    if (!/\.(xlsx|pdf)$/i.test(file.name) || file.size>MAX_FILE_BYTES) throw new Error("Selecione um arquivo XLSX ou PDF do Forponto de até 5 MB.");
+    if (/\.pdf$/i.test(file.name)) return parsePdfFile(file);
     const bytes = new Uint8Array(await file.arrayBuffer());
     const files = unzip(bytes, { filter(entry) {
       if (entry.originalSize > MAX_XML_BYTES) throw new Error("A planilha é grande demais para importação.");
@@ -158,5 +210,5 @@
     return blocks;
   }
 
-  return { parseRows, parseFile };
+  return { parseRows, parsePdfPages, parseFile };
 });
