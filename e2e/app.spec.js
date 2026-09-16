@@ -54,12 +54,13 @@ test("carrega a conta e calcula a simulação pessoal", async ({ page }) => {
   await expect(page.locator("#update-notice")).toBeHidden();
 });
 
-test("no mobile aceita horas inteiras e oferece separador em todos os campos", async ({ page }) => {
+test("no mobile aceita horas inteiras e permite digitar dois-pontos no teclado", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");
   await expect(page.locator("#app-content")).toBeVisible();
-  await expect(page.locator(".time-separator")).toHaveCount(7);
+  await expect(page.locator(".time-entry[inputmode='text']")).toHaveCount(7);
+  await expect(page.locator(".time-separator")).toHaveCount(0);
   await page.locator("#manual-positive").fill("1");
   await expect(page.locator("#simulator-projected-balance")).toContainText("1h 00min");
   await page.locator("#manual-positive").blur();
@@ -77,9 +78,8 @@ test("no mobile aceita horas inteiras e oferece separador em todos os campos", a
   await page.getByRole("button", { name: "Adicionar registro" }).click();
   await expect(page.locator("#records-body")).toContainText("08:30");
   await expect(page.locator("#records-body")).toContainText("17:30");
-  await page.locator("#manual-negative").fill("2");
-  await page.locator("#manual-negative").locator("xpath=..").getByRole("button", { name: /Inserir dois-pontos/ }).click();
-  await expect(page.locator("#manual-negative")).toHaveValue("2:");
+  await page.locator("#manual-negative").fill("2:30");
+  await expect(page.locator("#simulator-projected-balance")).toContainText("-1h 30min");
 });
 
 test("exporta um backup JSON válido", async ({ page }) => {

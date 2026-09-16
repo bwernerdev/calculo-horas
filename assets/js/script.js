@@ -272,14 +272,6 @@ for (const input of [$("#daily-target"),$("#start-time"),$("#end-time"),$("#simu
   input.addEventListener("blur",()=>{ const formatted=normalizeClock(input.value); if (!formatted) { if (input.value.trim()) { input.setCustomValidity("Digite um horário válido, como 8, 830 ou 08:30."); showToast(input.validationMessage,"error"); } return; } input.value=formatted; input.setCustomValidity(""); input.dispatchEvent(new Event("input",{ bubbles:true })); });
   input.addEventListener("input",()=>input.setCustomValidity(""));
 }
-for (const input of document.querySelectorAll(".time-entry")) {
-  const wrapper=document.createElement("span"); wrapper.className="time-entry-control";
-  input.parentNode.insertBefore(wrapper,input); wrapper.append(input);
-  const separator=document.createElement("button"); separator.type="button"; separator.className="time-separator"; separator.textContent=":"; separator.setAttribute("aria-label",`Inserir dois-pontos em ${input.closest("label")?.querySelector("span")?.textContent || "horário"}`);
-  separator.addEventListener("pointerdown",(event)=>event.preventDefault());
-  separator.addEventListener("click",()=>{ const from=input.selectionStart ?? input.value.length, to=input.selectionEnd ?? from; input.value=`${input.value.slice(0,from)}:${input.value.slice(to)}`; input.focus(); input.setSelectionRange(from+1,from+1); input.dispatchEvent(new Event("input",{ bubbles:true })); });
-  wrapper.append(separator);
-}
 form.addEventListener("reset",()=>setTimeout(()=>{
   $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
