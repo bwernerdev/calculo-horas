@@ -5,6 +5,7 @@ const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"F
 const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
 const { toMinutes, toClock, duration, signed } = HoursCalculator;
+const { normalizeClock, parseDuration, formatDuration } = HoursTimeInput;
 const FIXED_BREAK_MINUTES = 60;
 const MAX_DAILY_WORK_MINUTES = 10 * 60;
 const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
@@ -58,21 +59,19 @@ function updateForecast() {
   const visible = $("#day-type").value === "trabalho";
   document.querySelectorAll(".work-field").forEach((field) => field.hidden = !visible);
   $("#exit-forecast").hidden = !visible;
-  if (!visible || !$("#start-time").value) return;
+  const start=normalizeClock($("#start-time").value);
+  if (!visible || !start) { $("#exit-forecast").textContent="Informe um horário de entrada válido."; return; }
   const date=$("#work-date").value, month=date.slice(0,7), editingId=$("#editing-id").value;
   const monthRecords=records.filter((record)=>record.date.startsWith(month) && record.id!==editingId);
   const currentBalance=HoursCalculator.summarize(monthRecords,settings.target).balance;
-  const suggestion=HoursCalculator.suggestExit($("#start-time").value,settings.target,FIXED_BREAK_MINUTES,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
+  const suggestion=HoursCalculator.suggestExit(start,settings.target,FIXED_BREAK_MINUTES,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
   const balanceClass=currentBalance>0 ? "value-positive" : currentBalance<0 ? "value-negative" : "";
   const pending=suggestion.worked===SUGGESTED_DAILY_LIMIT_MINUTES && suggestion.remainingBalance<0 ? `<span class="forecast__warning"><b>Margem preventiva de 15 min aplicada</b> antes do limite de 10h. Saldo restante: <b>${signed(suggestion.remainingBalance)}</b></span>` : "";
   $("#exit-forecast").innerHTML = `<span>Saída-base: <b>${suggestion.baseExit}</b></span><span>Saldo atual: <b class="${balanceClass}">${signed(currentBalance)}</b></span><strong>Saída sugerida: ${suggestion.suggestedExit}</strong>${pending}`;
 }
 
 function filteredRecords() { return records.filter((record) => record.date.startsWith($("#month-filter").value)).sort((a,b) => b.date.localeCompare(a.date)); }
-function parseManualDuration(value) {
-  const match=String(value || "").trim().match(/^(\d{1,4}):([0-5]\d)$/);
-  return match ? Number(match[1])*60+Number(match[2]) : 0;
-}
+function parseManualDuration(value) { return parseDuration(value) ?? 0; }
 function manualBalanceStorageKey() { return `${MANUAL_BALANCE_KEY}:${loadedUserId || "anonymous"}:${$("#month-filter").value || "current"}`; }
 function saveSettingsQueued(nextSettings) {
   const operation=settingsSaveChain.catch(()=>{}).then(()=>useCases.saveSettings(nextSettings));
@@ -93,6 +92,7 @@ function saveManualSimulationLocally() {
   localStorage.setItem(manualBalanceStorageKey(),JSON.stringify({ positive:$("#manual-positive").value, negative:$("#manual-negative").value, start:$("#simulator-start-time").value, end:$("#simulator-end-time").value }));
 }
 async function syncManualBalance() {
+  if (["#manual-positive","#manual-negative"].some((selector)=>$(selector).value.trim() && parseDuration($(selector).value)===null)) return;
   const month=$("#month-filter").value;
   const manualBalances={ ...(settings.manualBalances || {}), [month]:{ positive:parseManualDuration($("#manual-positive").value), negative:parseManualDuration($("#manual-negative").value) } };
   settings={ ...settings, manualBalances };
@@ -106,17 +106,17 @@ function updateManualBalance(monthlyBalance) {
   $("#simulator-adjustment").textContent=signed(adjustment);
   $("#simulator-projected-balance").textContent=signed(projected);
   for (const [element,value] of [[$("#simulator-current-balance"),monthlyBalance],[$("#simulator-adjustment"),adjustment],[$("#simulator-projected-balance"),projected]]) element.className=value>0 ? "value-positive" : value<0 ? "value-negative" : "";
-  const start=$("#simulator-start-time").value, end=$("#simulator-end-time").value;
+  const start=normalizeClock($("#simulator-start-time").value), end=normalizeClock($("#simulator-end-time").value);
   const informedElement=$("#simulator-informed-balance"), suggestedElement=$("#simulator-suggested-exit"), warning=$("#simulator-limit-warning");
   warning.hidden=true; warning.textContent="";
-  if (!isValidClockTime(start)) { informedElement.textContent="—"; informedElement.className=""; suggestedElement.textContent="—"; return; }
+  if (!start) { informedElement.textContent="—"; informedElement.className=""; suggestedElement.textContent="—"; return; }
   const suggestion=HoursCalculator.suggestExit(start,settings.target,FIXED_BREAK_MINUTES,projected,SUGGESTED_DAILY_LIMIT_MINUTES);
   suggestedElement.textContent=suggestion.suggestedExit;
   if (suggestion.worked===SUGGESTED_DAILY_LIMIT_MINUTES && suggestion.remainingBalance<0) {
     warning.textContent=`Margem preventiva de 15 minutos aplicada antes do limite de 10 horas. Ainda restariam ${signed(suggestion.remainingBalance)}.`;
     warning.hidden=false;
   }
-  if (!isValidClockTime(end)) { informedElement.textContent="—"; informedElement.className=""; return; }
+  if (!end) { informedElement.textContent="—"; informedElement.className=""; return; }
   const informed=HoursCalculator.calculate({ type:"trabalho",start,end,break:FIXED_BREAK_MINUTES },settings.target);
   if (informed.worked<0 || informed.worked>MAX_DAILY_WORK_MINUTES) {
     informedElement.textContent="Horário inválido"; informedElement.className="value-negative";
@@ -212,10 +212,11 @@ $("#photo-dialog").addEventListener("close",()=>$("#photo-dialog-image").removeA
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault(); const type=$("#day-type").value;
-  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? $("#start-time").value : "", end:type==="trabalho" ? $("#end-time").value : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photos:{...pendingPhotos} };
+  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? normalizeClock($("#start-time").value) : "", end:type==="trabalho" ? normalizeClock($("#end-time").value) : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photos:{...pendingPhotos} };
   const submit=event.submitter || $("#submit-button"), originalText=submit.textContent;
   submit.disabled=true; submit.textContent="Salvando...";
   try {
+    if (type==="trabalho" && (!record.start || !record.end)) throw new Error("Informe horários válidos entre 00:00 e 23:59.");
     const result=await useCases.saveRecord(record,settings.target,records);
     records=result.records;
     resetForm(); render(); showToast(result.editing ? "Registro atualizado com sucesso." : "Jornada registrada com sucesso.");
@@ -251,7 +252,7 @@ $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
 $("#settings-form").addEventListener("submit",async (event)=>{
   event.preventDefault(); const submit=event.submitter; submit.disabled=true;
-  try { settings=await saveSettingsQueued({ ...settings, target:toMinutes($("#daily-target").value) }); $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva."); }
+  try { const target=normalizeClock($("#daily-target").value); if (!target) throw new Error("Informe uma meta válida, como 8 ou 08:48."); settings=await saveSettingsQueued({ ...settings, target:toMinutes(target) }); $("#daily-target").value=target; $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva."); }
   catch (error) { captureError(error,"settings-save"); showToast(error.message || "Não foi possível salvar a configuração.","error"); }
   finally { submit.disabled=false; }
 });
@@ -259,13 +260,26 @@ $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEve
 $("#month-filter").addEventListener("change",()=>{ loadManualBalance(); render(); }); $("#cancel-edit").addEventListener("click",resetForm);
 for (const input of [$("#manual-positive"),$("#manual-negative")]) {
   input.addEventListener("input",()=>{
+    input.setCustomValidity("");
     saveManualSimulationLocally();
     updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance);
     clearTimeout(manualBalanceSaveTimer); manualBalanceSaveTimer=setTimeout(syncManualBalance,700);
   });
-  input.addEventListener("blur",()=>{ if (input.value && !/^(\d{1,4}):([0-5]\d)$/.test(input.value.trim())) showToast("Use horas e minutos no formato 12:30.","error"); });
+  input.addEventListener("blur",()=>{ if (!input.value.trim()) return; const formatted=formatDuration(input.value); if (formatted===null) { input.setCustomValidity("Digite horas inteiras ou horas:minutos, como 1 ou 1:30."); showToast(input.validationMessage,"error"); return; } input.value=formatted; input.setCustomValidity(""); input.dispatchEvent(new Event("input",{ bubbles:true })); });
 }
 for (const input of [$("#simulator-start-time"),$("#simulator-end-time")]) input.addEventListener("input",()=>{ saveManualSimulationLocally(); updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance); });
+for (const input of [$("#daily-target"),$("#start-time"),$("#end-time"),$("#simulator-start-time"),$("#simulator-end-time")]) {
+  input.addEventListener("blur",()=>{ const formatted=normalizeClock(input.value); if (!formatted) { if (input.value.trim()) { input.setCustomValidity("Digite um horário válido, como 8, 830 ou 08:30."); showToast(input.validationMessage,"error"); } return; } input.value=formatted; input.setCustomValidity(""); input.dispatchEvent(new Event("input",{ bubbles:true })); });
+  input.addEventListener("input",()=>input.setCustomValidity(""));
+}
+for (const input of document.querySelectorAll(".time-entry")) {
+  const wrapper=document.createElement("span"); wrapper.className="time-entry-control";
+  input.parentNode.insertBefore(wrapper,input); wrapper.append(input);
+  const separator=document.createElement("button"); separator.type="button"; separator.className="time-separator"; separator.textContent=":"; separator.setAttribute("aria-label",`Inserir dois-pontos em ${input.closest("label")?.querySelector("span")?.textContent || "horário"}`);
+  separator.addEventListener("pointerdown",(event)=>event.preventDefault());
+  separator.addEventListener("click",()=>{ const from=input.selectionStart ?? input.value.length, to=input.selectionEnd ?? from; input.value=`${input.value.slice(0,from)}:${input.value.slice(to)}`; input.focus(); input.setSelectionRange(from+1,from+1); input.dispatchEvent(new Event("input",{ bubbles:true })); });
+  wrapper.append(separator);
+}
 form.addEventListener("reset",()=>setTimeout(()=>{
   $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";

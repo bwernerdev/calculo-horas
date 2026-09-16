@@ -15,6 +15,7 @@
   <script src="assets/js/theme-init.js"></script>
   <script src="assets/js/runtime-config.js"></script>
   <script src="assets/js/monitoring.js"></script>
+  <script src="assets/js/time-input.js"></script>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -103,7 +104,7 @@
       </div>
 
       <form id="settings-form" class="settings" hidden>
-        <label class="field"><span>Meta diária</span><input id="daily-target" type="time" value="08:48" required></label>
+        <label class="field"><span>Meta diária</span><input id="daily-target" class="time-entry" type="text" inputmode="numeric" maxlength="5" placeholder="08:48" value="08:48" required></label>
         <button class="button button--secondary" type="submit">Salvar configuração</button>
       </form>
 
@@ -112,8 +113,8 @@
         <div class="form-grid">
           <label class="field"><span>Data</span><input id="work-date" type="date" required></label>
           <label class="field"><span>Tipo de dia</span><select id="day-type"><option value="trabalho">Dia trabalhado</option><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="ferias">Férias</option><option value="falta">Falta</option></select></label>
-          <label class="field work-field"><span>Entrada</span><input id="start-time" type="time" value="08:00"></label>
-          <label class="field work-field"><span>Saída</span><input id="end-time" type="time" value="17:48"></label>
+          <label class="field work-field"><span>Entrada</span><input id="start-time" class="time-entry" type="text" inputmode="numeric" maxlength="5" placeholder="08:00" value="08:00"></label>
+          <label class="field work-field"><span>Saída</span><input id="end-time" class="time-entry" type="text" inputmode="numeric" maxlength="5" placeholder="17:48" value="17:48"></label>
           <label class="field work-field"><span>Intervalo fixo (min)</span><input id="break-time" type="number" value="60" readonly aria-readonly="true"></label>
         </div>
         <div class="mobile-photo-field">
@@ -166,11 +167,11 @@
       </div>
       <div class="balance-simulator__content">
         <div class="balance-simulator__fields">
-          <label class="field"><span>Total de horas positivas</span><input id="manual-positive" type="text" inputmode="numeric" placeholder="Ex.: 12:30" autocomplete="off" aria-describedby="manual-balance-help"></label>
-          <label class="field"><span>Total de horas negativas</span><input id="manual-negative" type="text" inputmode="numeric" placeholder="Ex.: 05:15" autocomplete="off" aria-describedby="manual-balance-help"></label>
-          <p id="manual-balance-help" class="field-help">Use o formato horas:minutos. Exemplo: 12:30.</p>
-          <label class="field"><span>Horário de entrada</span><input id="simulator-start-time" type="time" value="08:00"></label>
-          <label class="field"><span>Horário de saída</span><input id="simulator-end-time" type="time" value="17:48"></label>
+          <label class="field"><span>Total de horas positivas</span><input id="manual-positive" class="time-entry" type="text" inputmode="numeric" maxlength="7" placeholder="Ex.: 12:30" autocomplete="off" aria-describedby="manual-balance-help"></label>
+          <label class="field"><span>Total de horas negativas</span><input id="manual-negative" class="time-entry" type="text" inputmode="numeric" maxlength="7" placeholder="Ex.: 05:15" autocomplete="off" aria-describedby="manual-balance-help"></label>
+          <p id="manual-balance-help" class="field-help">Digite 1 para 1 hora, ou 1:30 para 1 hora e 30 minutos. Use o botão : se o teclado não mostrar o separador.</p>
+          <label class="field"><span>Horário de entrada</span><input id="simulator-start-time" class="time-entry" type="text" inputmode="numeric" maxlength="5" placeholder="08:00" value="08:00"></label>
+          <label class="field"><span>Horário de saída</span><input id="simulator-end-time" class="time-entry" type="text" inputmode="numeric" maxlength="5" placeholder="17:48" value="17:48"></label>
           <p class="field-help">O intervalo fixo de 60 minutos e a margem preventiva de 15 minutos antes do limite de 10 horas também são aplicados aqui.</p>
         </div>
         <div class="balance-simulator__result" aria-live="polite">

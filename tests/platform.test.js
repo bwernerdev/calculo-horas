@@ -32,7 +32,7 @@ test("dimensiona a interface para viewport e áreas seguras mobile", () => {
 test("mantém manifesto e arquivos essenciais no cache offline", () => {
   assert.equal(manifest.display, "standalone");
   assert.deepEqual(manifest.icons.map((icon) => icon.sizes), ["192x192", "512x512"]);
-  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/runtime-config.js", "assets/js/monitoring.js", "assets/js/calculations.js", "assets/js/script.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
+  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/runtime-config.js", "assets/js/monitoring.js", "assets/js/time-input.js", "assets/js/calculations.js", "assets/js/script.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
 });
 
 test("simula saldo manual positivo e negativo por usuário e mês", () => {

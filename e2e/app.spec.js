@@ -54,6 +54,34 @@ test("carrega a conta e calcula a simulação pessoal", async ({ page }) => {
   await expect(page.locator("#update-notice")).toBeHidden();
 });
 
+test("no mobile aceita horas inteiras e oferece separador em todos os campos", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  await expect(page.locator(".time-separator")).toHaveCount(7);
+  await page.locator("#manual-positive").fill("1");
+  await expect(page.locator("#simulator-projected-balance")).toContainText("1h 00min");
+  await page.locator("#manual-positive").blur();
+  await expect(page.locator("#manual-positive")).toHaveValue("1:00");
+  await page.locator("#simulator-start-time").fill("830");
+  await page.locator("#simulator-start-time").blur();
+  await expect(page.locator("#simulator-start-time")).toHaveValue("08:30");
+  await page.locator("#settings-toggle").click();
+  await page.locator("#daily-target").fill("8");
+  await page.locator("#settings-form").getByRole("button", { name: "Salvar configuração" }).click();
+  await expect(page.locator("#daily-target")).toHaveValue("08:00");
+  await page.locator("#start-time").fill("830");
+  await page.locator("#end-time").fill("1730");
+  await page.locator("#work-date").fill("2026-09-15");
+  await page.getByRole("button", { name: "Adicionar registro" }).click();
+  await expect(page.locator("#records-body")).toContainText("08:30");
+  await expect(page.locator("#records-body")).toContainText("17:30");
+  await page.locator("#manual-negative").fill("2");
+  await page.locator("#manual-negative").locator("xpath=..").getByRole("button", { name: /Inserir dois-pontos/ }).click();
+  await expect(page.locator("#manual-negative")).toHaveValue("2:");
+});
+
 test("exporta um backup JSON válido", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");
