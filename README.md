@@ -15,7 +15,9 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 - exportação em CSV e PDF e restauração transacional de backup JSON;
 - instalação como PWA, tema claro/escuro persistente e layout responsivo.
 
-Importação Forponto: selecione um XLSX, escolha o bloco correto e confira a prévia. Jornadas com quatro marcações usam o intervalo real; linhas incompletas ou ambíguas não são salvas. Datas já registradas são preservadas. O saldo calculado pelo aplicativo pode diferir do saldo oficial por tolerâncias e regras de compensação.
+Importação Forponto: selecione um XLSX, escolha o bloco correto e confira a prévia. Jornadas com quatro marcações usam o intervalo real; com duas marcações válidas, os horários são registrados como entrada e saída, com intervalo de 0 minuto, desde que a planilha informe o saldo final. Esse saldo é usado tanto quando positivo quanto negativo; sem ele, o dia fica para revisão. O dia identificado como “COMPENSA DIA” é salvo como compensação, sem horários. As marcações originais e o saldo oficial de cada dia são preservados; onde o relatório não informa saldo em uma jornada completa, o aplicativo calcula normalmente. Linhas ambíguas continuam pendentes de revisão. Datas já cadastradas são preservadas por padrão; para atualizar importações anteriores, marque a opção correspondente na prévia e confirme a substituição. Fotos existentes são mantidas.
+
+Antes de publicar esta versão, aplique [a migração Forponto](supabase/migrations/20260916000000_forponto_import.sql) no Supabase. Ela acrescenta os dados de origem aos registros e aceita o tipo compensação.
 
 ## Desenvolvimento
 

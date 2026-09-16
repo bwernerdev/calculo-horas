@@ -23,13 +23,15 @@
   }
 
   function calculate(record, targetMinutes) {
-    if (record.type === "falta") return { worked: 0, balance: -targetMinutes };
-    if (record.type !== "trabalho") return { worked: 0, balance: 0 };
+    const official = record.importData?.source === "forponto" && Number.isInteger(record.importData.officialBalanceMinutes)
+      ? record.importData.officialBalanceMinutes : null;
+    if (record.type === "falta") return { worked: 0, balance: official ?? -targetMinutes };
+    if (record.type !== "trabalho") return { worked: 0, balance: official ?? 0 };
     let end = toMinutes(record.end);
     const start = toMinutes(record.start);
     if (end <= start) end += 1440;
     const worked = end - start - Number(record.break);
-    return { worked, balance: worked - targetMinutes };
+    return { worked, balance: official ?? worked - targetMinutes };
   }
 
   function summarize(records, targetMinutes) {

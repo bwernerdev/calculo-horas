@@ -14,6 +14,21 @@ test("desconta o intervalo da jornada", () => {
   assert.deepEqual(result, { worked: 528, balance: 0 });
 });
 
+test("preserva o saldo oficial do Forponto mesmo com duas batidas", () => {
+  const result = calculate({
+    type:"trabalho", start:"08:02", end:"12:24", break:0,
+    importData:{ source:"forponto", officialBalanceMinutes:-320 }
+  }, TARGET);
+  assert.deepEqual(result, { worked:262, balance:-320 });
+  assert.deepEqual(calculate({
+    type:"compensacao", importData:{ source:"forponto", officialBalanceMinutes:-480 }
+  }, TARGET), { worked:0, balance:-480 });
+  assert.deepEqual(calculate({
+    type:"trabalho", start:"08:00", end:"12:17", break:0,
+    importData:{ source:"forponto", officialBalanceMinutes:17 }
+  }, TARGET), { worked:257, balance:17 });
+});
+
 test("contabiliza uma falta como saldo negativo integral", () => {
   assert.deepEqual(calculate({ type: "falta" }, TARGET), { worked: 0, balance: -528 });
 });

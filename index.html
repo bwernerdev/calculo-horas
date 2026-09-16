@@ -112,7 +112,7 @@
         <input id="editing-id" type="hidden">
         <div class="form-grid">
           <label class="field"><span>Data</span><input id="work-date" type="date" required></label>
-          <label class="field"><span>Tipo de dia</span><select id="day-type"><option value="trabalho">Dia trabalhado</option><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="ferias">Férias</option><option value="falta">Falta</option></select></label>
+          <label class="field"><span>Tipo de dia</span><select id="day-type"><option value="trabalho">Dia trabalhado</option><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="ferias">Férias</option><option value="falta">Falta</option><option value="compensacao">Compensação</option></select></label>
           <label class="field work-field"><span>Entrada</span><input id="start-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="08:00" value="08:00" autocapitalize="off" spellcheck="false"></label>
           <label class="field work-field"><span>Saída</span><input id="end-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="17:48" value="17:48" autocapitalize="off" spellcheck="false"></label>
           <label class="field work-field"><span>Intervalo (min)</span><input id="break-time" type="number" min="0" max="600" step="1" value="60" required></label>
@@ -192,6 +192,7 @@
     <p>Confira o bloco e os dias antes de importar. Registros já existentes não serão alterados.</p>
     <label class="field"><span>Bloco do relatório</span><select id="forponto-block"></select></label>
     <p id="forponto-summary" role="status"></p>
+    <label class="remember-access"><input id="forponto-update-existing" type="checkbox"><span>Atualizar datas já cadastradas com os dados do relatório (mantém as fotos)</span></label>
     <div class="table-wrap forponto-preview"><table><thead><tr><th>Data</th><th>Dia</th><th>Marcações</th><th>Resultado</th></tr></thead><tbody id="forponto-preview-body"></tbody></table></div>
     <div class="confirm-dialog__actions"><button id="forponto-cancel" class="button button--ghost" type="button">Cancelar</button><button id="forponto-confirm" class="button button--primary" type="button">Importar dias válidos</button></div>
   </dialog>

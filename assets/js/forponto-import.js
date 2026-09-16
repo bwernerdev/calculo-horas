@@ -26,6 +26,23 @@
     return null;
   }
 
+  function officialBalance(value) {
+    const text = String(value || "").trim();
+    if (!text) return null;
+    if (!/^[+-]?\d{1,3}:[0-5]\d$/.test(text)) return undefined;
+    const negative = text.startsWith("-");
+    const [hours, mins] = text.replace(/^[+-]/, "").split(":").map(Number);
+    const result = hours * 60 + mins;
+    return result > 1440 ? undefined : negative ? -result : result;
+  }
+
+  function balanceText(value) {
+    const absolute = Math.abs(value);
+    return (value > 0 ? "+" : value < 0 ? "-" : "") +
+      String(Math.floor(absolute / 60)).padStart(2, "0") + ":" +
+      String(absolute % 60).padStart(2, "0");
+  }
+
   function parseDay(row) {
     const match = dateCell.exec(String(row.A || "").trim());
     if (!match) return null;
@@ -33,12 +50,35 @@
     const day = Number(dayText), month = Number(monthText), year = Number(yearText);
     const date = `${yearText}-${monthText}-${dayText}`;
     if (!validDate(year, month, day)) return { date, label, status:"invalid", reason:"Data inválida" };
+    if (label.length > 100) return { date, label:"", status:"skipped", reason:"Descrição do dia extensa demais" };
     const punches = [row.F, row.G, row.H, row.I].map((value) => String(value || "").trim());
+    const balance = officialBalance(row.S);
+    if (balance === undefined) return { date, label, punches, status:"skipped", reason:"Saldo oficial inválido" };
+    const withReport = (record) => ({
+      ...record,
+      importData:{ source:"forponto", label, punches, officialBalanceMinutes:balance }
+    });
     const filled = punches.filter(Boolean);
     if (filled.length === 0) {
       const type = classifyDay(label);
-      return type ? { date, label, status:"ready", record:{ date, type, start:"", end:"", break:0 } }
+      return type ? { date, label, punches, status:"ready", record:withReport({ date, type, start:"", end:"", break:0 }) }
         : { date, label, status:"skipped", reason:"Sem marcações; tipo de dia não confirmado" };
+    }
+    if (filled.length === 1 && /^COMPENSA DIA$/i.test(punches[1]) && balance !== null) {
+      return {
+        date, label, punches, status:"ready", note:"Compensação sem batidas; saldo oficial preservado",
+        record:withReport({ date, type:"compensacao", start:"", end:"", break:0 })
+      };
+    }
+    if (punches[0] && punches[1] && !punches[2] && !punches[3] && clock.test(punches[0]) && clock.test(punches[1])) {
+      if (balance === null) return { date, label, punches, status:"skipped", reason:"2 marcações sem saldo final no relatório" };
+      const start = minutes(punches[0]), end = minutes(punches[1]);
+      const worked = (end <= start ? end + 1440 : end) - start;
+      if (worked > 600) return { date, label, punches, status:"skipped", reason:"Jornada acima de 10 horas" };
+      return {
+        date, label, punches, status:"ready", note:"2 marcações; saldo final "+balanceText(balance)+"; intervalo não informado (0 min)",
+        record:withReport({ date, type:"trabalho", start:punches[0], end:punches[1], break:0 })
+      };
     }
     if (filled.length !== 4 || !punches.every((value) => clock.test(value))) {
       return { date, label, punches, status:"skipped", reason:"Marcações incompletas ou não numéricas" };
@@ -50,7 +90,7 @@
     if (breakStart < start || breakEnd < breakStart || end < breakEnd || breakMinutes > 600 || worked < 0 || worked > 600) {
       return { date, label, punches, status:"skipped", reason:"Jornada ou intervalo fora dos limites" };
     }
-    return { date, label, punches, status:"ready", record:{ date, type:"trabalho", start:punches[0], end:punches[3], break:breakMinutes } };
+    return { date, label, punches, status:"ready", record:withReport({ date, type:"trabalho", start:punches[0], end:punches[3], break:breakMinutes }) };
   }
 
   function parseRows(rows) {

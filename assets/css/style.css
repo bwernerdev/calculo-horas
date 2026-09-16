@@ -120,6 +120,7 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 .forponto-dialog .field { margin:16px 0; }
 .forponto-preview { max-height:45dvh; overflow:auto; margin:16px 0 20px; border:1px solid var(--line); border-radius:12px; }
 .forponto-preview th { position:sticky; top:0; background:var(--surface); }
+.source-badge { display:block; margin-top:4px; color:var(--muted); font-size:.68rem; min-width:150px; }
 .password-dialog form { display:grid; gap:15px; }
 .password-dialog form>p { margin:0; }
 .photo-type-icon { color:var(--primary-dark); background:var(--primary-soft); } .photo-type-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; } .photo-type-actions #photo-type-cancel { grid-column:1/-1; }

@@ -80,7 +80,7 @@
       const photos = {};
       for (const kind of ["entrada", "saida"]) photos[kind] = await photoUrl(paths[kind]);
       recordObjectUrls.set(row.id, Object.values(photos).filter((value) => value.startsWith?.("blob:")));
-      return { id: row.id, date: row.date, type: row.type, start: row.start_time, end: row.end_time, break: row.break_minutes, photos, photoPaths: paths };
+      return { id: row.id, date: row.date, type: row.type, start: row.start_time, end: row.end_time, break: row.break_minutes, importData:row.import_data || {}, photos, photoPaths: paths };
     }
 
     function materializeRecord(record, paths) {
@@ -100,6 +100,7 @@
       start_time: record.start || "",
       end_time: record.end || "",
       break_minutes: record.break || 0,
+      ...(record.importData ? { import_data:record.importData } : {}),
       photos,
       updated_at: new Date().toISOString()
     });
@@ -201,6 +202,11 @@
       },
 
       async restoreBackup(records, settings) {
+        const hasForpontoData=records.some((record)=>record.importData?.source==="forponto");
+        if (hasForpontoData) {
+          const { error } = await client.from("records").select("import_data").limit(1);
+          if (error) throw new Error("Aplique a migração Forponto no Supabase antes de restaurar este backup.");
+        }
         const stages = [];
         try {
           for (const record of records) stages.push(await stagePhotos(record));
@@ -215,7 +221,7 @@
           p_theme: settings.theme,
           p_balance_adjustments: settings.manualBalances || {}
         });
-        if (error && /p_balance_adjustments|schema cache|function.*restore_user_backup/i.test(error.message || "")) ({ error } = await client.rpc("restore_user_backup", {
+        if (error && !hasForpontoData && /p_balance_adjustments|schema cache|function.*restore_user_backup/i.test(error.message || "")) ({ error } = await client.rpc("restore_user_backup", {
           p_records:rows,
           p_target_minutes:settings.target,
           p_theme:settings.theme

@@ -100,11 +100,12 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
   await expect(page.locator("#app-content")).toBeVisible();
   const cells = [
     ["A1", "16/08/2026 Dom-Folg"],
-    ["A2", "17/08/2026 Seg-Norm"], ["F2", "08:00"], ["G2", "12:00"], ["H2", "12:45"], ["I2", "17:00"],
-    ["A3", "18/08/2026 Ter-Norm"], ["F3", "08:00"], ["G3", "12:00"],
-    ["A4", "16/08/2026 Dom"]
+    ["A2", "17/08/2026 Seg-Norm"], ["F2", "08:00"], ["G2", "12:00"], ["H2", "12:45"], ["I2", "17:00"], ["S2", "00:30"],
+    ["A3", "18/08/2026 Ter-Norm"], ["F3", "08:00"], ["G3", "12:00"], ["S3", "-05:20"],
+    ["A4", "19/08/2026 Qua-Norm"], ["G4", "COMPENSA DIA"], ["S4", "-08:00"],
+    ["A5", "16/08/2026 Dom"]
   ];
-  const rowXml = [1,2,3,4].map((row) => "<row r=\"" + row + "\">" +
+  const rowXml = [1,2,3,4,5].map((row) => "<row r=\"" + row + "\">" +
     cells.filter(([address]) => address.endsWith(String(row))).map(([address,value]) =>
       "<c r=\"" + address + "\" t=\"inlineStr\"><is><t>" + value + "</t></is></c>").join("") + "</row>").join("");
   const xml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + rowXml + '</sheetData></worksheet>';
@@ -112,9 +113,28 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
   await page.locator("#forponto-file").setInputFiles({ name:"forponto.xlsx", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer });
   await expect(page.locator("#forponto-dialog")).toBeVisible();
   await page.locator("#forponto-block").selectOption("0");
-  await expect(page.locator("#forponto-summary")).toContainText("2 dia(s) pronto(s)");
+  await expect(page.locator("#forponto-summary")).toContainText("4 novo(s)");
+  await expect(page.locator("#forponto-preview-body")).toContainText("2 marcações; saldo final -05:20");
   await page.locator("#forponto-confirm").click();
   await expect(page.locator("#records-body")).toContainText("17/08/2026");
   await expect(page.locator("#records-body")).toContainText("45 min");
-  await expect(page.locator("#records-body")).not.toContainText("18/08/2026");
+  await expect(page.locator("#records-body")).toContainText("18/08/2026");
+  await expect(page.locator("#records-body")).toContainText("0 min");
+  await expect(page.locator("#records-body")).toContainText("Compensação");
+  await expect(page.locator("#records-body")).toContainText("-8h 00min");
+  await page.locator("#forponto-file").setInputFiles({ name:"forponto.xlsx", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer });
+  await page.locator("#forponto-block").selectOption("0");
+  await expect(page.locator("#forponto-confirm")).toBeDisabled();
+  await page.locator("#forponto-update-existing").check();
+  await expect(page.locator("#forponto-summary")).toContainText("4 para atualizar");
+  await page.locator("#forponto-confirm").click();
+  await page.locator("#confirm-accept").click();
+  await expect(page.locator("#records-body tr")).toHaveCount(4);
+  const backupDownload=page.waitForEvent("download");
+  await page.locator("#export-json").click();
+  const backup=JSON.parse(await fs.promises.readFile(await (await backupDownload).path(), "utf8"));
+  expect(backup.registros.find((record)=>record.data==="2026-08-18").dadosImportacao.officialBalanceMinutes).toBe(-320);
+  expect(backup.registros.find((record)=>record.data==="2026-08-19")).toMatchObject({
+    tipo:"compensacao", dadosImportacao:{ officialBalanceMinutes:-480 }
+  });
 });

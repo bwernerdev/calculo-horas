@@ -1,7 +1,7 @@
 const THEME_PREFERENCE_KEY = "controle-horas-tema-v1";
 const REMEMBERED_EMAIL_KEY = "controle-horas-email-v1";
 const MANUAL_BALANCE_KEY = "controle-horas-simulador-v1";
-const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"Férias", falta:"Falta" };
+const TYPES = { trabalho:"Trabalho", folga:"Folga", feriado:"Feriado", ferias:"Férias", falta:"Falta", compensacao:"Compensação" };
 const $ = (selector) => document.querySelector(selector);
 const form = $("#hours-form");
 const { toMinutes, toClock, duration, signed } = HoursCalculator;
@@ -138,6 +138,14 @@ function render() {
     const photoButtons=[photos.entrada ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="entrada">Entrada</button>` : "",photos.saida ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="saida">Saída</button>` : ""].filter(Boolean).join(" ");
     return `<tr><td>${date}</td><td><span class="tag">${TYPES[record.type]}</span></td><td>${record.start || "—"}</td><td>${record.end || "—"}</td><td>${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td>${duration(calc.worked)}</td><td class="${css}">${signed(calc.balance)}</td><td>${photoButtons} <button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
   }).join("");
+  list.forEach((record,index)=>{
+    if (record.importData?.source!=="forponto") return;
+    const badge=document.createElement("small");
+    badge.className="source-badge";
+    const punches=Array.isArray(record.importData.punches) ? record.importData.punches.filter((value)=>/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) : [];
+    badge.textContent="Forponto · "+(punches.length ? punches.join(" / ") : record.type==="compensacao" ? "COMPENSA DIA" : "sem batidas")+" · "+(Number.isInteger(record.importData.officialBalanceMinutes) ? "saldo oficial" : "saldo calculado");
+    $("#records-body").rows[index].cells[1].append(badge);
+  });
   $("#empty-state").hidden = list.length > 0;
   const photos=list.flatMap((record)=>Object.entries(recordPhotos(record)).filter(([,photo])=>photo).map(([kind,photo])=>({record,kind,photo})));
   $("#photo-history").hidden=photos.length===0; $("#photo-count").textContent=`${photos.length} ${photos.length===1 ? "foto" : "fotos"}`;
@@ -221,6 +229,15 @@ form.addEventListener("submit", async (event) => {
   submit.disabled=true; submit.textContent="Salvando...";
   try {
     if (type==="trabalho" && (!record.start || !record.end)) throw new Error("Informe horários válidos entre 00:00 e 23:59.");
+    const original=records.find((item)=>item.id===record.id);
+    if (original?.importData?.source==="forponto") {
+      const unchanged=["date","type","start","end","break"].every((key)=>original[key]===record[key]);
+      if (unchanged) record.importData=original.importData;
+      else {
+        if (!await requestConfirmation("Alterar este registro removerá as marcações e o saldo oficial importados do Forponto. Continuar?")) return;
+        record.importData={};
+      }
+    }
     const result=await useCases.saveRecord(record,settings.target,records);
     records=result.records;
     resetForm(); render(); showToast(result.editing ? "Registro atualizado com sucesso." : "Jornada registrada com sucesso.");
@@ -378,12 +395,25 @@ function isValidCalendarDate(value) {
   return date.getUTCFullYear()===year && date.getUTCMonth()===month-1 && date.getUTCDate()===day;
 }
 function isValidClockTime(value) { return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value); }
+function parseBackupImportData(value) {
+  if (value === undefined) return {};
+  if (!value || typeof value!=="object" || Array.isArray(value)) throw new Error("Dados de importação inválidos no backup.");
+  if (Object.keys(value).length===0) return {};
+  if (value.source!=="forponto" || typeof value.label!=="string" || value.label.length>100 ||
+      !Array.isArray(value.punches) || value.punches.length!==4 ||
+      value.punches.some((punch)=>typeof punch!=="string" || (punch!=="" && !/^COMPENSA DIA$/i.test(punch) && !isValidClockTime(punch))) ||
+      (value.officialBalanceMinutes!==null && (!Number.isInteger(value.officialBalanceMinutes) || Math.abs(value.officialBalanceMinutes)>1440))) {
+    throw new Error("Dados de importação inválidos no backup.");
+  }
+  return { source:"forponto", label:value.label, punches:[...value.punches], officialBalanceMinutes:value.officialBalanceMinutes };
+}
 function parseBackupRecord(item,targetMinutes) {
   const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (!item || !uuid.test(String(item.id)) || !isValidCalendarDate(item.data) || !Object.hasOwn(TYPES,item.tipo)) throw new Error("Há um registro com identificação, data ou tipo inválido.");
   const breakMinutes=Number(item.intervaloMinutos);
   if (!Number.isInteger(breakMinutes) || breakMinutes<0 || breakMinutes>MAX_DAILY_WORK_MINUTES) throw new Error(`O intervalo de ${item.data} é inválido.`);
-  const record={ id:String(item.id), date:item.data, type:item.tipo, start:item.entrada || "", end:item.saida || "", break:item.tipo==="trabalho" ? breakMinutes : 0, photos:{ entrada:"", saida:"" } };
+  const importData=parseBackupImportData(item.dadosImportacao);
+  const record={ id:String(item.id), date:item.data, type:item.tipo, start:item.entrada || "", end:item.saida || "", break:item.tipo==="trabalho" ? breakMinutes : 0, ...(Object.keys(importData).length ? { importData } : {}), photos:{ entrada:"", saida:"" } };
   if (item.tipo==="trabalho") {
     if (!isValidClockTime(record.start) || !isValidClockTime(record.end)) throw new Error(`A jornada de ${item.data} possui horários inválidos.`);
     const worked=HoursCalculator.calculate(record,targetMinutes).worked;
@@ -404,7 +434,7 @@ $("#export-json").addEventListener("click",async (event)=>{
     const backupRecords = [];
     for (const record of records) {
       const photos = recordPhotos(record);
-      backupRecords.push({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, fotos:{ entrada:await photoAsDataUrl(photos.entrada), saida:await photoAsDataUrl(photos.saida) } });
+      backupRecords.push({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, dadosImportacao:record.importData || {}, fotos:{ entrada:await photoAsDataUrl(photos.entrada), saida:await photoAsDataUrl(photos.saida) } });
     }
   const backup={
     versao:1,
@@ -424,18 +454,23 @@ function closeForpontoPreview() {
   forpontoBlocks=[];
   $("#forponto-preview-body").replaceChildren();
   $("#forponto-block").replaceChildren();
+  $("#forponto-update-existing").checked=false;
 }
 function renderForpontoPreview() {
   const block=$("#forponto-block").value==="" ? null : forpontoBlocks[Number($("#forponto-block").value)];
   const body=$("#forponto-preview-body");
   body.replaceChildren();
   if (!block) { $("#forponto-summary").textContent="Selecione um bloco para conferir os dados."; $("#forponto-confirm").disabled=true; return; }
-  let ready=0, duplicates=0, skipped=0;
+  let ready=0, duplicates=0, updates=0, skipped=0;
+  const updateExisting=$("#forponto-update-existing").checked;
   const knownDates=new Set(records.map((record)=>record.date));
   for (const day of block.days) {
     const duplicate=knownDates.has(day.date);
-    const status=duplicate ? "Já registrado — preservado" : day.status==="ready" ? "Pronto para importar" : day.reason;
-    if (duplicate) duplicates++;
+    const status=duplicate && !updateExisting ? "Já registrado — preservado"
+      : duplicate && day.status==="ready" ? "Atualizar: "+(day.note || "saldo e marcações do relatório")
+      : day.status==="ready" ? day.note || "Pronto para importar" : day.reason;
+    if (duplicate && !updateExisting) duplicates++;
+    else if (duplicate && day.status==="ready") updates++;
     else if (day.status==="ready") ready++;
     else skipped++;
     const tr=document.createElement("tr");
@@ -446,11 +481,12 @@ function renderForpontoPreview() {
     }
     body.append(tr);
   }
-  $("#forponto-summary").textContent=ready+" dia(s) pronto(s), "+duplicates+" já registrado(s), "+skipped+" pendente(s) de revisão. Horas podem diferir do saldo oficial do Forponto por regras de tolerância e compensação.";
-  $("#forponto-confirm").disabled=ready===0;
-  $("#forponto-confirm").textContent="Importar "+ready+" dia(s) válido(s)";
+  $("#forponto-summary").textContent=ready+" novo(s), "+updates+" para atualizar, "+duplicates+" preservado(s), "+skipped+" pendente(s). O saldo oficial do Forponto é preservado quando informado.";
+  $("#forponto-confirm").disabled=ready+updates===0;
+  $("#forponto-confirm").textContent="Aplicar "+(ready+updates)+" dia(s)";
 }
 $("#forponto-block").addEventListener("change",renderForpontoPreview);
+$("#forponto-update-existing").addEventListener("change",renderForpontoPreview);
 $("#forponto-cancel").addEventListener("click",closeForpontoPreview);
 $("#forponto-dialog").addEventListener("cancel",(event)=>{ if ($("#forponto-cancel").disabled) event.preventDefault(); });
 $("#forponto-dialog").addEventListener("close",()=>{ forpontoBlocks=[]; });
@@ -471,6 +507,7 @@ $("#forponto-file").addEventListener("change",async(event)=>{
       $("#forponto-block").append(option);
     });
     $("#forponto-block").value="";
+    $("#forponto-update-existing").checked=false;
     renderForpontoPreview();
     forpontoGeneration=applicationGeneration;
     $("#forponto-dialog").showModal();
@@ -482,16 +519,20 @@ $("#forponto-file").addEventListener("change",async(event)=>{
 $("#forponto-confirm").addEventListener("click",async()=>{
   const block=$("#forponto-block").value==="" ? null : forpontoBlocks[Number($("#forponto-block").value)];
   if (!block || forpontoGeneration!==applicationGeneration || !useCases) return;
-  const knownDates=new Set(records.map((record)=>record.date));
-  const pending=block.days.filter((day)=>day.status==="ready" && !knownDates.has(day.date));
+  const knownDates=new Map(records.map((record)=>[record.date,record]));
+  const updateExisting=$("#forponto-update-existing").checked;
+  const pending=block.days.filter((day)=>day.status==="ready" && (updateExisting || !knownDates.has(day.date)));
   const button=$("#forponto-confirm");
   button.disabled=true;
   $("#forponto-cancel").disabled=true;
   let imported=0;
   try {
+    const updates=pending.filter((day)=>knownDates.has(day.date)).length;
+    if (updates && !await requestConfirmation("Atualizar "+updates+" data(s) existente(s) com as marcações e o saldo do Forponto? As fotos serão mantidas.")) return;
     for (const day of pending) {
       if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
-      const record={ ...day.record, id:crypto.randomUUID(), photos:{ entrada:"", saida:"" } };
+      const existing=knownDates.get(day.date);
+      const record={ ...day.record, id:existing?.id || crypto.randomUUID(), photos:existing ? recordPhotos(existing) : { entrada:"", saida:"" } };
       const result=await useCases.saveRecord(record,settings.target,records);
       if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
       records=result.records;
@@ -501,12 +542,14 @@ $("#forponto-confirm").addEventListener("click",async()=>{
     loadManualBalance();
     render();
     closeForpontoPreview();
-    showToast(imported+" dia(s) importado(s). Os demais não foram alterados.");
+    showToast(imported+" dia(s) aplicado(s). Os demais não foram alterados.");
   } catch (error) {
     captureError(error,"forponto-import",{ imported });
     renderForpontoPreview();
     render();
-    showToast("Importação interrompida após "+imported+" dia(s): "+error.message,"error");
+    const guidance=/import_data|records_type_check|compensacao/i.test(error.message || "")
+      ? "Aplique a migração Forponto no Supabase antes de importar." : error.message;
+    showToast("Importação interrompida após "+imported+" dia(s): "+guidance,"error");
   } finally { button.disabled=false; $("#forponto-cancel").disabled=false; }
 });
 $("#json-file").addEventListener("change",async(event)=>{

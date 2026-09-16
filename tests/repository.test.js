@@ -32,17 +32,19 @@ test("restauração local troca registros e configurações em conjunto", () => 
 
 test("repositório Supabase faz upsert e delete individuais", async () => {
   const calls=[];
+  let savedRow;
   const client={
     storage:{ from:()=>({ download:async()=>({ data:null,error:null }), upload:async()=>({ error:null }), remove:async()=>({ error:null }) }) },
     from:(table)=>({
-      upsert:(row,options)=>({ select:()=>({ single:async()=>({ data:row,error:null }) }), then:(resolve)=>resolve({ error:null }), row, options }),
+      upsert:(row,options)=>{ savedRow=row; return { select:()=>({ single:async()=>({ data:row,error:null }) }), then:(resolve)=>resolve({ error:null }), row, options }; },
       delete:()=>({ eq:async(column,value)=>{ calls.push(["delete",table,column,value]); return { error:null }; } })
     })
   };
   const repository=createSupabaseRepository(client,"user-1");
-  const record={ id:"record-1", date:"2026-08-17", type:"folga", start:"", end:"", break:0, photos:{} };
+  const record={ id:"record-1", date:"2026-08-17", type:"folga", start:"", end:"", break:0, photos:{}, importData:{ source:"forponto", label:"Dom-Folg", punches:["","","",""], officialBalanceMinutes:null } };
   const saved=await repository.saveRecord(record);
   assert.equal(saved.id,"record-1");
+  assert.deepEqual(savedRow.import_data,record.importData);
   await repository.deleteRecord("record-1");
   assert.deepEqual(calls,[["delete","records","id","record-1"]]);
 });
