@@ -957,7 +957,19 @@ if ("serviceWorker" in navigator) {
           if (installing.state==="installed") offerUpdate();
         });
       });
-      registration.update().catch((error)=>captureError(error,"service-worker-update"));
+      let checkingUpdate=false;
+      const checkForUpdate=async()=>{
+        if (checkingUpdate || !navigator.onLine || registration.waiting) { offerUpdate(); return; }
+        checkingUpdate=true;
+        try { await registration.update(); offerUpdate(); }
+        catch (error) { captureError(error,"service-worker-update"); }
+        finally { checkingUpdate=false; }
+      };
+      void checkForUpdate();
+      window.setInterval(checkForUpdate,60_000);
+      window.addEventListener("focus",checkForUpdate);
+      window.addEventListener("online",checkForUpdate);
+      document.addEventListener("visibilitychange",()=>{ if (!document.hidden) void checkForUpdate(); });
     } catch (error) {
       captureError(error,"service-worker-register");
       console.error("Falha ao ativar o modo offline:",error);

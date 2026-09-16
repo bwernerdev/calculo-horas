@@ -130,6 +130,36 @@ test("carrega a conta e calcula a simulação pessoal", async ({ page }) => {
   await expect(page.locator("#update-notice")).toBeHidden();
 });
 
+test("mostra o botão de atualização sem recarregar quando uma nova versão é detectada", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("e2e-authenticated", "true");
+    const workerContainer=new EventTarget();
+    workerContainer.controller={};
+    const registration=new EventTarget();
+    registration.waiting=null;
+    registration.update=async()=>{
+      window.__updateChecks=(window.__updateChecks || 0)+1;
+      if (!window.__fakeUpdateAvailable) return;
+      const installing=new EventTarget();
+      installing.state="installing";
+      registration.installing=installing;
+      registration.dispatchEvent(new Event("updatefound"));
+      registration.waiting={ postMessage:(message)=>{ window.__updateMessage=message; } };
+      installing.state="installed";
+      installing.dispatchEvent(new Event("statechange"));
+    };
+    workerContainer.register=async()=>registration;
+    Object.defineProperty(navigator,"serviceWorker",{ configurable:true, value:workerContainer });
+  });
+  await page.goto("/");
+  await expect.poll(()=>page.evaluate(()=>window.__updateChecks || 0)).toBe(1);
+  await expect(page.locator("#update-notice")).toBeHidden();
+  await page.evaluate(()=>{ window.__fakeUpdateAvailable=true; window.dispatchEvent(new Event("focus")); });
+  await expect(page.locator("#update-notice")).toBeVisible();
+  await page.locator("#update-app").click();
+  await expect.poll(()=>page.evaluate(()=>window.__updateMessage?.type)).toBe("SKIP_WAITING");
+});
+
 test("no mobile aceita horas inteiras e permite digitar dois-pontos no teclado", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));

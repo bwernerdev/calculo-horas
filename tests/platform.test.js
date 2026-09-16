@@ -76,5 +76,8 @@ test("avisa antes de ativar uma nova versão do PWA", () => {
   assert.match(worker, /SKIP_WAITING/);
   assert.match(script, /registration\.waiting\.postMessage/);
   assert.match(script, /controllerchange/);
+  assert.match(script, /setInterval\(checkForUpdate,60_000\)/);
+  assert.match(script, /visibilitychange/);
+  assert.match(script, /addEventListener\("online",checkForUpdate\)/);
   assert.doesNotMatch(worker, /event\.waitUntil[^;]+skipWaiting/s);
 });
