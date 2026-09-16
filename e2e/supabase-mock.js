@@ -40,7 +40,13 @@
         updateUser: async () => ({ data: { user }, error: null }),
       },
       from: query,
-      rpc: async () => ({ data: null, error: null }),
+      rpc: async (name,parameters) => {
+        if (name==="import_forponto_records") {
+          if (window.__failForpontoImport) return { data:null, error:{ message:"Falha simulada na importação." } };
+          return { data:parameters.p_records, error:null };
+        }
+        return { data:null, error:null };
+      },
       storage: {
         from: () => ({
           download: async () => ({ data: new Blob(), error: null }),

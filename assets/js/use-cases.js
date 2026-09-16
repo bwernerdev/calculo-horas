@@ -15,7 +15,7 @@
       };
     }
 
-    async function saveRecord(record, targetMinutes, currentRecords) {
+    function validateRecord(record, targetMinutes) {
       if (record.type === "trabalho") {
         if (!Number.isInteger(record.break) || record.break < 0 || record.break > 600) throw new Error("O intervalo deve estar entre 0 e 600 minutos.");
         if (!record.start || !record.end) throw new Error("Informe os horários de entrada e saída.");
@@ -23,7 +23,10 @@
         if (worked < 0) throw new Error("O intervalo não pode superar a jornada.");
         if (worked > maxDailyWorkMinutes) throw new Error("A jornada não pode ultrapassar 10 horas trabalhadas no dia.");
       }
+    }
 
+    async function saveRecord(record, targetMinutes, currentRecords) {
+      validateRecord(record,targetMinutes);
       const records = Array.isArray(currentRecords) ? currentRecords : await repository.findAllRecords();
       if (records.some((item) => item.date === record.date && item.id !== record.id)) {
         throw new Error("Já existe um registro para esta data. Edite o registro existente.");
@@ -34,6 +37,26 @@
       if (index >= 0) updatedRecords[index] = savedRecord;
       else updatedRecords.push(savedRecord);
       return { records: updatedRecords, editing: index >= 0 };
+    }
+
+    async function importForpontoRecords(importedRecords, targetMinutes, currentRecords, updateExisting) {
+      if (!Array.isArray(importedRecords) || importedRecords.length===0 || importedRecords.length>5000) throw new Error("Lista de registros Forponto inválida.");
+      const dates=new Set();
+      const records=Array.isArray(currentRecords) ? currentRecords : await repository.findAllRecords();
+      for (const record of importedRecords) {
+        if (record.importData?.source!=="forponto" || dates.has(record.date)) throw new Error("O relatório contém datas duplicadas ou inválidas.");
+        dates.add(record.date);
+        validateRecord(record,targetMinutes);
+        if (!updateExisting && records.some((item)=>item.date===record.date)) throw new Error("Uma data já foi registrada. Confira a prévia antes de importar.");
+      }
+      const saved=await repository.importForpontoRecords(importedRecords,updateExisting);
+      const updated=[...records];
+      for (const item of saved) {
+        const index=updated.findIndex((record)=>record.date===item.date);
+        if (index>=0) updated[index]=item;
+        else updated.push(item);
+      }
+      return updated;
     }
 
     async function deleteRecord(id, currentRecords) {
@@ -62,7 +85,7 @@
       return nextSettings;
     }
 
-    return { getSettings, saveRecord, deleteRecord, deleteAllRecords, saveSettings };
+    return { getSettings, saveRecord, importForpontoRecords, deleteRecord, deleteAllRecords, saveSettings };
   }
 
   return { createHoursUseCases };

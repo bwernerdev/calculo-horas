@@ -28,6 +28,17 @@
         persist(records);
         return record;
       },
+      importForpontoRecords(importedRecords, updateExisting) {
+        const records=load();
+        for (const record of importedRecords) {
+          const index=records.findIndex((item)=>item.date===record.date);
+          if (index>=0 && !updateExisting) throw new Error("Uma data já foi registrada.");
+          if (index>=0) records[index]={ ...record, id:records[index].id, photos:records[index].photos || {} };
+          else records.push(record);
+        }
+        persist(records);
+        return importedRecords.map((record)=>records.find((item)=>item.date===record.date));
+      },
       deleteRecord(id) { persist(load().filter((item) => item.id !== id)); },
       deleteAllRecords() { persist([]); return { photoCleanupFailed:0 }; },
       getSettings() {
@@ -169,6 +180,18 @@
         await removeFiles(stage.obsolete);
         knownIds.add(record.id);
         return materializeRecord({ ...record, date:data.date },stage.stored);
+      },
+
+      async importForpontoRecords(importedRecords, updateExisting) {
+        const rows=importedRecords.map((record)=>toRow(record,emptyPhotos()));
+        const { data,error }=await client.rpc("import_forponto_records",{
+          p_records:rows,
+          p_update_existing:Boolean(updateExisting)
+        });
+        throwIfError(error);
+        if (!Array.isArray(data) || data.length!==rows.length) throw new Error("A importação não retornou todos os registros. Recarregue os dados antes de tentar novamente.");
+        data.forEach((row)=>knownIds.add(row.id));
+        return Promise.all(data.map(toRecord));
       },
 
       async deleteRecord(id) {

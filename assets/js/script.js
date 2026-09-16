@@ -622,34 +622,31 @@ $("#forponto-confirm").addEventListener("click",async()=>{
   const button=$("#forponto-confirm");
   button.disabled=true;
   $("#forponto-cancel").disabled=true;
-  let imported=0;
-  const appliedDates=[];
   try {
     const updates=pending.filter((day)=>knownDates.has(day.date)).length;
     if (updates && !await requestConfirmation("Atualizar "+updates+" data(s) existente(s) com as marcações e o saldo do Forponto? As fotos serão mantidas.")) return;
-    for (const day of pending) {
-      if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
+    if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
+    const importedRecords=pending.map((day)=>{
       const existing=knownDates.get(day.date);
-      const record={ ...day.record, id:existing?.id || crypto.randomUUID(), photos:existing ? recordPhotos(existing) : { entrada:"", saida:"" } };
-      const result=await useCases.saveRecord(record,settings.target,records);
-      if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
-      records=result.records;
-      imported++;
-      appliedDates.push(day.date);
-    }
-    if (appliedDates.length) applyImportedPeriod(appliedDates);
+      return { ...day.record, id:existing?.id || crypto.randomUUID(), photos:existing ? recordPhotos(existing) : { entrada:"", saida:"" } };
+    });
+    const updatedRecords=await useCases.importForpontoRecords(importedRecords,settings.target,records,updateExisting);
+    if (forpontoGeneration!==applicationGeneration) return;
+    records=updatedRecords;
+    if (pending.length) applyImportedPeriod(pending.map((day)=>day.date));
     loadManualBalance();
     render();
     closeForpontoPreview();
-    showToast(imported+" dia(s) aplicado(s). Os demais não foram alterados.");
+    showToast(pending.length+" dia(s) aplicado(s) em conjunto. Os demais não foram alterados.");
   } catch (error) {
-    captureError(error,"forponto-import",{ imported });
-    if (appliedDates.length) { applyImportedPeriod(appliedDates); loadManualBalance(); }
+    captureError(error,"forponto-import",{ count:pending.length });
     renderForpontoPreview();
     render();
-    const guidance=/import_data|records_type_check|compensacao/i.test(error.message || "")
-      ? "Aplique a migração Forponto no Supabase antes de importar." : error.message;
-    showToast("Importação interrompida após "+imported+" dia(s): "+guidance,"error");
+    const guidance=/import_forponto_records|schema cache/i.test(error.message || "")
+      ? "Aplique a migração de importação atômica no Supabase antes de importar."
+      : /import_data|records_type_check|compensacao/i.test(error.message || "")
+        ? "Aplique a migração Forponto no Supabase antes de importar." : error.message;
+    showToast("Nenhum dia foi importado: "+guidance,"error");
   } finally { button.disabled=false; $("#forponto-cancel").disabled=false; }
 });
 $("#json-file").addEventListener("change",async(event)=>{
