@@ -93,6 +93,16 @@ function clearHistoryRange() {
   $("#history-range-message").textContent="";
   $("#history-range-message").classList.remove("history-range__message--error");
 }
+function applyImportedPeriod(dates) {
+  if (!dates.length) { clearHistoryRange(); return; }
+  const sorted=[...dates].sort();
+  historyRange={ from:sorted[0], to:sorted.at(-1) };
+  $("#month-filter").value=historyRange.to.slice(0,7);
+  $("#history-date-from").value=historyRange.from;
+  $("#history-date-to").value=historyRange.to;
+  $("#history-range-message").classList.remove("history-range__message--error");
+  $("#history-range-message").textContent="Período importado aplicado automaticamente: "+historyPeriodLabel()+". Os ajustes manuais continuam vinculados ao mês selecionado.";
+}
 function parseManualDuration(value) { return parseDuration(value) ?? 0; }
 function manualBalanceStorageKey() { return `${MANUAL_BALANCE_KEY}:${loadedUserId || "anonymous"}:${$("#month-filter").value || "current"}`; }
 function saveSettingsQueued(nextSettings) {
@@ -613,6 +623,7 @@ $("#forponto-confirm").addEventListener("click",async()=>{
   button.disabled=true;
   $("#forponto-cancel").disabled=true;
   let imported=0;
+  const appliedDates=[];
   try {
     const updates=pending.filter((day)=>knownDates.has(day.date)).length;
     if (updates && !await requestConfirmation("Atualizar "+updates+" data(s) existente(s) com as marcações e o saldo do Forponto? As fotos serão mantidas.")) return;
@@ -624,17 +635,16 @@ $("#forponto-confirm").addEventListener("click",async()=>{
       if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
       records=result.records;
       imported++;
+      appliedDates.push(day.date);
     }
-    if (pending.length) {
-      $("#month-filter").value=pending[0].record.date.slice(0,7);
-      clearHistoryRange();
-    }
+    if (appliedDates.length) applyImportedPeriod(appliedDates);
     loadManualBalance();
     render();
     closeForpontoPreview();
     showToast(imported+" dia(s) aplicado(s). Os demais não foram alterados.");
   } catch (error) {
     captureError(error,"forponto-import",{ imported });
+    if (appliedDates.length) { applyImportedPeriod(appliedDates); loadManualBalance(); }
     renderForpontoPreview();
     render();
     const guidance=/import_data|records_type_check|compensacao/i.test(error.message || "")
@@ -661,7 +671,7 @@ $("#json-file").addEventListener("change",async(event)=>{
     const nextSettings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light", manualBalances };
     records=await repository.restoreBackup(imported,nextSettings); settings=nextSettings;
     for (const [month,balance] of Object.entries(manualBalances)) localStorage.setItem(`${MANUAL_BALANCE_KEY}:${loadedUserId}:${month}`,JSON.stringify({ positive:manualDurationInput(balance.positive), negative:manualDurationInput(balance.negative) }));
-    $("#daily-target").value=toClock(settings.target); applyTheme(); clearHistoryRange(); loadManualBalance(); resetForm(); render();
+    $("#daily-target").value=toClock(settings.target); applyTheme(); applyImportedPeriod(records.map((record)=>record.date)); loadManualBalance(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
   } catch (error) {
     captureError(error,"backup-import");

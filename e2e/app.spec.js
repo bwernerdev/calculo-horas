@@ -178,9 +178,10 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
     ["A2", "17/08/2026 Seg-Norm"], ["F2", "08:00"], ["G2", "12:00"], ["H2", "12:45"], ["I2", "17:00"], ["S2", "00:30"],
     ["A3", "18/08/2026 Ter-Norm"], ["F3", "08:00"], ["G3", "12:00"], ["S3", "-05:20"],
     ["A4", "19/08/2026 Qua-Norm"], ["G4", "COMPENSA DIA"], ["S4", "-08:00"],
-    ["A5", "16/08/2026 Dom"]
+    ["A5", "15/09/2026 Ter-Norm"], ["F5", "08:00"], ["G5", "12:00"], ["H5", "13:00"], ["I5", "17:48"],
+    ["A6", "16/08/2026 Dom"]
   ];
-  const rowXml = [1,2,3,4,5].map((row) => "<row r=\"" + row + "\">" +
+  const rowXml = [1,2,3,4,5,6].map((row) => "<row r=\"" + row + "\">" +
     cells.filter(([address]) => address.endsWith(String(row))).map(([address,value]) =>
       "<c r=\"" + address + "\" t=\"inlineStr\"><is><t>" + value + "</t></is></c>").join("") + "</row>").join("");
   const xml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + rowXml + '</sheetData></worksheet>';
@@ -188,10 +189,16 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
   await page.locator("#forponto-file").setInputFiles({ name:"forponto.xlsx", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer });
   await expect(page.locator("#forponto-dialog")).toBeVisible();
   await page.locator("#forponto-block").selectOption("0");
-  await expect(page.locator("#forponto-summary")).toContainText("4 novo(s)");
+  await expect(page.locator("#forponto-summary")).toContainText("5 novo(s)");
   await expect(page.locator("#forponto-preview-body")).toContainText("2 marcações; saldo final -05:20");
   await page.locator("#forponto-confirm").click();
+  await expect(page.locator("#history-date-from")).toHaveValue("2026-08-16");
+  await expect(page.locator("#history-date-to")).toHaveValue("2026-09-15");
+  await expect(page.locator("#month-filter")).toHaveValue("2026-09");
+  await expect(page.locator("#registered-days")).toHaveText("5");
+  await expect(page.locator("#history-range-message")).toContainText("aplicado automaticamente");
   await expect(page.locator("#records-body")).toContainText("17/08/2026");
+  await expect(page.locator("#records-body")).toContainText("15/09/2026");
   await expect(page.locator("#records-body")).toContainText("45 min");
   await expect(page.locator("#records-body")).toContainText("18/08/2026");
   await expect(page.locator("#records-body")).toContainText("0 min");
@@ -201,10 +208,10 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
   await page.locator("#forponto-block").selectOption("0");
   await expect(page.locator("#forponto-confirm")).toBeDisabled();
   await page.locator("#forponto-update-existing").check();
-  await expect(page.locator("#forponto-summary")).toContainText("4 para atualizar");
+  await expect(page.locator("#forponto-summary")).toContainText("5 para atualizar");
   await page.locator("#forponto-confirm").click();
   await page.locator("#confirm-accept").click();
-  await expect(page.locator("#records-body tr")).toHaveCount(4);
+  await expect(page.locator("#records-body tr")).toHaveCount(5);
   const backupDownload=page.waitForEvent("download");
   await page.locator("#export-json").click();
   const backup=JSON.parse(await fs.promises.readFile(await (await backupDownload).path(), "utf8"));
@@ -212,4 +219,27 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
   expect(backup.registros.find((record)=>record.data==="2026-08-19")).toMatchObject({
     tipo:"compensacao", dadosImportacao:{ officialBalanceMinutes:-480 }
   });
+});
+
+test("aplica automaticamente o período dos registros restaurados de um backup", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  const backup={
+    versao:1,
+    configuracoes:{ metaDiariaMinutos:528, intervaloPadraoMinutos:60, tema:"light", saldosManuais:{} },
+    registros:["2026-08-16","2026-09-15"].map((date,index)=>({
+      id:`00000000-0000-4000-8000-00000000000${index+2}`,
+      data:date, tipo:"folga", entrada:"", saida:"", intervaloMinutos:0, fotos:{ entrada:"", saida:"" }
+    }))
+  };
+  await page.locator("#json-file").setInputFiles({ name:"backup.json", mimeType:"application/json", buffer:Buffer.from(JSON.stringify(backup)) });
+  await expect(page.locator("#confirm-dialog")).toBeVisible();
+  await page.locator("#confirm-accept").click();
+  await expect(page.locator("#history-date-from")).toHaveValue("2026-08-16");
+  await expect(page.locator("#history-date-to")).toHaveValue("2026-09-15");
+  await expect(page.locator("#month-filter")).toHaveValue("2026-09");
+  await expect(page.locator("#records-body tr")).toHaveCount(2);
+  await expect(page.locator("#registered-days")).toHaveText("2");
+  await expect(page.locator("#history-range-message")).toContainText("aplicado automaticamente");
 });
