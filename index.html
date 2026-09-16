@@ -115,7 +115,7 @@
           <label class="field"><span>Tipo de dia</span><select id="day-type"><option value="trabalho">Dia trabalhado</option><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="ferias">Férias</option><option value="falta">Falta</option></select></label>
           <label class="field work-field"><span>Entrada</span><input id="start-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="08:00" value="08:00" autocapitalize="off" spellcheck="false"></label>
           <label class="field work-field"><span>Saída</span><input id="end-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="17:48" value="17:48" autocapitalize="off" spellcheck="false"></label>
-          <label class="field work-field"><span>Intervalo fixo (min)</span><input id="break-time" type="number" value="60" readonly aria-readonly="true"></label>
+          <label class="field work-field"><span>Intervalo (min)</span><input id="break-time" type="number" min="0" max="600" step="1" value="60" required></label>
         </div>
         <div class="mobile-photo-field">
           <button id="open-camera" class="photo-capture" type="button">
@@ -146,7 +146,9 @@
           <button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button>
           <button id="export-json" class="button button--secondary" type="button">Baixar backup</button>
           <button id="import-json" class="button button--secondary" type="button">Importar backup</button>
+          <button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX</button>
           <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup JSON">
+          <input id="forponto-file" class="visually-hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Selecionar relatório Forponto XLSX">
         </div>
       </div>
       <div class="table-wrap">
@@ -185,6 +187,14 @@
       </div>
     </section>
   </main>
+  <dialog id="forponto-dialog" class="confirm-dialog forponto-dialog" aria-labelledby="forponto-title">
+    <h2 id="forponto-title">Prévia da importação Forponto</h2>
+    <p>Confira o bloco e os dias antes de importar. Registros já existentes não serão alterados.</p>
+    <label class="field"><span>Bloco do relatório</span><select id="forponto-block"></select></label>
+    <p id="forponto-summary" role="status"></p>
+    <div class="table-wrap forponto-preview"><table><thead><tr><th>Data</th><th>Dia</th><th>Marcações</th><th>Resultado</th></tr></thead><tbody id="forponto-preview-body"></tbody></table></div>
+    <div class="confirm-dialog__actions"><button id="forponto-cancel" class="button button--ghost" type="button">Cancelar</button><button id="forponto-confirm" class="button button--primary" type="button">Importar dias válidos</button></div>
+  </dialog>
   <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
     <div class="confirm-dialog__icon" aria-hidden="true">!</div>
     <h2 id="confirm-title">Confirmar ação</h2>
@@ -234,6 +244,8 @@
   <script src="assets/js/calculations.js"></script>
   <script src="assets/js/repository.js"></script>
   <script src="assets/js/use-cases.js"></script>
+  <script src="assets/js/vendor/fflate.min.js"></script>
+  <script src="assets/js/forponto-import.js"></script>
   <script src="assets/js/script.js"></script>
 </body>
 </html>

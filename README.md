@@ -15,6 +15,8 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 - exportação em CSV e PDF e restauração transacional de backup JSON;
 - instalação como PWA, tema claro/escuro persistente e layout responsivo.
 
+Importação Forponto: selecione um XLSX, escolha o bloco correto e confira a prévia. Jornadas com quatro marcações usam o intervalo real; linhas incompletas ou ambíguas não são salvas. Datas já registradas são preservadas. O saldo calculado pelo aplicativo pode diferir do saldo oficial por tolerâncias e regras de compensação.
+
 ## Desenvolvimento
 
 O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS é carregada pelo navegador.

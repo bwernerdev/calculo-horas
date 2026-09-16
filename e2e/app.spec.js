@@ -1,5 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs");
+const { zipSync, strToU8 } = require("fflate");
 
 const supabaseMock = fs.readFileSync("e2e/supabase-mock.js", "utf8");
 let server;
@@ -91,4 +92,29 @@ test("exporta um backup JSON válido", async ({ page }) => {
   const download = await downloadPromise;
   const content = JSON.parse(await fs.promises.readFile(await download.path(), "utf8"));
   expect(content).toMatchObject({ versao: 1, registros: [] });
+});
+
+test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  const cells = [
+    ["A1", "16/08/2026 Dom-Folg"],
+    ["A2", "17/08/2026 Seg-Norm"], ["F2", "08:00"], ["G2", "12:00"], ["H2", "12:45"], ["I2", "17:00"],
+    ["A3", "18/08/2026 Ter-Norm"], ["F3", "08:00"], ["G3", "12:00"],
+    ["A4", "16/08/2026 Dom"]
+  ];
+  const rowXml = [1,2,3,4].map((row) => "<row r=\"" + row + "\">" +
+    cells.filter(([address]) => address.endsWith(String(row))).map(([address,value]) =>
+      "<c r=\"" + address + "\" t=\"inlineStr\"><is><t>" + value + "</t></is></c>").join("") + "</row>").join("");
+  const xml = '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + rowXml + '</sheetData></worksheet>';
+  const buffer = Buffer.from(zipSync({ "xl/worksheets/sheet1.xml": strToU8(xml) }));
+  await page.locator("#forponto-file").setInputFiles({ name:"forponto.xlsx", mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer });
+  await expect(page.locator("#forponto-dialog")).toBeVisible();
+  await page.locator("#forponto-block").selectOption("0");
+  await expect(page.locator("#forponto-summary")).toContainText("2 dia(s) pronto(s)");
+  await page.locator("#forponto-confirm").click();
+  await expect(page.locator("#records-body")).toContainText("17/08/2026");
+  await expect(page.locator("#records-body")).toContainText("45 min");
+  await expect(page.locator("#records-body")).not.toContainText("18/08/2026");
 });

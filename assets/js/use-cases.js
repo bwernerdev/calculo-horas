@@ -17,6 +17,7 @@
 
     async function saveRecord(record, targetMinutes, currentRecords) {
       if (record.type === "trabalho") {
+        if (!Number.isInteger(record.break) || record.break < 0 || record.break > 600) throw new Error("O intervalo deve estar entre 0 e 600 minutos.");
         if (!record.start || !record.end) throw new Error("Informe os horários de entrada e saída.");
         const worked = calculator.calculate(record, targetMinutes).worked;
         if (worked < 0) throw new Error("O intervalo não pode superar a jornada.");

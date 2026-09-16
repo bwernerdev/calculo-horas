@@ -116,6 +116,10 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 .confirm-dialog__icon { display:grid; place-items:center; width:42px; height:42px; margin-bottom:16px; border-radius:50%; color:var(--danger); background:var(--danger-bg); font-size:1.2rem; font-weight:900; }
 .confirm-dialog h2 { font-size:1.3rem; } .confirm-dialog p { margin:10px 0 22px; color:var(--muted); line-height:1.55; }
 .confirm-dialog__actions { display:flex; justify-content:flex-end; gap:10px; }
+.forponto-dialog { width:min(900px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
+.forponto-dialog .field { margin:16px 0; }
+.forponto-preview { max-height:45dvh; overflow:auto; margin:16px 0 20px; border:1px solid var(--line); border-radius:12px; }
+.forponto-preview th { position:sticky; top:0; background:var(--surface); }
 .password-dialog form { display:grid; gap:15px; }
 .password-dialog form>p { margin:0; }
 .photo-type-icon { color:var(--primary-dark); background:var(--primary-soft); } .photo-type-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; } .photo-type-actions #photo-type-cancel { grid-column:1/-1; }

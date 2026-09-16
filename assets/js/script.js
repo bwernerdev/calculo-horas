@@ -44,6 +44,8 @@ let applicationLoad;
 let applicationGeneration = 0;
 let manualBalanceSaveTimer;
 let settingsSaveChain=Promise.resolve();
+let forpontoBlocks=[];
+let forpontoGeneration=0;
 
 const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY) || "";
 $("#auth-email").value = rememberedEmail;
@@ -64,7 +66,9 @@ function updateForecast() {
   const date=$("#work-date").value, month=date.slice(0,7), editingId=$("#editing-id").value;
   const monthRecords=records.filter((record)=>record.date.startsWith(month) && record.id!==editingId);
   const currentBalance=HoursCalculator.summarize(monthRecords,settings.target).balance;
-  const suggestion=HoursCalculator.suggestExit(start,settings.target,FIXED_BREAK_MINUTES,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
+  const breakMinutes=Number($("#break-time").value);
+  if (!Number.isInteger(breakMinutes) || breakMinutes<0 || breakMinutes>600) { $("#exit-forecast").textContent="Informe um intervalo entre 0 e 600 minutos."; return; }
+  const suggestion=HoursCalculator.suggestExit(start,settings.target,breakMinutes,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
   const balanceClass=currentBalance>0 ? "value-positive" : currentBalance<0 ? "value-negative" : "";
   const pending=suggestion.worked===SUGGESTED_DAILY_LIMIT_MINUTES && suggestion.remainingBalance<0 ? `<span class="forecast__warning"><b>Margem preventiva de 15 min aplicada</b> antes do limite de 10h. Saldo restante: <b>${signed(suggestion.remainingBalance)}</b></span>` : "";
   $("#exit-forecast").innerHTML = `<span>Saída-base: <b>${suggestion.baseExit}</b></span><span>Saldo atual: <b class="${balanceClass}">${signed(currentBalance)}</b></span><strong>Saída sugerida: ${suggestion.suggestedExit}</strong>${pending}`;
@@ -212,7 +216,7 @@ $("#photo-dialog").addEventListener("close",()=>$("#photo-dialog-image").removeA
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault(); const type=$("#day-type").value;
-  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? normalizeClock($("#start-time").value) : "", end:type==="trabalho" ? normalizeClock($("#end-time").value) : "", break:type==="trabalho" ? FIXED_BREAK_MINUTES : 0, photos:{...pendingPhotos} };
+  const record={ id:$("#editing-id").value || crypto.randomUUID(), date:$("#work-date").value, type, start:type==="trabalho" ? normalizeClock($("#start-time").value) : "", end:type==="trabalho" ? normalizeClock($("#end-time").value) : "", break:type==="trabalho" ? Number($("#break-time").value) : 0, photos:{...pendingPhotos} };
   const submit=event.submitter || $("#submit-button"), originalText=submit.textContent;
   submit.disabled=true; submit.textContent="Salvando...";
   try {
@@ -230,7 +234,7 @@ form.addEventListener("submit", async (event) => {
 function editRecord(id) {
   const record=records.find((item)=>item.id===id); if (!record) return;
   $("#editing-id").value=record.id; $("#work-date").value=record.date; $("#day-type").value=record.type;
-  if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=FIXED_BREAK_MINUTES;
+  if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=record.break;
   pendingPhotos={...recordPhotos(record)}; updatePhotoPreview(); $("#form-title").textContent="Editar jornada"; $("#submit-button").textContent="Salvar alteração"; $("#cancel-edit").hidden=false; updateForecast(); scrollTo({top:0,behavior:"smooth"});
 }
 function showRecordPhoto(id,kind) {
@@ -414,6 +418,97 @@ $("#export-json").addEventListener("click",async (event)=>{
 });
 
 $("#import-json").addEventListener("click",()=>$("#json-file").click());
+$("#import-forponto").addEventListener("click",()=>$("#forponto-file").click());
+function closeForpontoPreview() {
+  if ($("#forponto-dialog").open) $("#forponto-dialog").close();
+  forpontoBlocks=[];
+  $("#forponto-preview-body").replaceChildren();
+  $("#forponto-block").replaceChildren();
+}
+function renderForpontoPreview() {
+  const block=$("#forponto-block").value==="" ? null : forpontoBlocks[Number($("#forponto-block").value)];
+  const body=$("#forponto-preview-body");
+  body.replaceChildren();
+  if (!block) { $("#forponto-summary").textContent="Selecione um bloco para conferir os dados."; $("#forponto-confirm").disabled=true; return; }
+  let ready=0, duplicates=0, skipped=0;
+  const knownDates=new Set(records.map((record)=>record.date));
+  for (const day of block.days) {
+    const duplicate=knownDates.has(day.date);
+    const status=duplicate ? "Já registrado — preservado" : day.status==="ready" ? "Pronto para importar" : day.reason;
+    if (duplicate) duplicates++;
+    else if (day.status==="ready") ready++;
+    else skipped++;
+    const tr=document.createElement("tr");
+    for (const value of [day.date.split("-").reverse().join("/"),day.label || "—",day.punches?.join(" · ") || "—",status]) {
+      const td=document.createElement("td");
+      td.textContent=value;
+      tr.append(td);
+    }
+    body.append(tr);
+  }
+  $("#forponto-summary").textContent=ready+" dia(s) pronto(s), "+duplicates+" já registrado(s), "+skipped+" pendente(s) de revisão. Horas podem diferir do saldo oficial do Forponto por regras de tolerância e compensação.";
+  $("#forponto-confirm").disabled=ready===0;
+  $("#forponto-confirm").textContent="Importar "+ready+" dia(s) válido(s)";
+}
+$("#forponto-block").addEventListener("change",renderForpontoPreview);
+$("#forponto-cancel").addEventListener("click",closeForpontoPreview);
+$("#forponto-dialog").addEventListener("cancel",(event)=>{ if ($("#forponto-cancel").disabled) event.preventDefault(); });
+$("#forponto-dialog").addEventListener("close",()=>{ forpontoBlocks=[]; });
+$("#forponto-file").addEventListener("change",async(event)=>{
+  const file=event.target.files?.[0];
+  if (!file) return;
+  const button=$("#import-forponto");
+  button.disabled=true;
+  try {
+    forpontoBlocks=await ForpontoImport.parseFile(file,fflate.unzipSync);
+    $("#forponto-block").replaceChildren();
+    const placeholder=document.createElement("option");
+    placeholder.value=""; placeholder.textContent="Selecione o bloco correto"; $("#forponto-block").append(placeholder);
+    forpontoBlocks.forEach((block,index)=>{
+      const option=document.createElement("option");
+      option.value=String(index);
+      option.textContent="Bloco "+(index+1)+(block.header ? " — "+block.header : "")+" — "+block.days.length+" dia(s), "+block.days.filter((day)=>day.punches?.length).length+" com marcações";
+      $("#forponto-block").append(option);
+    });
+    $("#forponto-block").value="";
+    renderForpontoPreview();
+    forpontoGeneration=applicationGeneration;
+    $("#forponto-dialog").showModal();
+  } catch (error) {
+    captureError(error,"forponto-parse");
+    showToast(error.message || "Não foi possível ler o relatório XLSX.","error");
+  } finally { event.target.value=""; button.disabled=false; }
+});
+$("#forponto-confirm").addEventListener("click",async()=>{
+  const block=$("#forponto-block").value==="" ? null : forpontoBlocks[Number($("#forponto-block").value)];
+  if (!block || forpontoGeneration!==applicationGeneration || !useCases) return;
+  const knownDates=new Set(records.map((record)=>record.date));
+  const pending=block.days.filter((day)=>day.status==="ready" && !knownDates.has(day.date));
+  const button=$("#forponto-confirm");
+  button.disabled=true;
+  $("#forponto-cancel").disabled=true;
+  let imported=0;
+  try {
+    for (const day of pending) {
+      if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
+      const record={ ...day.record, id:crypto.randomUUID(), photos:{ entrada:"", saida:"" } };
+      const result=await useCases.saveRecord(record,settings.target,records);
+      if (forpontoGeneration!==applicationGeneration) throw new Error("A sessão mudou durante a importação.");
+      records=result.records;
+      imported++;
+    }
+    if (pending.length) $("#month-filter").value=pending[0].record.date.slice(0,7);
+    loadManualBalance();
+    render();
+    closeForpontoPreview();
+    showToast(imported+" dia(s) importado(s). Os demais não foram alterados.");
+  } catch (error) {
+    captureError(error,"forponto-import",{ imported });
+    renderForpontoPreview();
+    render();
+    showToast("Importação interrompida após "+imported+" dia(s): "+error.message,"error");
+  } finally { button.disabled=false; $("#forponto-cancel").disabled=false; }
+});
 $("#json-file").addEventListener("change",async(event)=>{
   const file=event.target.files[0]; if (!file) return;
   const importButton=$("#import-json"); importButton.disabled=true; importButton.textContent="Validando backup...";
@@ -488,6 +583,7 @@ function selectAuthTab(tab) {
 }
 function clearSensitiveState() {
   applicationGeneration+=1;
+  closeForpontoPreview();
   if ($("#confirm-dialog").open) $("#confirm-cancel").click();
   stopCamera();
   document.querySelectorAll("dialog[open]").forEach((dialog)=>dialog.close());
