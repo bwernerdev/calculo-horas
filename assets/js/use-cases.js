@@ -42,6 +42,11 @@
       return records.filter((item) => item.id !== id);
     }
 
+    async function deleteAllRecords() {
+      const result=await repository.deleteAllRecords();
+      return { records:[], photoCleanupFailed:result.photoCleanupFailed || 0 };
+    }
+
     async function saveSettings(settings) {
       if (!Number.isInteger(settings.target) || settings.target < 1 || settings.target > maxDailyWorkMinutes) {
         throw new Error("A meta diária deve estar entre 1 minuto e 10 horas.");
@@ -57,7 +62,7 @@
       return nextSettings;
     }
 
-    return { getSettings, saveRecord, deleteRecord, saveSettings };
+    return { getSettings, saveRecord, deleteRecord, deleteAllRecords, saveSettings };
   }
 
   return { createHoursUseCases };

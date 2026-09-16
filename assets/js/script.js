@@ -147,6 +147,7 @@ function render() {
     $("#records-body").rows[index].cells[1].append(badge);
   });
   $("#empty-state").hidden = list.length > 0;
+  $("#clear-records").disabled=records.length===0;
   const photos=list.flatMap((record)=>Object.entries(recordPhotos(record)).filter(([,photo])=>photo).map(([kind,photo])=>({record,kind,photo})));
   $("#photo-history").hidden=photos.length===0; $("#photo-count").textContent=`${photos.length} ${photos.length===1 ? "foto" : "fotos"}`;
   $("#photo-gallery").innerHTML=photos.map(({record,kind,photo})=>{
@@ -288,6 +289,44 @@ for (const input of [$("#manual-positive"),$("#manual-negative")]) {
   });
   input.addEventListener("blur",()=>{ if (!input.value.trim()) return; const formatted=formatDuration(input.value); if (formatted===null) { input.setCustomValidity("Digite horas inteiras ou horas:minutos, como 1 ou 1:30."); showToast(input.validationMessage,"error"); return; } input.value=formatted; input.setCustomValidity(""); input.dispatchEvent(new Event("input",{ bubbles:true })); });
 }
+let clearingRecords=false;
+$("#clear-records").addEventListener("click",()=>{
+  if (!records.length) return;
+  $("#clear-records-message").textContent="Serão apagados "+records.length+" registro(s) de todos os meses e as fotos vinculadas. O tema, a meta diária e os saldos manuais serão mantidos. Esta ação não pode ser desfeita; baixe um backup antes se quiser conservar os dados.";
+  $("#clear-records-confirmation").value="";
+  $("#clear-records-accept").disabled=true;
+  $("#clear-records-dialog").showModal();
+  $("#clear-records-confirmation").focus();
+});
+$("#clear-records-confirmation").addEventListener("input",()=>{
+  $("#clear-records-accept").disabled=$("#clear-records-confirmation").value.trim()!=="APAGAR";
+});
+$("#clear-records-cancel").addEventListener("click",()=>$("#clear-records-dialog").close());
+$("#clear-records-dialog").addEventListener("cancel",(event)=>{ if (clearingRecords) event.preventDefault(); });
+$("#clear-records-form").addEventListener("submit",async(event)=>{
+  event.preventDefault();
+  if (clearingRecords || $("#clear-records-confirmation").value.trim()!=="APAGAR" || !records.length || !useCases) return;
+  clearingRecords=true;
+  const generation=applicationGeneration;
+  const accept=$("#clear-records-accept"), cancel=$("#clear-records-cancel");
+  accept.disabled=true; cancel.disabled=true; accept.textContent="Apagando...";
+  try {
+    const result=await useCases.deleteAllRecords();
+    if (generation!==applicationGeneration) return;
+    records=result.records;
+    $("#clear-records-dialog").close();
+    resetForm();
+    render();
+    if (result.photoCleanupFailed) showToast("Registros apagados, mas "+result.photoCleanupFailed+" foto(s) não puderam ser removidas do armazenamento.","error");
+    else showToast("Todos os registros e fotos vinculadas foram apagados.");
+  } catch (error) {
+    captureError(error,"records-delete-all");
+    if (generation===applicationGeneration) showToast("Não foi possível apagar os registros: "+(error.message || "tente novamente."),"error");
+  } finally {
+    clearingRecords=false; cancel.disabled=false; accept.textContent="Apagar registros";
+    accept.disabled=$("#clear-records-confirmation").value.trim()!=="APAGAR";
+  }
+});
 for (const input of [$("#simulator-start-time"),$("#simulator-end-time")]) input.addEventListener("input",()=>{ saveManualSimulationLocally(); updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance); });
 for (const input of [$("#daily-target"),$("#start-time"),$("#end-time"),$("#simulator-start-time"),$("#simulator-end-time")]) {
   input.addEventListener("blur",()=>{ const formatted=normalizeClock(input.value); if (!formatted) { if (input.value.trim()) { input.setCustomValidity("Digite um horário válido, como 8, 830 ou 08:30."); showToast(input.validationMessage,"error"); } return; } input.value=formatted; input.setCustomValidity(""); input.dispatchEvent(new Event("input",{ bubbles:true })); });

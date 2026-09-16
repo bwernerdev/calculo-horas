@@ -29,6 +29,7 @@
         return record;
       },
       deleteRecord(id) { persist(load().filter((item) => item.id !== id)); },
+      deleteAllRecords() { persist([]); return { photoCleanupFailed:0 }; },
       getSettings() {
         const settings = readJson(storage, keys.settings, {});
         return settings && typeof settings === "object" ? settings : {};
@@ -179,6 +180,36 @@
         (recordObjectUrls.get(id) || []).forEach(revokeObjectUrl);
         recordObjectUrls.delete(id);
         await removeFiles(paths);
+      },
+
+      async deleteAllRecords() {
+        const paths=[];
+        for (let from=0; ; from+=PAGE_SIZE) {
+          const { data, error } = await client.from("records")
+            .select("photos").eq("user_id",userId).order("id",{ ascending:true })
+            .range(from,from+PAGE_SIZE-1);
+          throwIfError(error);
+          for (const row of data) paths.push(...Object.values(row.photos || {}));
+          if (data.length<PAGE_SIZE) break;
+        }
+        const { error } = await client.from("records").delete().eq("user_id",userId);
+        throwIfError(error);
+        knownIds.clear();
+        knownPhotoPaths.clear();
+        recordObjectUrls.forEach((urls)=>urls.forEach(revokeObjectUrl));
+        recordObjectUrls.clear();
+        const files=[...new Set(paths.filter((path)=>typeof path==="string" && path.startsWith(userId+"/")))];
+        let photoCleanupFailed=0;
+        for (let from=0;from<files.length;from+=100) {
+          const batch=files.slice(from,from+100);
+          try {
+            const result=await bucket.remove(batch);
+            if (result.error) photoCleanupFailed+=batch.length;
+          } catch {
+            photoCleanupFailed+=batch.length;
+          }
+        }
+        return { photoCleanupFailed };
       },
 
       async getSettings() {

@@ -44,6 +44,26 @@ test("entra na conta e registra uma jornada", async ({ page }) => {
   await expect(page.locator("#toast-region")).toContainText("Jornada registrada com sucesso");
 });
 
+test("apaga todos os registros somente após confirmação digitada", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  await page.locator("#work-date").fill("2026-09-15");
+  await page.locator("#submit-button").click();
+  await expect(page.locator("#records-body tr")).toHaveCount(1);
+  await page.locator("#clear-records").click();
+  await expect(page.locator("#clear-records-dialog")).toBeVisible();
+  await page.locator("#clear-records-cancel").click();
+  await expect(page.locator("#records-body tr")).toHaveCount(1);
+  await page.locator("#clear-records").click();
+  await page.locator("#clear-records-confirmation").fill("apagar");
+  await expect(page.locator("#clear-records-accept")).toBeDisabled();
+  await page.locator("#clear-records-confirmation").fill("APAGAR");
+  await page.locator("#clear-records-accept").click();
+  await expect(page.locator("#records-body tr")).toHaveCount(0);
+  await expect(page.locator("#clear-records")).toBeDisabled();
+});
+
 test("carrega a conta e calcula a simulação pessoal", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");

@@ -30,6 +30,38 @@ test("restauração local troca registros e configurações em conjunto", () => 
   assert.deepEqual(repository.getSettings(), { target:528, theme:"dark" });
 });
 
+test("limpeza local apaga registros sem alterar preferências", () => {
+  const repository=createLocalStorageRepository(memoryStorage(),{ records:"records",settings:"settings" });
+  repository.saveRecord({ id:"1",date:"2026-08-17" });
+  repository.saveSettings({ theme:"dark",target:528 });
+  assert.deepEqual(repository.deleteAllRecords(),{ photoCleanupFailed:0 });
+  assert.deepEqual(repository.findAllRecords(),[]);
+  assert.deepEqual(repository.getSettings(),{ theme:"dark",target:528 });
+});
+
+test("limpeza Supabase limita a exclusão ao usuário e remove suas fotos", async () => {
+  const calls=[];
+  const client={
+    storage:{ from:()=>({ remove:async(paths)=>{ calls.push(["photos",paths]); return { error:null }; } }) },
+    from:()=>({
+      select:()=>({
+        eq:()=>({
+          order:()=>({
+            range:async()=>({ data:[{ photos:{ entrada:"user-1/record-1/in.jpg",saida:"other-user/out.jpg" } }],error:null })
+          })
+        })
+      }),
+      delete:()=>({ eq:async(column,value)=>{ calls.push(["delete",column,value]); return { error:null }; } })
+    })
+  };
+  const repository=createSupabaseRepository(client,"user-1");
+  assert.deepEqual(await repository.deleteAllRecords(),{ photoCleanupFailed:0 });
+  assert.deepEqual(calls,[
+    ["delete","user_id","user-1"],
+    ["photos",["user-1/record-1/in.jpg"]]
+  ]);
+});
+
 test("repositório Supabase faz upsert e delete individuais", async () => {
   const calls=[];
   let savedRow;

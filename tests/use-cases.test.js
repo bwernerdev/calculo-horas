@@ -10,10 +10,20 @@ function createRepository() {
     findAllRecords: async () => [],
     saveRecord: async (record) => { saved.push(record); return record; },
     deleteRecord: async () => {},
+    deleteAllRecords: async () => ({ photoCleanupFailed:0 }),
     getSettings: async () => ({}),
     saveSettings: async () => {}
   };
 }
+
+test("apaga todos os registros sem tocar nas configurações", async () => {
+  const repository=createRepository();
+  let settingsSaved=false;
+  repository.saveSettings=async()=>{ settingsSaved=true; };
+  const useCases=createHoursUseCases({ calculator,repository });
+  assert.deepEqual(await useCases.deleteAllRecords(),{ records:[],photoCleanupFailed:0 });
+  assert.equal(settingsSaved,false);
+});
 
 test("caso de uso salva uma única jornada sem regravar a coleção", async () => {
   const repository = createRepository();

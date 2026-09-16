@@ -147,6 +147,7 @@
           <button id="export-json" class="button button--secondary" type="button">Baixar backup</button>
           <button id="import-json" class="button button--secondary" type="button">Importar backup</button>
           <button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX</button>
+          <button id="clear-records" class="button button--danger" type="button">Apagar todos os registros</button>
           <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup JSON">
           <input id="forponto-file" class="visually-hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Selecionar relatório Forponto XLSX">
         </div>
@@ -187,6 +188,18 @@
       </div>
     </section>
   </main>
+  <dialog id="clear-records-dialog" class="confirm-dialog" aria-labelledby="clear-records-title" aria-describedby="clear-records-message">
+    <form id="clear-records-form">
+      <div class="confirm-dialog__icon" aria-hidden="true">!</div>
+      <h2 id="clear-records-title">Apagar todos os registros?</h2>
+      <p id="clear-records-message"></p>
+      <label class="field"><span>Digite APAGAR para confirmar</span><input id="clear-records-confirmation" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label>
+      <div class="confirm-dialog__actions">
+        <button id="clear-records-cancel" class="button button--ghost" type="button">Cancelar</button>
+        <button id="clear-records-accept" class="button button--danger" type="submit" disabled>Apagar registros</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="forponto-dialog" class="confirm-dialog forponto-dialog" aria-labelledby="forponto-title">
     <h2 id="forponto-title">Prévia da importação Forponto</h2>
     <p>Confira o bloco e os dias antes de importar. Registros já existentes não serão alterados.</p>

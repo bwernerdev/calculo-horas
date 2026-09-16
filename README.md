@@ -19,6 +19,8 @@ Importação Forponto: selecione um XLSX, escolha o bloco correto e confira a pr
 
 Antes de publicar esta versão, aplique [a migração Forponto](supabase/migrations/20260916000000_forponto_import.sql) no Supabase. Ela acrescenta os dados de origem aos registros e aceita o tipo compensação.
 
+O botão “Apagar todos os registros” remove os registros de todos os meses e as fotos vinculadas à conta após confirmação digitada. Configurações, tema e saldos manuais não são apagados. Recomenda-se baixar um backup antes.
+
 ## Desenvolvimento
 
 O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS é carregada pelo navegador.
