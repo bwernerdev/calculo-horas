@@ -44,6 +44,7 @@ let applicationLoad;
 let applicationGeneration = 0;
 let manualBalanceSaveTimer;
 let settingsSaveChain=Promise.resolve();
+let historyRange=null;
 let forpontoBlocks=[];
 let forpontoGeneration=0;
 
@@ -64,8 +65,8 @@ function updateForecast() {
   const start=normalizeClock($("#start-time").value);
   if (!visible || !start) { $("#exit-forecast").textContent="Informe um horário de entrada válido."; return; }
   const date=$("#work-date").value, month=date.slice(0,7), editingId=$("#editing-id").value;
-  const monthRecords=records.filter((record)=>record.date.startsWith(month) && record.id!==editingId);
-  const currentBalance=HoursCalculator.summarize(monthRecords,settings.target).balance;
+  const basisRecords=(historyRange ? filteredRecords() : records.filter((record)=>record.date.startsWith(month))).filter((record)=>record.id!==editingId);
+  const currentBalance=HoursCalculator.summarize(basisRecords,settings.target).balance;
   const breakMinutes=Number($("#break-time").value);
   if (!Number.isInteger(breakMinutes) || breakMinutes<0 || breakMinutes>600) { $("#exit-forecast").textContent="Informe um intervalo entre 0 e 600 minutos."; return; }
   const suggestion=HoursCalculator.suggestExit(start,settings.target,breakMinutes,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
@@ -74,7 +75,24 @@ function updateForecast() {
   $("#exit-forecast").innerHTML = `<span>Saída-base: <b>${suggestion.baseExit}</b></span><span>Saldo atual: <b class="${balanceClass}">${signed(currentBalance)}</b></span><strong>Saída sugerida: ${suggestion.suggestedExit}</strong>${pending}`;
 }
 
-function filteredRecords() { return records.filter((record) => record.date.startsWith($("#month-filter").value)).sort((a,b) => b.date.localeCompare(a.date)); }
+function monthlyRecords() { return records.filter((record)=>record.date.startsWith($("#month-filter").value)).sort((a,b)=>b.date.localeCompare(a.date)); }
+function filteredRecords() {
+  return historyRange
+    ? records.filter((record)=>record.date>=historyRange.from && record.date<=historyRange.to).sort((a,b)=>b.date.localeCompare(a.date))
+    : monthlyRecords();
+}
+function historyPeriodLabel() {
+  return historyRange ? historyRange.from.split("-").reverse().join("/")+" a "+historyRange.to.split("-").reverse().join("/") : $("#month-filter").value;
+}
+function historyFilenameSuffix() {
+  return historyRange ? historyRange.from+"-a-"+historyRange.to : $("#month-filter").value;
+}
+function clearHistoryRange() {
+  historyRange=null;
+  $("#history-range-form").reset();
+  $("#history-range-message").textContent="";
+  $("#history-range-message").classList.remove("history-range__message--error");
+}
 function parseManualDuration(value) { return parseDuration(value) ?? 0; }
 function manualBalanceStorageKey() { return `${MANUAL_BALANCE_KEY}:${loadedUserId || "anonymous"}:${$("#month-filter").value || "current"}`; }
 function saveSettingsQueued(nextSettings) {
@@ -147,14 +165,22 @@ function render() {
     $("#records-body").rows[index].cells[1].append(badge);
   });
   $("#empty-state").hidden = list.length > 0;
+  $("#empty-state").textContent=historyRange ? "Nenhum registro neste período." : "Nenhum registro neste mês.";
   $("#clear-records").disabled=records.length===0;
   const photos=list.flatMap((record)=>Object.entries(recordPhotos(record)).filter(([,photo])=>photo).map(([kind,photo])=>({record,kind,photo})));
+  $("#photo-history-title").textContent=historyRange ? "Fotos do período" : "Fotos do mês";
   $("#photo-history").hidden=photos.length===0; $("#photo-count").textContent=`${photos.length} ${photos.length===1 ? "foto" : "fotos"}`;
   $("#photo-gallery").innerHTML=photos.map(({record,kind,photo})=>{
     const date=new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
     return `<button class="photo-card" type="button" data-view-photo="${record.id}" data-photo-kind="${kind}" aria-label="Ver foto de ${kind} de ${date}"><img src="${photo}" alt="" loading="lazy"><span class="photo-card__info"><strong>${date}</strong><small>${kind === "entrada" ? "Entrada" : "Saída"} · ${TYPES[record.type]}</small></span></button>`;
   }).join("");
   const totals = HoursCalculator.summarize(list,settings.target);
+  $(".summary-grid").setAttribute("aria-label",historyRange ? "Resumo do período pesquisado" : "Resumo do mês");
+  $("#balance-period-label").textContent=historyRange ? "Saldo do período" : "Saldo do mês";
+  $("#history-title").textContent=historyRange ? "Registros do período" : "Registros mensais";
+  $("#simulator-description").textContent=historyRange
+    ? "O saldo dos registros considera o período pesquisado. Os ajustes manuais continuam vinculados ao mês selecionado."
+    : "Informe saldos anteriores ou ajustes que ainda não aparecem nos registros deste mês.";
   $("#monthly-worked").textContent = duration(totals.worked); $("#monthly-balance").textContent = signed(totals.balance);
   $("#monthly-positive").textContent = `+${duration(totals.positive)}`;
   $("#monthly-negative").textContent = `-${duration(totals.negative)}`;
@@ -279,7 +305,29 @@ $("#settings-form").addEventListener("submit",async (event)=>{
   finally { submit.disabled=false; }
 });
 $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
-$("#month-filter").addEventListener("change",()=>{ loadManualBalance(); render(); }); $("#cancel-edit").addEventListener("click",resetForm);
+$("#month-filter").addEventListener("change",()=>{ clearHistoryRange(); loadManualBalance(); render(); }); $("#cancel-edit").addEventListener("click",resetForm);
+$("#history-range-form").addEventListener("submit",(event)=>{
+  event.preventDefault();
+  const from=$("#history-date-from").value, to=$("#history-date-to").value;
+  if (!isValidCalendarDate(from) || !isValidCalendarDate(to)) {
+    $("#history-range-message").textContent="Informe as datas inicial e final.";
+    $("#history-range-message").classList.add("history-range__message--error");
+    return;
+  }
+  if (from>to) {
+    $("#history-range-message").textContent="A data inicial não pode ser posterior à data final.";
+    $("#history-range-message").classList.add("history-range__message--error");
+    return;
+  }
+  historyRange={ from,to };
+  $("#history-range-message").classList.remove("history-range__message--error");
+  $("#history-range-message").textContent="Exibindo e calculando os registros de "+historyPeriodLabel()+". Os ajustes manuais continuam vinculados ao mês selecionado.";
+  render();
+});
+$("#history-range-clear").addEventListener("click",()=>{
+  clearHistoryRange();
+  render();
+});
 for (const input of [$("#manual-positive"),$("#manual-negative")]) {
   input.addEventListener("input",()=>{
     input.setCustomValidity("");
@@ -353,7 +401,7 @@ $("#export-csv").addEventListener("click",()=>{
   const header=["Data","Tipo","Entrada","Saída","Intervalo (min)","Trabalhado","Saldo"];
   const rows=filteredRecords().map((r)=>{ const c=calculate(r); return [r.date,TYPES[r.type],r.start,r.end,r.break,duration(c.worked),signed(c.balance)]; });
   const csv="\uFEFF"+[header,...rows].map((row)=>row.map(escapeCell).join(";")).join("\r\n"); const link=document.createElement("a");
-  link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); link.download=`horas-${$("#month-filter").value}.csv`; link.click(); URL.revokeObjectURL(link.href);
+  link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); link.download=`horas-${historyFilenameSuffix()}.csv`; link.click(); URL.revokeObjectURL(link.href);
 });
 function pdfText(value) {
   return String(value).replaceAll("\\","\\\\").replaceAll("(","\\(").replaceAll(")","\\)");
@@ -374,11 +422,11 @@ function buildPdf() {
   const line=(x1,y1,x2,y2,color="0.86 0.89 0.94")=>`${color} RG ${x1} ${y1} m ${x2} ${y2} l S`;
   pages.forEach((page,index)=>{
     const pageId=3+index*2, contentId=pageId+1;
-    const commands=[fill(0,760,595,82,"0.12 0.25 0.68"),text("CONTROLE DE JORNADA",42,810,9,"F2","0.76 0.82 1"),text("Relatório mensal de horas",42,783,21,"F2","1 1 1"),text(`Período: ${$("#month-filter").value}   |   Meta diária: ${duration(settings.target)}`,390,787,8,"F1","0.88 0.91 1")];
+    const commands=[fill(0,760,595,82,"0.12 0.25 0.68"),text("CONTROLE DE JORNADA",42,810,9,"F2","0.76 0.82 1"),text("Relatório de horas",42,783,21,"F2","1 1 1"),text(`Período: ${historyPeriodLabel()}   |   Meta diária: ${duration(settings.target)}`,325,787,7,"F1","0.88 0.91 1")];
     let tableTop;
     if (index===0) {
       const cards=[
-        {label:"SALDO DO MÊS",value:signed(totals.balance),bg:"0.91 0.93 1",fg:"0.12 0.25 0.68"},
+        {label:historyRange ? "SALDO DO PERIODO" : "SALDO DO MES",value:signed(totals.balance),bg:"0.91 0.93 1",fg:"0.12 0.25 0.68"},
         {label:"HORAS POSITIVAS",value:`+${duration(totals.positive)}`,bg:"0.89 0.97 0.93",fg:"0.02 0.42 0.24"},
         {label:"HORAS NEGATIVAS",value:`-${duration(totals.negative)}`,bg:"1 0.91 0.90",fg:"0.70 0.14 0.10"},
         {label:"TOTAL TRABALHADO",value:duration(totals.worked),bg:"0.95 0.96 0.98",fg:"0.10 0.15 0.24"}
@@ -397,7 +445,7 @@ function buildPdf() {
       values.forEach((value,column)=>{ const balanceColor=column===6 ? (calc.balance>0 ? "0.02 0.42 0.24" : calc.balance<0 ? "0.70 0.14 0.10" : "0.38 0.43 0.52") : "0.16 0.21 0.30"; commands.push(text(value,columns[column]+6,rowY+8,7.5,column===6?"F2":"F1",balanceColor)); });
       commands.push(line(42,rowY,553,rowY)); rowY-=23;
     });
-    if (!page.length) commands.push(text("Nenhum registro no mês selecionado.",42,rowY-12,10,"F1","0.38 0.43 0.52"));
+    if (!page.length) commands.push(text(historyRange ? "Nenhum registro no periodo pesquisado." : "Nenhum registro no mes selecionado.",42,rowY-12,10,"F1","0.38 0.43 0.52"));
     commands.push(line(42,44,553,44),text(`Gerado em ${new Date().toLocaleDateString("pt-BR")} | Meu Banco de Horas`,42,27,7,"F1","0.45 0.49 0.57"),text(`Página ${index+1} de ${pages.length}`,493,27,7,"F1","0.45 0.49 0.57"));
     const stream=commands.join("\n");
     objects[pageId]=`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${regularFontId} 0 R /F2 ${boldFontId} 0 R >> >> /Contents ${contentId} 0 R >>`;
@@ -413,7 +461,7 @@ function buildPdf() {
   return new Uint8Array([...pdf].map((character)=>character.charCodeAt(0)&255));
 }
 
-$("#export-pdf").addEventListener("click",()=>downloadFile(buildPdf(),`relatorio-horas-${$("#month-filter").value}.pdf`,"application/pdf"));
+$("#export-pdf").addEventListener("click",()=>downloadFile(buildPdf(),`relatorio-horas-${historyFilenameSuffix()}.pdf`,"application/pdf"));
 
 function downloadFile(content, filename, type) {
   const link=document.createElement("a"), url=URL.createObjectURL(new Blob([content],{type}));
@@ -577,7 +625,10 @@ $("#forponto-confirm").addEventListener("click",async()=>{
       records=result.records;
       imported++;
     }
-    if (pending.length) $("#month-filter").value=pending[0].record.date.slice(0,7);
+    if (pending.length) {
+      $("#month-filter").value=pending[0].record.date.slice(0,7);
+      clearHistoryRange();
+    }
     loadManualBalance();
     render();
     closeForpontoPreview();
@@ -610,7 +661,7 @@ $("#json-file").addEventListener("change",async(event)=>{
     const nextSettings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light", manualBalances };
     records=await repository.restoreBackup(imported,nextSettings); settings=nextSettings;
     for (const [month,balance] of Object.entries(manualBalances)) localStorage.setItem(`${MANUAL_BALANCE_KEY}:${loadedUserId}:${month}`,JSON.stringify({ positive:manualDurationInput(balance.positive), negative:manualDurationInput(balance.negative) }));
-    $("#daily-target").value=toClock(settings.target); applyTheme(); loadManualBalance(); resetForm(); render();
+    $("#daily-target").value=toClock(settings.target); applyTheme(); clearHistoryRange(); loadManualBalance(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
   } catch (error) {
     captureError(error,"backup-import");
@@ -665,6 +716,7 @@ function selectAuthTab(tab) {
 }
 function clearSensitiveState() {
   applicationGeneration+=1;
+  clearHistoryRange();
   closeForpontoPreview();
   if ($("#confirm-dialog").open) $("#confirm-cancel").click();
   stopCamera();
@@ -700,6 +752,7 @@ async function loadApplication(user) {
     const [loadedRecords,loadedSettings] = await Promise.all([nextRepository.findAllRecords(), nextUseCases.getSettings()]);
     if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
     records=loadedRecords; settings=loadedSettings;
+    clearHistoryRange();
     $("#work-date").value=localDate(); $("#month-filter").value=localDate().slice(0,7); $("#daily-target").value=toClock(settings.target); loadManualBalance();
     $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
     $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;

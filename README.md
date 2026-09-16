@@ -21,6 +21,8 @@ Antes de publicar esta versão, aplique [a migração Forponto](supabase/migrati
 
 O botão “Apagar todos os registros” remove os registros de todos os meses e as fotos vinculadas à conta após confirmação digitada. Configurações, tema e saldos manuais não são apagados. Recomenda-se baixar um backup antes.
 
+No histórico, os campos editáveis “De” e “Até” permitem pesquisar um período inclusivo, mesmo entre meses diferentes (por exemplo, 16/08 a 15/09). A tabela, as fotos, os arquivos CSV/PDF, os cartões de resumo e o saldo dos registros usado na simulação seguem o período pesquisado. Os ajustes manuais da simulação continuam vinculados ao mês selecionado. “Limpar período” volta à visualização e aos cálculos mensais.
+
 ## Desenvolvimento
 
 O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS é carregada pelo navegador.

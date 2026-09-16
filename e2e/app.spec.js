@@ -64,6 +64,61 @@ test("apaga todos os registros somente após confirmação digitada", async ({ p
   await expect(page.locator("#clear-records")).toBeDisabled();
 });
 
+test("pesquisa um período editável entre meses e recalcula o resumo e a simulação", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  await page.locator("#month-filter").fill("2026-09");
+  await page.locator("#month-filter").dispatchEvent("change");
+  for (const date of ["2026-08-15","2026-08-16","2026-08-20","2026-09-15","2026-09-16"]) {
+    await page.locator("#month-filter").fill(date.slice(0,7));
+    await page.locator("#month-filter").dispatchEvent("change");
+    await page.locator("#work-date").fill(date);
+    if (date==="2026-08-20") await page.locator("#end-time").fill("18:48");
+    else await page.locator("#end-time").fill("17:48");
+    await page.locator("#submit-button").click();
+    await expect(page.locator("#records-body")).toContainText(date.split("-").reverse().join("/"));
+  }
+  await page.locator("#month-filter").fill("2026-09");
+  await page.locator("#month-filter").dispatchEvent("change");
+  await expect(page.locator("#registered-days")).toHaveText("2");
+  await expect(page.locator("#records-body tr")).toHaveCount(2);
+  await expect(page.locator("#monthly-balance")).toContainText("0h 00min");
+  await page.locator("#history-date-from").fill("2026-09-16");
+  await page.locator("#history-date-to").fill("2026-08-15");
+  await page.locator("#history-range-form").getByRole("button",{ name:"Pesquisar" }).click();
+  await expect(page.locator("#history-range-message")).toContainText("não pode ser posterior");
+  await expect(page.locator("#records-body tr")).toHaveCount(2);
+  await page.locator("#history-date-from").fill("2026-08-16");
+  await page.locator("#history-date-to").fill("2026-09-15");
+  await page.locator("#history-range-form").getByRole("button",{ name:"Pesquisar" }).click();
+  await expect(page.locator("#history-range-message")).toContainText("16/08/2026 a 15/09/2026");
+  await expect(page.locator("#records-body tr")).toHaveCount(3);
+  await expect(page.locator("#records-body")).toContainText("16/08/2026");
+  await expect(page.locator("#records-body")).toContainText("15/09/2026");
+  await expect(page.locator("#registered-days")).toHaveText("3");
+  await expect(page.locator("#balance-period-label")).toHaveText("Saldo do período");
+  await expect(page.locator("#monthly-balance")).toHaveText("+1h 00min");
+  await expect(page.locator("#simulator-current-balance")).toHaveText("+1h 00min");
+  await page.locator("#manual-positive").fill("1");
+  await expect(page.locator("#simulator-projected-balance")).toHaveText("+2h 00min");
+  const csvDownload=page.waitForEvent("download");
+  await page.locator("#export-csv").click();
+  expect((await csvDownload).suggestedFilename()).toBe("horas-2026-08-16-a-2026-09-15.csv");
+  const pdfDownload=page.waitForEvent("download");
+  await page.locator("#export-pdf").click();
+  expect((await pdfDownload).suggestedFilename()).toBe("relatorio-horas-2026-08-16-a-2026-09-15.pdf");
+  await page.locator("#history-range-clear").click();
+  await expect(page.locator("#records-body tr")).toHaveCount(2);
+  await expect(page.locator("#records-body")).toContainText("16/09/2026");
+  await expect(page.locator("#balance-period-label")).toHaveText("Saldo do mês");
+  await expect(page.locator("#monthly-balance")).toHaveText("0h 00min");
+  await expect(page.locator("#simulator-current-balance")).toHaveText("0h 00min");
+  await expect(page.locator("#simulator-projected-balance")).toHaveText("+1h 00min");
+  await expect(page.locator("#history-date-from")).toHaveValue("");
+  await expect(page.locator("#history-date-to")).toHaveValue("");
+});
+
 test("carrega a conta e calcula a simulação pessoal", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");
