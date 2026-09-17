@@ -12,6 +12,9 @@ const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
 const MAX_BACKUP_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_BACKUP_RECORDS = 5000;
 const MAX_BACKUP_PHOTO_LENGTH = 2_790_000;
+const BACKUP_REMINDER_DAYS = 30;
+const BACKUP_SNOOZE_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const authLinkType = new URLSearchParams(window.location.hash.slice(1)).get("type") || new URLSearchParams(window.location.search).get("type");
 let requiresPasswordSetup = authLinkType === "invite" || authLinkType === "recovery";
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
@@ -92,6 +95,12 @@ function clearHistoryRange() {
   $("#history-range-form").reset();
   $("#history-range-message").textContent="";
   $("#history-range-message").classList.remove("history-range__message--error");
+}
+function backupReminderKey(kind) { return `controle-horas-backup-${kind}:${loadedUserId}`; }
+function renderBackupReminder() {
+  const lastBackup=Number(localStorage.getItem(backupReminderKey("last"))) || 0;
+  const snoozedUntil=Number(localStorage.getItem(backupReminderKey("snooze"))) || 0;
+  $("#backup-reminder").hidden=!loadedUserId || records.length===0 || Date.now()-lastBackup<BACKUP_REMINDER_DAYS*DAY_MS || snoozedUntil>Date.now();
 }
 function applyImportedPeriod(dates) {
   if (!dates.length) { clearHistoryRange(); return; }
@@ -198,6 +207,7 @@ function render() {
   $("#registered-days").textContent = list.length; $("#target-summary").textContent = duration(settings.target);
   updateManualBalance(totals.balance);
   updateForecast();
+  renderBackupReminder();
 }
 
 function resetForm() {
@@ -540,8 +550,16 @@ $("#export-json").addEventListener("click",async (event)=>{
     registros:backupRecords
   };
   downloadFile(JSON.stringify(backup,null,2),`backup-horas-${localDate()}.json`,"application/json;charset=utf-8");
+  localStorage.setItem(backupReminderKey("last"),String(Date.now()));
+  localStorage.removeItem(backupReminderKey("snooze"));
+  renderBackupReminder();
   } catch (error) { captureError(error,"backup-export"); showToast("Não foi possível incluir as fotos no backup.","error"); }
   finally { button.disabled = false; button.textContent = "Baixar backup"; }
+});
+$("#backup-reminder-download").addEventListener("click",()=>$("#export-json").click());
+$("#backup-reminder-later").addEventListener("click",()=>{
+  localStorage.setItem(backupReminderKey("snooze"),String(Date.now()+BACKUP_SNOOZE_DAYS*DAY_MS));
+  renderBackupReminder();
 });
 
 $("#import-json").addEventListener("click",()=>$("#json-file").click());

@@ -84,6 +84,12 @@ input[readonly] { color:var(--muted); background:color-mix(in srgb,var(--surface
 .button--danger { color:#fff; background:#b42318; }
 .month-filter { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.82rem; font-weight:750; } .month-filter input { width:auto; min-height:44px; }
 .history-range { display:grid; grid-template-columns:repeat(2,minmax(160px,1fr)) auto auto; gap:10px; align-items:end; margin:-6px 0 20px; padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--surface-2); }
+.backup-reminder { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:-6px 0 20px; padding:16px 18px; border:1px solid color-mix(in srgb,var(--primary) 30%,var(--line)); border-radius:14px; background:var(--primary-soft); }
+.backup-reminder[hidden] { display:none; }
+.backup-reminder strong { color:var(--primary-dark); font-size:.9rem; }
+.backup-reminder p { margin:4px 0 0; color:var(--muted); font-size:.8rem; line-height:1.45; }
+.backup-reminder__actions { display:flex; flex-wrap:wrap; gap:8px; flex:none; }
+@media (max-width:760px) { .backup-reminder { align-items:stretch; flex-direction:column; } .backup-reminder__actions .button { flex:1; } }
 .history-range .field { min-width:0; }
 .history-range__message { grid-column:1/-1; margin:0; color:var(--muted); font-size:.8rem; }
 .history-range__message--error { color:var(--danger); font-weight:700; }

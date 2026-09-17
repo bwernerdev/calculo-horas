@@ -68,6 +68,7 @@ test("aceita intervalo diferente de 60 minutos e feriado explícito", () => {
 test("PDF usa as mesmas regras do XLSX e ignora páginas de resumo repetidas", () => {
   const item=(str,x,y)=>({ str, transform:[1,0,0,1,x,y] });
   const detailed=[
+    item("SALDO",605.8,505.6),
     item("16/08/2026 Dom-Folg",39.8,487.6),
     item("17/08/2026 Seg-Norm",39.8,475.6),item("07:41",196.8,475.6),item("11:30",226,475.6),item("12:30",255.1,475.6),item("16:19",284.3,475.6),
     item("19/08/2026 Qua-Norm",39.8,463.6),item("08:02",196.8,463.6),item("12:24",226,463.6),item("-05:20",607.5,463.6),
@@ -83,4 +84,14 @@ test("PDF usa as mesmas regras do XLSX e ignora páginas de resumo repetidas", (
   assert.equal(block.days[2].record.importData.officialBalanceMinutes,-320);
   assert.equal(block.days[3].record.type,"compensacao");
   assert.equal(block.days[4].record.importData.officialBalanceMinutes,17);
+});
+
+test("PDF rejeita colunas deslocadas antes de abrir a prévia", () => {
+  const item=(str,x,y)=>({ str, transform:[1,0,0,1,x,y] });
+  const page={ width:792,items:[
+    item("SALDO",605.8,505.6),
+    item("17/08/2026 Seg-Norm",39.8,475.6),
+    item("08:00",308,475.6),item("12:00",226,475.6)
+  ] };
+  assert.throws(()=>parsePdfPages([page]),/Layout do PDF não reconhecido/);
 });

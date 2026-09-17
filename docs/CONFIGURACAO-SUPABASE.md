@@ -6,15 +6,17 @@ O banco agora é controlado por migrações numeradas em [`supabase/migrations`]
 
 1. [`20260915000000_initial_schema.sql`](../supabase/migrations/20260915000000_initial_schema.sql): tabelas, validações, índices, RLS, Storage e restauração de backup.
 2. [`20260915000100_client_error_monitoring.sql`](../supabase/migrations/20260915000100_client_error_monitoring.sql): armazenamento privado de erros sanitizados do navegador.
+3. [`20260916000000_forponto_import.sql`](../supabase/migrations/20260916000000_forponto_import.sql): marcações e saldo oficial do Forponto.
+4. [`20260916010000_atomic_forponto_import.sql`](../supabase/migrations/20260916010000_atomic_forponto_import.sql): importação de blocos Forponto em uma única transação.
 
 ## Banco de produção já existente
 
-A primeira migração corresponde ao SQL de segurança que já foi executado manualmente. Portanto:
+A primeira migração corresponde ao SQL de segurança que já foi executado manualmente. Em uma produção existente:
 
 1. faça um backup JSON no aplicativo;
-2. execute apenas `20260915000100_client_error_monitoring.sql` no **SQL Editor**;
+2. confira quais migrações da lista acima ainda não foram executadas; aplique somente as pendentes, na ordem, pelo **SQL Editor**;
 3. confirme `Success. No rows returned`;
-4. em **Table Editor**, confirme a tabela `client_errors` com RLS habilitado.
+4. em **Table Editor**, confirme a tabela `client_errors` com RLS habilitado e, no **Database > Functions**, confirme `import_forponto_records` antes de publicar a nova interface.
 
 Se você adotar o Supabase CLI para esse banco existente, vincule o projeto e marque a migração inicial como aplicada antes de usar `db push`. Confira o estado com `supabase migration list`; não execute `db reset --linked` em produção.
 

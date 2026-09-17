@@ -168,9 +168,29 @@
   }
 
   function parsePdfPages(pages) {
-    const pageRows=pages.map((page)=>pdfRows(page.items,page.width));
-    const detailed=pageRows.filter((rows)=>rows.some((row)=>/\s\S+-\S+/.test(row.A) || [row.F,row.G,row.H,row.I].some(Boolean)));
-    const blocks=parseRows(detailed.flat());
+    const detailed=[];
+    for (const page of pages) {
+      const rows=pdfRows(page.items,page.width);
+      if (!rows.some((row)=>/\s\S+-\S+/.test(row.A) || [row.F,row.G,row.H,row.I].some(Boolean))) continue;
+      const scale=792/(page.width || 792);
+      const hasSaldoHeader=page.items.some((item)=>/\bSALDO\b/i.test(String(item.str || "")) && item.transform?.[4]*scale>=590 && item.transform?.[4]*scale<=650);
+      if (!hasSaldoHeader) throw new Error("Layout do PDF não reconhecido: coluna de saldo ausente ou deslocada. Nenhum dia foi importado.");
+      let recognizedTotal=0;
+      for (const row of rows) {
+        const date=row.A.slice(0,10);
+        const anchor=page.items.find((item)=>String(item.str || "").startsWith(date) && item.transform?.[4]*scale<180);
+        if (!anchor) continue;
+        const observed=page.items.filter((item)=>Math.abs(item.transform?.[5]-anchor.transform[5])<2.5 && item.transform?.[4]*scale>=150 && item.transform?.[4]*scale<=330 && (clock.test(String(item.str || "").trim()) || /^COMPENSA DIA$/i.test(String(item.str || "").trim()))).length;
+        const recognized=[row.F,row.G,row.H,row.I].filter(Boolean).length;
+        recognizedTotal+=recognized;
+        if (observed!==recognized) throw new Error("Layout do PDF não reconhecido: marcações fora das colunas esperadas. Nenhum dia foi importado.");
+      }
+      if (!recognizedTotal && page.items.some((item)=>item.transform?.[4]*scale>=150 && item.transform?.[4]*scale<=450 && clock.test(String(item.str || "").trim()))) {
+        throw new Error("Layout do PDF não reconhecido: horários não encontrados nas colunas de marcação. Nenhum dia foi importado.");
+      }
+      detailed.push(...rows);
+    }
+    const blocks=parseRows(detailed);
     if (!blocks.length) throw new Error("Nenhum dia detalhado reconhecido no PDF. Use o relatório Forponto com texto selecionável, não uma digitalização.");
     return blocks;
   }

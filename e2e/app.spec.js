@@ -5,6 +5,7 @@ const { zipSync, strToU8 } = require("fflate");
 function forpontoPdfFixture() {
   const text=(value,x,y)=>`BT /F1 9 Tf 1 0 0 1 ${x} ${y} Tm (${value}) Tj ET`;
   const detailed=[
+    text("SALDO",605.8,505.6),
     text("16/08/2026 Dom-Folg",39.8,487.6),
     text("17/08/2026 Seg-Norm",39.8,475.6),text("08:00",196.8,475.6),text("12:00",226,475.6),text("12:45",255.1,475.6),text("17:00",284.3,475.6),text("00:30",607.5,475.6),
     text("18/08/2026 Ter-Norm",39.8,463.6),text("08:00",196.8,463.6),text("12:00",226,463.6),text("-05:20",607.5,463.6),
@@ -300,6 +301,31 @@ test("importa PDF Forponto com as mesmas regras do XLSX", async ({ page }) => {
   await expect(page.locator("#forponto-confirm")).toBeDisabled();
   await page.locator("#forponto-update-existing").check();
   await expect(page.locator("#forponto-summary")).toContainText("5 para atualizar");
+});
+
+test("falha de importação Forponto não grava nenhum dia", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await page.evaluate(()=>{ window.__failForpontoImport=true; });
+  await page.locator("#forponto-file").setInputFiles({ name:"forponto.pdf", mimeType:"application/pdf", buffer:forpontoPdfFixture() });
+  await page.locator("#forponto-block").selectOption("0");
+  await page.locator("#forponto-confirm").click();
+  await expect(page.locator("#records-body tr")).toHaveCount(0);
+  await expect(page.locator("#forponto-dialog")).toBeVisible();
+  await expect(page.locator("#toast-region")).toContainText("Nenhum dia foi importado");
+});
+
+test("lembra de baixar backup e oculta o aviso após o download", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#backup-reminder")).toBeHidden();
+  await page.locator("#submit-button").click();
+  await expect(page.locator("#records-body tr")).toHaveCount(1);
+  await expect(page.locator("#backup-reminder")).toBeVisible();
+  const download=page.waitForEvent("download");
+  await page.locator("#backup-reminder-download").click();
+  expect((await download).suggestedFilename()).toMatch(/^backup-horas-\d{4}-\d{2}-\d{2}\.json$/);
+  await expect(page.locator("#backup-reminder")).toBeHidden();
 });
 
 test("aplica automaticamente o período dos registros restaurados de um backup", async ({ page }) => {

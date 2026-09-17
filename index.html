@@ -152,6 +152,10 @@
           <input id="forponto-file" class="visually-hidden" type="file" accept=".xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf" aria-label="Selecionar relatório Forponto XLSX ou PDF">
         </div>
       </div>
+      <aside id="backup-reminder" class="backup-reminder" role="status" hidden>
+        <div><strong>Guarde uma cópia dos seus registros</strong><p>Não há backup recente registrado neste dispositivo. Baixe um arquivo JSON para poder restaurar seus dados se necessário.</p></div>
+        <div class="backup-reminder__actions"><button id="backup-reminder-download" class="button button--secondary" type="button">Baixar backup</button><button id="backup-reminder-later" class="button button--ghost" type="button">Lembrar depois</button></div>
+      </aside>
       <form id="history-range-form" class="history-range" aria-label="Pesquisar registros por período" novalidate>
         <label class="field"><span>De</span><input id="history-date-from" type="date" required></label>
         <label class="field"><span>Até</span><input id="history-date-to" type="date" required></label>
