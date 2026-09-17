@@ -42,10 +42,10 @@
       </div>
       <form id="auth-form" class="auth-form-panel" role="tabpanel" aria-labelledby="login-tab">
         <h2 id="auth-title">Entre no seu banco de horas</h2>
-        <p>Entre com seu nome de usuário ou e-mail e sua senha.</p>
-        <label class="field"><span>Usuário ou e-mail</span><input id="auth-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+        <p>Use seu e-mail e senha para acessar seus registros em qualquer dispositivo.</p>
+        <label class="field"><span>E-mail</span><input id="auth-email" type="email" autocomplete="email" required></label>
         <div class="field"><label for="auth-password">Senha</label><span class="password-control"><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required><button class="password-toggle" type="button" data-toggle-password="auth-password" aria-label="Mostrar senha">Mostrar</button></span></div>
-        <label class="remember-access"><input id="remember-access" type="checkbox"><span>Lembrar meu usuário neste dispositivo</span></label>
+        <label class="remember-access"><input id="remember-access" type="checkbox"><span>Lembrar meu e-mail neste dispositivo</span></label>
         <p id="auth-message" class="error-message" role="alert" hidden></p>
         <button class="button button--primary" type="submit">Entrar</button>
         <button id="forgot-password-button" class="text-button" type="button">Esqueci minha senha</button>
@@ -271,7 +271,6 @@
   <script src="assets/js/use-cases.js"></script>
   <script src="assets/js/vendor/fflate.min.js"></script>
   <script src="assets/js/forponto-import.js"></script>
-  <script src="assets/js/login-identifier.js"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/app-auth.js"></script>
   <script src="assets/js/app-pwa.js"></script>

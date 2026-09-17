@@ -15,7 +15,7 @@ test("define cabecalhos de seguranca compativeis com Supabase", () => {
 });
 
 test("forca renovacao do cache para a publicacao corrigida", () => {
-  assert.match(worker, /banco-horas-v57/);
+  assert.match(worker, /banco-horas-v56/);
   assert.match(worker, /assets\/js\/vendor\/supabase\.min\.js/);
   assert.match(headers, /script-src 'self';/);
   assert.doesNotMatch(headers, /unpkg\.com/);

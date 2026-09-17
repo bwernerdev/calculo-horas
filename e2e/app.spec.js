@@ -94,30 +94,6 @@ test("entra na conta e registra uma jornada", async ({ page }) => {
   await expect(page.locator("#toast-region")).toContainText("Jornada registrada com sucesso");
 });
 
-test("entra com nome de usuário quando o domínio de login está configurado", async ({ page }) => {
-  await page.route("**/assets/js/runtime-config.js",async (route)=>{
-    const response=await route.fetch();
-    await route.fulfill({ response,body:`${await response.text()}\nwindow.APP_CONFIG=Object.freeze({...window.APP_CONFIG,loginEmailDomain:"example.com"});` });
-  });
-  await page.goto("/");
-  await page.locator("#auth-email").fill("admin");
-  await page.locator("#auth-password").fill("Senha123");
-  await page.getByRole("button",{ name:"Entrar",exact:true }).click();
-  await expect(page.locator("#app-content")).toBeVisible();
-  expect(await page.evaluate(()=>window.__lastLoginEmail)).toBe("admin@example.com");
-});
-
-test("sem domínio configurado, pede e-mail completo e não tenta autenticar nome isolado", async ({ page }) => {
-  await page.goto("/");
-  await page.locator("#auth-email").fill("admin");
-  await page.locator("#auth-password").fill("Senha123");
-  await page.getByRole("button",{ name:"Entrar",exact:true }).click();
-  await expect(page.locator("#auth-message")).toContainText("LOGIN_EMAIL_DOMAIN");
-  expect(await page.evaluate(()=>window.__lastLoginEmail)).toBeUndefined();
-  await page.locator("#forgot-password-button").click();
-  await expect(page.locator("#recovery-email")).toHaveValue("");
-});
-
 test("mantém ferramentas e cartões alinhados em telas pequenas e grandes", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");

@@ -12,12 +12,9 @@ No Cloudflare Pages, configure estas variáveis em **Settings > Environment vari
 | Production | `SUPABASE_PUBLISHABLE_KEY` | Chave publicável de produção |
 | Preview | `SUPABASE_URL` | URL do Supabase de teste |
 | Preview | `SUPABASE_PUBLISHABLE_KEY` | Chave publicável de teste |
-| Ambos | `LOGIN_EMAIL_DOMAIN` | Domínio do e-mail usado no Supabase para entrar somente com o nome antes de `@` (ex.: `exemplo.com`) |
 | Ambos | `ERROR_REPORTING` | `true` para enviar erros sanitizados |
 
 O comando `npm run build:config` gera `assets/js/runtime-config.js` durante o build. Em uma branch de preview, o build falha se as credenciais próprias não estiverem configuradas; isso impede acesso acidental ao banco de produção.
-
-Para permitir que `admin` faça login sem digitar `@exemplo.com`, crie no Supabase o usuário `admin@exemplo.com` com senha e configure `LOGIN_EMAIL_DOMAIN=exemplo.com` no Cloudflare Pages. O domínio é público no navegador; não é uma chave ou segredo. O mesmo domínio deve valer para todos os usuários que usarão o atalho. E-mails completos continuam aceitos, inclusive de outros domínios. A recuperação de senha continua exigindo o e-mail real. Se a variável estiver ausente, o site não tentará adivinhar o endereço: será necessário informar o e-mail completo.
 
 Para testes locais, copie [`.env.example`](../.env.example) para um arquivo não versionado e carregue as variáveis no terminal antes de executar o gerador. Não coloque chaves privadas nesse arquivo.
 

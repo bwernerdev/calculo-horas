@@ -103,12 +103,9 @@ async function restoreSession() {
 }
 $("#auth-form").addEventListener("submit", async (event) => {
   event.preventDefault(); setAuthMessage("");
-  const identifier = $("#auth-email").value.trim(), password = $("#auth-password").value;
+  const email = $("#auth-email").value.trim(), password = $("#auth-password").value;
   $("#auth-password").value="";
-  let email;
-  try { email=HoursLoginIdentifier.resolveEmail(identifier,window.APP_CONFIG?.loginEmailDomain); }
-  catch (error) { setAuthMessage(error.message); return; }
-  if ($("#remember-access").checked) appStorage.setItem(REMEMBERED_EMAIL_KEY, identifier);
+  if ($("#remember-access").checked) appStorage.setItem(REMEMBERED_EMAIL_KEY, email);
   else appStorage.removeItem(REMEMBERED_EMAIL_KEY);
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) setAuthMessage(translateAuthError(error));
@@ -117,8 +114,7 @@ $("#login-tab").addEventListener("click", () => selectAuthTab("login"));
 $("#signup-tab").addEventListener("click", () => selectAuthTab("signup"));
 $("#forgot-password-button").addEventListener("click", () => {
   $("#auth-form").hidden = true; $("#signup-form").hidden = true; $("#recovery-form").hidden = false;
-  $("#recovery-email").value = $("#auth-email").value.includes("@") ? $("#auth-email").value : "";
-  $("#recovery-email").focus();
+  $("#recovery-email").value = $("#auth-email").value; $("#recovery-email").focus();
 });
 $("#recovery-back-button").addEventListener("click", () => selectAuthTab("login"));
 $("#recovery-form").addEventListener("submit", async (event) => {

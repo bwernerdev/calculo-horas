@@ -34,12 +34,12 @@ test("mantém autenticação sem dependência de CAPTCHA", () => {
   assert.match(script, /signInWithPassword\(\{ email, password \}\)/);
 });
 
-test("lembra somente o identificador e mantém a sessão do Supabase", () => {
+test("lembra somente o e-mail e mantém a sessão do Supabase", () => {
   assert.match(html, /id="remember-access"/);
-  assert.match(html, /Lembrar meu usuário neste dispositivo/);
+  assert.match(html, /Lembrar meu e-mail neste dispositivo/);
   assert.match(script, /REMEMBERED_EMAIL_KEY/);
   assert.match(script, /persistSession:true/);
-  assert.match(script, /appStorage\.setItem\(REMEMBERED_EMAIL_KEY, identifier\)/);
+  assert.match(script, /appStorage\.setItem\(REMEMBERED_EMAIL_KEY, email\)/);
   assert.doesNotMatch(script, /appStorage\.setItem\([^,]*password/i);
 });
 
