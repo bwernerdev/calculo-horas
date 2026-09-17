@@ -23,6 +23,7 @@ const config = {
   version: process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12) || process.env.npm_package_version || "development",
   supabaseUrl,
   supabasePublishableKey,
+  loginEmailDomain: (process.env.LOGIN_EMAIL_DOMAIN || "").trim().replace(/^@/, "").toLowerCase(),
   errorReporting: process.env.ERROR_REPORTING !== "false",
 };
 const output = `window.APP_CONFIG = Object.freeze(${JSON.stringify(config, null, 2)});\n\nconst SUPABASE_URL = window.APP_CONFIG.supabaseUrl;\nconst SUPABASE_PUBLISHABLE_KEY = window.APP_CONFIG.supabasePublishableKey;\n`;

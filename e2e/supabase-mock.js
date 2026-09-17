@@ -29,7 +29,8 @@
       auth: {
         getSession: async () => ({ data: { session }, error: null }),
         onAuthStateChange: (listener) => { authListener = listener; return { data: { subscription: { unsubscribe() {} } } }; },
-        signInWithPassword: async () => {
+        signInWithPassword: async ({ email }) => {
+          window.__lastLoginEmail=email;
           session = { user };
           queueMicrotask(() => authListener?.("SIGNED_IN", session));
           return { data: { session }, error: null };

@@ -7,6 +7,7 @@ Aplicação web para registrar jornadas de trabalho e acompanhar o banco de hora
 ## Funcionalidades
 
 - autenticação por e-mail, confirmação de conta e recuperação de senha;
+- login por nome de usuário (parte antes de `@`) quando `LOGIN_EMAIL_DOMAIN` está configurado; o e-mail completo continua aceito;
 - dados privados por usuário com Supabase e Row Level Security (RLS);
 - fotos privadas de entrada e saída no Supabase Storage;
 - cálculo de saldo diário e mensal com jornada configurável;
