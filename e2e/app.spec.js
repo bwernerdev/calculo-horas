@@ -73,6 +73,23 @@ test("entra na conta e registra uma jornada", async ({ page }) => {
   await expect(page.locator("#toast-region")).toContainText("Jornada registrada com sucesso");
 });
 
+test("mantém ferramentas e cartões alinhados em telas pequenas e grandes", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    const layout = await page.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth > window.innerWidth,
+      cards: getComputedStyle(document.querySelector(".summary-grid")).gridTemplateColumns.split(" ").length,
+      toolbar: getComputedStyle(document.querySelector(".toolbar")).gridTemplateColumns.split(" ").length,
+    }));
+    expect(layout.overflow, `overflow horizontal em ${width}px`).toBe(false);
+    expect(layout.cards).toBe(width <= 580 ? 2 : width <= 900 ? 2 : 3);
+    expect(layout.toolbar).toBe(width <= 580 ? 1 : 2);
+  }
+});
+
 test("apaga todos os registros somente após confirmação digitada", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");

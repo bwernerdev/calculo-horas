@@ -140,14 +140,11 @@
     <section class="panel records-panel">
       <div class="panel__header panel__header--wrap">
         <div><span class="eyebrow">Histórico</span><h2 id="history-title">Registros mensais</h2></div>
-        <div class="toolbar">
-          <label class="month-filter">Mês <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês no formato AAAA-MM" maxlength="7"></label>
-          <button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button>
-          <button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button>
-          <button id="export-json" class="button button--secondary" type="button">Baixar backup</button>
-          <button id="import-json" class="button button--secondary" type="button">Importar backup</button>
-          <button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX/PDF</button>
-          <button id="clear-records" class="button button--danger" type="button">Apagar todos os registros</button>
+        <div class="toolbar" aria-label="Ferramentas do histórico">
+          <div class="toolbar__group"><span class="toolbar__label">Período</span><label class="month-filter">Mês <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês no formato AAAA-MM" maxlength="7"></label></div>
+          <div class="toolbar__group"><span class="toolbar__label">Exportar dados</span><div class="toolbar__buttons"><button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button><button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button><button id="export-json" class="button button--secondary" type="button">Baixar backup</button></div></div>
+          <div class="toolbar__group"><span class="toolbar__label">Importar dados</span><div class="toolbar__buttons"><button id="import-json" class="button button--secondary" type="button">Importar backup</button><button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX/PDF</button></div></div>
+          <div class="toolbar__group toolbar__group--danger"><span class="toolbar__label">Gerenciar</span><button id="clear-records" class="button button--danger" type="button">Apagar todos os registros</button></div>
           <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup JSON">
           <input id="forponto-file" class="visually-hidden" type="file" accept=".xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf" aria-label="Selecionar relatório Forponto XLSX ou PDF">
         </div>
