@@ -11,6 +11,7 @@
       order() { return builder; },
       eq() { return builder; },
       upsert(value) { selectedRow = value; return builder; },
+      then(resolve) { resolve({ error: table === "settings" && window.__failSettingsSave ? { message: "Falha simulada nas configurações." } : null }); },
       delete() { return builder; },
       insert: async () => ({ data: null, error: null }),
       single: async () => ({ data: selectedRow, error: null }),

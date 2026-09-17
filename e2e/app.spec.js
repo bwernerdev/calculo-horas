@@ -267,6 +267,40 @@ test("no mobile aceita horas inteiras e permite digitar dois-pontos no teclado",
   await expect(page.locator("#simulator-projected-balance")).toContainText("-2h 30min");
 });
 
+test("saldo manual indica falha, mantém valores ao recarregar e permite sincronizar novamente", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("e2e-authenticated","true");
+    window.__failSettingsSave=true;
+  });
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  await page.locator("#manual-positive").fill("2:30");
+  await expect(page.locator("#manual-sync-retry")).toBeVisible();
+  await expect(page.locator("#manual-sync-status")).toContainText("pendente");
+  await page.reload();
+  await expect(page.locator("#manual-positive")).toHaveValue("2:30");
+  await page.evaluate(() => { window.__failSettingsSave=false; });
+  await page.locator("#manual-sync-retry").click();
+  await expect(page.locator("#manual-sync-status")).toContainText("sincronizado");
+  await expect(page.locator("#manual-sync-retry")).toBeHidden();
+});
+
+test("histórico mostra cartões legíveis sem rolagem horizontal no celular", async ({ page }) => {
+  await page.setViewportSize({ width:390,height:844 });
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated","true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  await page.locator("#work-date").fill("2026-09-15");
+  await page.locator("#start-time").fill("08:00");
+  await page.locator("#end-time").fill("17:48");
+  await page.locator("#submit-button").click();
+  const row=page.locator("#records-body tr").first();
+  await expect(row).toBeVisible();
+  expect(await row.evaluate((element)=>getComputedStyle(element).display)).toBe("grid");
+  expect(await page.locator(".history-table").evaluate((element)=>element.scrollWidth<=element.clientWidth)).toBe(true);
+  await expect(row.getByRole("button",{name:"Editar"})).toBeVisible();
+});
+
 test("exporta um backup JSON válido", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");

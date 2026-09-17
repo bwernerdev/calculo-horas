@@ -43,7 +43,8 @@ function selectAuthTab(tab) {
 function clearSensitiveState() {
   applicationGeneration+=1;
   for (const timer of manualBalanceSaveTimers.values()) clearTimeout(timer);
-  manualBalanceSaveTimers.clear();
+    manualBalanceSaveTimers.clear();
+    manualBalanceVersions.clear();
   clearHistoryRange();
   closeForpontoPreview();
   if ($("#confirm-dialog").open) $("#confirm-cancel").click();

@@ -50,6 +50,7 @@ let loadedUserId = "";
 let applicationLoad;
 let applicationGeneration = 0;
 const manualBalanceSaveTimers=new Map();
+const manualBalanceVersions=new Map();
 let settingsSaveChain=Promise.resolve();
 let historyRange=null;
 let forpontoBlocks=[];
@@ -119,30 +120,59 @@ function applyImportedPeriod(dates) {
 }
 function parseManualDuration(value) { return parseDuration(value) ?? 0; }
 function manualBalanceStorageKey() { return `${MANUAL_BALANCE_KEY}:${loadedUserId || "anonymous"}:${$("#month-filter").value || "current"}`; }
+function pendingBalanceKey(month) { return `${MANUAL_BALANCE_KEY}-pending:${loadedUserId}:${month}`; }
+function pendingBalance(month) {
+  try {
+    const value=JSON.parse(appStorage.getItem(pendingBalanceKey(month)) || "null");
+    return value && typeof value.positive==="string" && typeof value.negative==="string" ? value : null;
+  } catch { return null; }
+}
+function renderManualSyncStatus(state) {
+  const status=$("#manual-sync-status"), retry=$("#manual-sync-retry");
+  status.textContent=state==="saving" ? "Sincronizando saldo com sua conta..." : state==="pending" ? "Saldo salvo neste dispositivo; sincronização pendente." : "Saldo sincronizado com sua conta.";
+  status.dataset.state=state;
+  retry.hidden=state!=="pending";
+}
 function saveSettingsQueued(nextSettings) {
-  const operation=settingsSaveChain.catch(()=>{}).then(()=>useCases.saveSettings(nextSettings));
+  const currentUseCases=useCases;
+  const operation=settingsSaveChain.catch(()=>{}).then(()=>currentUseCases.saveSettings(nextSettings));
   settingsSaveChain=operation;
   return operation;
 }
 function manualDurationInput(minutes) { return minutes ? `${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}` : ""; }
 function loadManualBalance() {
-  const remote=settings.manualBalances?.[$("#month-filter").value];
+  const month=$("#month-filter").value;
+  const remote=settings.manualBalances?.[month];
   let saved={};
   try { saved=JSON.parse(appStorage.getItem(manualBalanceStorageKey()) || "{}"); } catch {}
-  $("#manual-positive").value=remote ? manualDurationInput(remote.positive) : typeof saved.positive==="string" ? saved.positive : "";
-  $("#manual-negative").value=remote ? manualDurationInput(remote.negative) : typeof saved.negative==="string" ? saved.negative : "";
+  const pending=pendingBalance(month);
+  $("#manual-positive").value=pending ? pending.positive : remote ? manualDurationInput(remote.positive) : typeof saved.positive==="string" ? saved.positive : "";
+  $("#manual-negative").value=pending ? pending.negative : remote ? manualDurationInput(remote.negative) : typeof saved.negative==="string" ? saved.negative : "";
   $("#simulator-start-time").value=typeof saved.start==="string" && isValidClockTime(saved.start) ? saved.start : "08:00";
   $("#simulator-end-time").value=typeof saved.end==="string" && isValidClockTime(saved.end) ? saved.end : "17:48";
+  renderManualSyncStatus(pending ? "pending" : "synced");
 }
 function saveManualSimulationLocally() {
   appStorage.setItem(manualBalanceStorageKey(),JSON.stringify({ positive:$("#manual-positive").value, negative:$("#manual-negative").value, start:$("#simulator-start-time").value, end:$("#simulator-end-time").value }));
 }
 async function syncManualBalance(month, positiveInput, negativeInput) {
   if ([positiveInput,negativeInput].some((value)=>value.trim() && parseDuration(value)===null)) return;
+  const userId=loadedUserId, version=manualBalanceVersions.get(month);
+  if ($("#month-filter").value===month) renderManualSyncStatus("saving");
   const manualBalances={ ...(settings.manualBalances || {}), [month]:{ positive:parseManualDuration(positiveInput), negative:parseManualDuration(negativeInput) } };
   settings={ ...settings, manualBalances };
-  try { await saveSettingsQueued(settings); }
-  catch (error) { captureError(error,"manual-balance-sync"); showToast("Saldo salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
+  try {
+    await saveSettingsQueued(settings);
+    if (loadedUserId!==userId || manualBalanceVersions.get(month)!==version) return;
+    appStorage.removeItem(pendingBalanceKey(month));
+    if ($("#month-filter").value===month) renderManualSyncStatus("synced");
+  } catch (error) {
+    captureError(error,"manual-balance-sync");
+    if (loadedUserId===userId && manualBalanceVersions.get(month)===version) {
+      if ($("#month-filter").value===month) renderManualSyncStatus("pending");
+      showToast("Saldo salvo neste dispositivo; a sincronização com sua conta falhou.","error");
+    }
+  }
 }
 function updateManualBalance(monthlyBalance) {
   const positive=parseManualDuration($("#manual-positive").value), negative=parseManualDuration($("#manual-negative").value);
@@ -177,7 +207,7 @@ function render() {
     const date = new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
     const photos=recordPhotos(record);
     const photoButtons=[photos.entrada ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="entrada">Entrada</button>` : "",photos.saida ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="saida">Saída</button>` : ""].filter(Boolean).join(" ");
-    return `<tr><td>${date}</td><td><span class="tag">${TYPES[record.type]}</span></td><td>${record.start || "—"}</td><td>${record.end || "—"}</td><td>${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td>${duration(calc.worked)}</td><td class="${css}">${signed(calc.balance)}</td><td>${photoButtons} <button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
+    return `<tr><td data-label="Data">${date}</td><td data-label="Tipo"><span class="tag">${TYPES[record.type]}</span></td><td data-label="Entrada">${record.start || "—"}</td><td data-label="Saída">${record.end || "—"}</td><td data-label="Intervalo">${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td data-label="Trabalhado">${duration(calc.worked)}</td><td data-label="Saldo" class="${css}">${signed(calc.balance)}</td><td data-label="Ações" class="history-actions">${photoButtons} <button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
   }).join("");
   list.forEach((record,index)=>{
     if (record.importData?.source!=="forponto") return;
@@ -195,7 +225,8 @@ function render() {
   $("#photo-history").hidden=photos.length===0; $("#photo-count").textContent=`${photos.length} ${photos.length===1 ? "foto" : "fotos"}`;
   $("#photo-gallery").innerHTML=photos.map(({record,kind,photo})=>{
     const date=new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
-    return `<button class="photo-card" type="button" data-view-photo="${record.id}" data-photo-kind="${kind}" aria-label="Ver foto de ${kind} de ${date}"><img src="${photo}" alt="" loading="lazy"><span class="photo-card__info"><strong>${date}</strong><small>${kind === "entrada" ? "Entrada" : "Saída"} · ${TYPES[record.type]}</small></span></button>`;
+    const preview=/^(?:blob:|data:image\/)/.test(photo) ? `<img src="${photo}" alt="" loading="lazy">` : `<span class="photo-card__placeholder" aria-hidden="true">📷</span>`;
+    return `<button class="photo-card" type="button" data-view-photo="${record.id}" data-photo-kind="${kind}" aria-label="Ver foto de ${kind} de ${date}">${preview}<span class="photo-card__info"><strong>${date}</strong><small>${kind === "entrada" ? "Entrada" : "Saída"} · ${TYPES[record.type]}</small></span></button>`;
   }).join("");
   const totals = HoursCalculator.summarize(list,settings.target);
   $(".summary-grid").setAttribute("aria-label",historyRange ? "Resumo do período pesquisado" : "Resumo do ciclo de 16 a 15");
@@ -238,7 +269,14 @@ function updatePhotoPreview() {
   $("#photo-preview").hidden=!pendingPhotos.entrada && !pendingPhotos.saida;
   for (const kind of ["entrada","saida"]) {
     $(`#${kind === "entrada" ? "entry" : "exit"}-photo-preview`).hidden=!pendingPhotos[kind];
-    $(`#${kind === "entrada" ? "entry" : "exit"}-photo-image`).src=pendingPhotos[kind] || "";
+    const image=$(`#${kind === "entrada" ? "entry" : "exit"}-photo-image`);
+    const value=pendingPhotos[kind];
+    if (!value || /^(?:blob:|data:image\/)/.test(value)) { image.src=value || ""; continue; }
+    image.removeAttribute("src");
+    const id=$("#editing-id").value, generation=applicationGeneration;
+    void repository.loadPhoto(id,kind).then((url)=>{
+      if (generation===applicationGeneration && pendingPhotos[kind]===value && $("#editing-id").value===id) image.src=url;
+    }).catch((error)=>captureError(error,"photo-preview-load"));
   }
 }
 function stopCamera() {
@@ -311,21 +349,29 @@ function editRecord(id) {
   if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=record.break;
   pendingPhotos={...recordPhotos(record)}; updatePhotoPreview(); $("#form-title").textContent="Editar jornada"; $("#submit-button").textContent="Salvar alteração"; $("#cancel-edit").hidden=false; updateForecast(); scrollTo({top:0,behavior:"smooth"});
 }
-function showRecordPhoto(id,kind) {
+async function showRecordPhoto(id,kind) {
   const record=records.find((item)=>item.id===id);
   const photo=record ? recordPhotos(record)[kind] : "";
-  if (photo) { $("#photo-dialog-title").textContent=`Foto de ${kind}`; $("#photo-dialog-image").src=photo; $("#photo-dialog").showModal(); }
+  if (!photo) return;
+  const generation=applicationGeneration;
+  try {
+    const url=/^(?:blob:|data:image\/)/.test(photo) ? photo : await repository.loadPhoto(id,kind);
+    if (generation!==applicationGeneration || !url) return;
+    $("#photo-dialog-title").textContent=`Foto de ${kind}`;
+    $("#photo-dialog-image").src=url;
+    $("#photo-dialog").showModal();
+  } catch (error) { captureError(error,"photo-load"); showToast("Não foi possível carregar esta foto. Tente novamente.","error"); }
 }
 $("#records-body").addEventListener("click", async(event) => {
   const edit=event.target.dataset.edit, remove=event.target.dataset.delete, photo=event.target.dataset.photo; if (edit) editRecord(edit);
-  if (photo) showRecordPhoto(photo,event.target.dataset.photoKind);
+  if (photo) await showRecordPhoto(photo,event.target.dataset.photoKind);
   if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) {
     const button=event.target; button.disabled=true;
     try { records=await useCases.deleteRecord(remove,records); render(); showToast("Registro excluído."); }
     catch (error) { captureError(error,"record-delete"); button.disabled=false; showToast(error.message || "Não foi possível excluir o registro.","error"); }
   }
 });
-$("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
+$("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) void showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
 $("#settings-form").addEventListener("submit",async (event)=>{
@@ -366,6 +412,9 @@ for (const input of [$("#manual-positive"),$("#manual-negative")]) {
     const month=$("#month-filter").value;
     clearTimeout(manualBalanceSaveTimers.get(month));
     const positive=$("#manual-positive").value, negative=$("#manual-negative").value;
+    manualBalanceVersions.set(month,(manualBalanceVersions.get(month) || 0)+1);
+    appStorage.setItem(pendingBalanceKey(month),JSON.stringify({ positive,negative }));
+    renderManualSyncStatus("pending");
     manualBalanceSaveTimers.set(month,setTimeout(()=>{
       manualBalanceSaveTimers.delete(month);
       void syncManualBalance(month,positive,negative);
@@ -373,6 +422,13 @@ for (const input of [$("#manual-positive"),$("#manual-negative")]) {
   });
   input.addEventListener("blur",()=>{ if (!input.value.trim()) return; const formatted=formatDuration(input.value); if (formatted===null) { input.setCustomValidity("Digite horas inteiras ou horas:minutos, como 1 ou 1:30."); showToast(input.validationMessage,"error"); return; } input.value=formatted; input.setCustomValidity(""); input.dispatchEvent(new Event("input",{ bubbles:true })); });
 }
+$("#manual-sync-retry").addEventListener("click",()=>{
+  const month=$("#month-filter").value, pending=pendingBalance(month);
+  if (!pending) return;
+  clearTimeout(manualBalanceSaveTimers.get(month));
+  manualBalanceSaveTimers.delete(month);
+  void syncManualBalance(month,pending.positive,pending.negative);
+});
 let clearingRecords=false;
 $("#clear-records").addEventListener("click",()=>{
   if (!records.length) return;
@@ -504,9 +560,10 @@ function downloadFile(content, filename, type) {
   link.href=url; link.download=filename; link.hidden=true; document.body.append(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
-async function photoAsDataUrl(value) {
+async function photoAsDataUrl(value, recordId, kind) {
   if (!value || value.startsWith("data:image/")) return value || "";
-  const response = await fetch(value); if (!response.ok) throw new Error("foto indisponível");
+  const displayUrl=value.startsWith("blob:") ? value : await repository.loadPhoto(recordId,kind);
+  const response = await fetch(displayUrl); if (!response.ok) throw new Error("foto indisponível");
   const blob = await response.blob();
   return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
 }
@@ -555,9 +612,20 @@ $("#export-json").addEventListener("click",async (event)=>{
   const button = event.currentTarget; button.disabled = true; button.textContent = "Preparando backup...";
   try {
     const backupRecords = [];
+    let estimatedBytes=0, photosComplete=true, unavailablePhotos=false;
     for (const record of records) {
-      const photos = recordPhotos(record);
-      backupRecords.push({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, dadosImportacao:record.importData || {}, fotos:{ entrada:await photoAsDataUrl(photos.entrada), saida:await photoAsDataUrl(photos.saida) } });
+      const item={ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, dadosImportacao:record.importData || {}, fotos:{ entrada:"", saida:"" } };
+      backupRecords.push(item);
+      estimatedBytes+=new Blob([JSON.stringify(item)]).size;
+      if (photosComplete) {
+        const photos=recordPhotos(record);
+        for (const kind of ["entrada","saida"]) {
+          try { item.fotos[kind]=await photoAsDataUrl(photos[kind],record.id,kind); }
+          catch (error) { captureError(error,"backup-photo-load",{ recordId:record.id,kind }); photosComplete=false; unavailablePhotos=true; break; }
+          estimatedBytes+=item.fotos[kind].length;
+          if (estimatedBytes>MAX_BACKUP_FILE_BYTES) { photosComplete=false; break; }
+        }
+      }
     }
   const backup={
     versao:1,
@@ -565,7 +633,20 @@ $("#export-json").addEventListener("click",async (event)=>{
     configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:settings.theme, saldosManuais:settings.manualBalances || {} },
     registros:backupRecords
   };
-  downloadFile(JSON.stringify(backup,null,2),`backup-horas-${localDate()}.json`,"application/json;charset=utf-8");
+  let content=JSON.stringify(backup);
+  let filename=`backup-horas-${localDate()}.json`;
+  let withoutPhotos=false;
+  if (!photosComplete || new Blob([content]).size>MAX_BACKUP_FILE_BYTES) {
+    const reason=unavailablePhotos ? "Uma ou mais fotos estão indisponíveis no Supabase agora." : "O backup completo excede 50 MB e não pode ser restaurado neste site.";
+    if (!await requestConfirmation(`${reason} Baixar uma cópia restaurável dos registros sem as fotos? As fotos já enviadas continuarão no Supabase.`)) return;
+    for (const item of backupRecords) item.fotos={ entrada:"", saida:"" };
+    content=JSON.stringify(backup);
+    filename=`backup-horas-sem-fotos-${localDate()}.json`;
+    withoutPhotos=true;
+    if (new Blob([content]).size>MAX_BACKUP_FILE_BYTES) throw new Error("Mesmo sem fotos, o backup excede 50 MB.");
+  }
+  downloadFile(content,filename,"application/json;charset=utf-8");
+  if (withoutPhotos) showToast("Backup dos registros baixado sem fotos; as imagens permanecem no Supabase.","error");
   appStorage.setItem(backupReminderKey("last"),String(Date.now()));
   appStorage.removeItem(backupReminderKey("snooze"));
   renderBackupReminder();

@@ -112,3 +112,21 @@ test("repositório Supabase sincroniza os saldos manuais nas configurações", a
   await repository.saveSettings(settings);
   assert.deepEqual(savedRow.balance_adjustments,settings.manualBalances);
 });
+
+test("lista marcações sem baixar fotos e carrega uma foto somente quando solicitada", async () => {
+  let downloads=0;
+  const row={ id:"record-1",date:"2026-09-15",type:"trabalho",start_time:"08:00",end_time:"17:48",break_minutes:60,photos:{ entrada:"user-1/record-1/entrada.jpg",saida:"" } };
+  const client={
+    storage:{ from:()=>({ download:async()=>{ downloads++; return { data:new Blob(["photo"]),error:null }; } }) },
+    from:()=>({ select:()=>({ order:()=>({ range:async()=>({ data:[row],error:null }) }) }) })
+  };
+  const repository=createSupabaseRepository(client,"user-1");
+  const records=await repository.findAllRecords();
+  assert.equal(downloads,0);
+  assert.equal(records[0].photos.entrada,row.photos.entrada);
+  const url=await repository.loadPhoto(row.id,"entrada");
+  assert.match(url,/^blob:/);
+  assert.equal(await repository.loadPhoto(row.id,"entrada"),url);
+  assert.equal(downloads,1);
+  repository.dispose();
+});

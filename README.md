@@ -23,6 +23,8 @@ O botão “Apagar todos os registros” remove os registros de todos os meses e
 
 Quando existem registros e não há backup JSON recente registrado no dispositivo, aparece um lembrete discreto. Após baixar o backup, ele desaparece por 30 dias; “Lembrar depois” adia por 7 dias. O navegador não informa se o usuário guardou o arquivo após iniciar o download.
 
+As fotos são baixadas do Supabase Storage somente quando abertas, ao editar o registro ou ao preparar um backup; uma foto indisponível não impede o carregamento dos demais registros. Se o backup com fotos ultrapassar 50 MB (limite de restauração), o aplicativo oferece um JSON restaurável sem fotos e avisa antes do download. Nesse caso, as fotos já armazenadas continuam no Supabase, mas **não serão recuperadas por esse JSON**. Na simulação pessoal, o estado informa se o saldo manual foi sincronizado com a conta; em caso de falha, o valor pendente permanece neste dispositivo e pode ser reenviado pelo botão “Tentar sincronizar”. Em telas pequenas, o histórico é apresentado em cartões.
+
 O painel usa por padrão ciclos de 16 a 15: o mês de fechamento `2026-09`, por exemplo, considera de 16/08/2026 a 15/09/2026. A partir do dia 16, abre automaticamente o ciclo seguinte. Os cartões, o histórico, a saída sugerida, a simulação e as exportações seguem esse período. Os campos editáveis “De” e “Até” permitem pesquisar outro período inclusivo, mesmo entre meses diferentes. Ao importar um XLSX/PDF Forponto ou restaurar um backup JSON, esse filtro personalizado é preenchido automaticamente com a primeira e a última data dos registros importados. “Limpar período” volta ao ciclo do mês de fechamento selecionado. Os ajustes manuais da simulação continuam vinculados a esse mês de fechamento.
 
 ## Desenvolvimento

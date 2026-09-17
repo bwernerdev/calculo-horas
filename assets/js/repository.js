@@ -61,6 +61,7 @@
     const knownPhotoPaths = new Map();
     const recordObjectUrls = new Map();
     const objectUrls = new Set();
+    const photoUrlCache = new Map();
     const bucket = client.storage.from("point-photos");
     const throwIfError = (error) => { if (error) throw new Error(error.message); };
     const missingBalanceColumn = (error) => error && (error.code === "42703" || /balance_adjustments/i.test(error.message || ""));
@@ -73,26 +74,25 @@
       if (typeof value === "string" && value.startsWith("blob:") && objectUrls.has(value)) {
         URL.revokeObjectURL(value);
         objectUrls.delete(value);
+        for (const [path,url] of photoUrlCache) if (url===value) photoUrlCache.delete(path);
       }
     }
 
     async function photoUrl(path) {
       if (!path || isInlinePhoto(path) || isDisplayUrl(path)) return path || "";
+      if (photoUrlCache.has(path)) return photoUrlCache.get(path);
       const { data, error } = await bucket.download(path);
       throwIfError(error);
       const url = URL.createObjectURL(data);
       objectUrls.add(url);
+      photoUrlCache.set(path,url);
       return url;
     }
 
-    async function toRecord(row) {
-      (recordObjectUrls.get(row.id) || []).forEach(revokeObjectUrl);
+    function toRecord(row) {
       const paths = { ...emptyPhotos(), ...(row.photos || {}) };
       knownPhotoPaths.set(row.id, paths);
-      const photos = {};
-      for (const kind of ["entrada", "saida"]) photos[kind] = await photoUrl(paths[kind]);
-      recordObjectUrls.set(row.id, Object.values(photos).filter((value) => value.startsWith?.("blob:")));
-      return { id: row.id, date: row.date, type: row.type, start: row.start_time, end: row.end_time, break: row.break_minutes, importData:row.import_data || {}, photos, photoPaths: paths };
+      return { id: row.id, date: row.date, type: row.type, start: row.start_time, end: row.end_time, break: row.break_minutes, importData:row.import_data || {}, photos:{ ...paths }, photoPaths: paths };
     }
 
     function materializeRecord(record, paths) {
@@ -167,7 +167,19 @@
           if (data.length < PAGE_SIZE) break;
         }
         knownIds = new Set(rows.map((row) => row.id));
-        return Promise.all(rows.map(toRecord));
+        return rows.map(toRecord);
+      },
+
+      async loadPhoto(id, kind) {
+        if (!["entrada","saida"].includes(kind)) throw new Error("Tipo de foto inválido.");
+        const path=knownPhotoPaths.get(id)?.[kind];
+        if (!path) return "";
+        const url=await photoUrl(path);
+        if (url.startsWith("blob:")) {
+          const urls=recordObjectUrls.get(id) || [];
+          if (!urls.includes(url)) recordObjectUrls.set(id,[...urls,url]);
+        }
+        return url;
       },
 
       async saveRecord(record) {
@@ -191,7 +203,7 @@
         throwIfError(error);
         if (!Array.isArray(data) || data.length!==rows.length) throw new Error("A importação não retornou todos os registros. Recarregue os dados antes de tentar novamente.");
         data.forEach((row)=>knownIds.add(row.id));
-        return Promise.all(data.map(toRecord));
+        return data.map(toRecord);
       },
 
       async deleteRecord(id) {
@@ -248,10 +260,13 @@
           row,
           { onConflict: "user_id" }
         );
-        if (missingBalanceColumn(error)) ({ error } = await client.from("settings").upsert(
-          { user_id:row.user_id, target_minutes:row.target_minutes, theme:row.theme, updated_at:row.updated_at },
-          { onConflict:"user_id" }
-        ));
+        if (missingBalanceColumn(error)) {
+          if (Object.keys(row.balance_adjustments).length) throw new Error("A coluna de saldos manuais não existe no Supabase. Aplique a migração de segurança antes de sincronizar.");
+          ({ error } = await client.from("settings").upsert(
+            { user_id:row.user_id, target_minutes:row.target_minutes, theme:row.theme, updated_at:row.updated_at },
+            { onConflict:"user_id" }
+          ));
+        }
         throwIfError(error);
       },
 
@@ -298,6 +313,7 @@
       dispose() {
         objectUrls.forEach((url) => URL.revokeObjectURL(url));
         objectUrls.clear();
+        photoUrlCache.clear();
         knownPhotoPaths.clear();
         recordObjectUrls.clear();
         knownIds.clear();
