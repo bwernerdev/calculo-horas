@@ -46,7 +46,7 @@ test.afterAll(async () => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await page.route("https://unpkg.com/@supabase/supabase-js@2", (route) => route.fulfill({
+  await page.route("**/assets/js/vendor/supabase.min.js", (route) => route.fulfill({
     contentType: "text/javascript",
     body: supabaseMock,
   }));
@@ -59,6 +59,27 @@ test("abre autenticação e persiste a preferência de tema", async ({ page }) =
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("inicializa com a biblioteca local real do Supabase", async ({ page }) => {
+  await page.unroute("**/assets/js/vendor/supabase.min.js");
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Entre no seu banco de horas" })).toBeVisible();
+  expect(await page.evaluate(() => typeof window.supabase.createClient)).toBe("function");
+});
+
+test("continua utilizável e avisa quando o armazenamento é bloqueado", async ({ page }) => {
+  await page.unroute("**/assets/js/vendor/supabase.min.js");
+  await page.addInitScript(() => Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    get() { throw new DOMException("Armazenamento bloqueado", "SecurityError"); },
+  }));
+  await page.goto("/");
+  await expect(page.locator("#storage-warning")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entre no seu banco de horas" })).toBeVisible();
+  await page.locator("#theme-toggle").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  expect(await page.evaluate(() => window.AppStorage.persistent)).toBe(false);
 });
 
 test("entra na conta e registra uma jornada", async ({ page }) => {
@@ -90,6 +111,15 @@ test("mantém ferramentas e cartões alinhados em telas pequenas e grandes", asy
   }
 });
 
+test("abre automaticamente o ciclo vigente após o dia 15", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-16T12:00:00-03:00"));
+  await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
+  await page.goto("/");
+  await expect(page.locator("#app-content")).toBeVisible();
+  await expect(page.locator("#month-filter")).toHaveValue("2026-10");
+  await expect(page.locator("#balance-period-dates")).toHaveText("16/09/2026 a 15/10/2026");
+});
+
 test("apaga todos os registros somente após confirmação digitada", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");
@@ -117,7 +147,8 @@ test("pesquisa um período editável entre meses e recalcula o resumo e a simula
   await page.locator("#month-filter").fill("2026-09");
   await page.locator("#month-filter").dispatchEvent("change");
   for (const date of ["2026-08-15","2026-08-16","2026-08-20","2026-09-15","2026-09-16"]) {
-    await page.locator("#month-filter").fill(date.slice(0,7));
+    const closingMonth=date==="2026-08-15" ? "2026-08" : date==="2026-09-16" ? "2026-10" : "2026-09";
+    await page.locator("#month-filter").fill(closingMonth);
     await page.locator("#month-filter").dispatchEvent("change");
     await page.locator("#work-date").fill(date);
     if (date==="2026-08-20") await page.locator("#end-time").fill("18:48");
@@ -127,22 +158,23 @@ test("pesquisa um período editável entre meses e recalcula o resumo e a simula
   }
   await page.locator("#month-filter").fill("2026-09");
   await page.locator("#month-filter").dispatchEvent("change");
-  await expect(page.locator("#registered-days")).toHaveText("2");
-  await expect(page.locator("#records-body tr")).toHaveCount(2);
-  await expect(page.locator("#monthly-balance")).toContainText("0h 00min");
+  await expect(page.locator("#registered-days")).toHaveText("3");
+  await expect(page.locator("#records-body tr")).toHaveCount(3);
+  await expect(page.locator("#balance-period-dates")).toHaveText("16/08/2026 a 15/09/2026");
+  await expect(page.locator("#monthly-balance")).toHaveText("+1h 00min");
   await page.locator("#history-date-from").fill("2026-09-16");
   await page.locator("#history-date-to").fill("2026-08-15");
   await page.locator("#history-range-form").getByRole("button",{ name:"Pesquisar" }).click();
   await expect(page.locator("#history-range-message")).toContainText("não pode ser posterior");
-  await expect(page.locator("#records-body tr")).toHaveCount(2);
-  await page.locator("#history-date-from").fill("2026-08-16");
-  await page.locator("#history-date-to").fill("2026-09-15");
-  await page.locator("#history-range-form").getByRole("button",{ name:"Pesquisar" }).click();
-  await expect(page.locator("#history-range-message")).toContainText("16/08/2026 a 15/09/2026");
   await expect(page.locator("#records-body tr")).toHaveCount(3);
-  await expect(page.locator("#records-body")).toContainText("16/08/2026");
-  await expect(page.locator("#records-body")).toContainText("15/09/2026");
-  await expect(page.locator("#registered-days")).toHaveText("3");
+  await page.locator("#history-date-from").fill("2026-08-15");
+  await page.locator("#history-date-to").fill("2026-09-16");
+  await page.locator("#history-range-form").getByRole("button",{ name:"Pesquisar" }).click();
+  await expect(page.locator("#history-range-message")).toContainText("15/08/2026 a 16/09/2026");
+  await expect(page.locator("#records-body tr")).toHaveCount(5);
+  await expect(page.locator("#records-body")).toContainText("15/08/2026");
+  await expect(page.locator("#records-body")).toContainText("16/09/2026");
+  await expect(page.locator("#registered-days")).toHaveText("5");
   await expect(page.locator("#balance-period-label")).toHaveText("Saldo do período");
   await expect(page.locator("#monthly-balance")).toHaveText("+1h 00min");
   await expect(page.locator("#simulator-current-balance")).toHaveText("+1h 00min");
@@ -150,17 +182,17 @@ test("pesquisa um período editável entre meses e recalcula o resumo e a simula
   await expect(page.locator("#simulator-projected-balance")).toHaveText("+2h 00min");
   const csvDownload=page.waitForEvent("download");
   await page.locator("#export-csv").click();
-  expect((await csvDownload).suggestedFilename()).toBe("horas-2026-08-16-a-2026-09-15.csv");
+  expect((await csvDownload).suggestedFilename()).toBe("horas-2026-08-15-a-2026-09-16.csv");
   const pdfDownload=page.waitForEvent("download");
   await page.locator("#export-pdf").click();
-  expect((await pdfDownload).suggestedFilename()).toBe("relatorio-horas-2026-08-16-a-2026-09-15.pdf");
+  expect((await pdfDownload).suggestedFilename()).toBe("relatorio-horas-2026-08-15-a-2026-09-16.pdf");
   await page.locator("#history-range-clear").click();
-  await expect(page.locator("#records-body tr")).toHaveCount(2);
-  await expect(page.locator("#records-body")).toContainText("16/09/2026");
-  await expect(page.locator("#balance-period-label")).toHaveText("Saldo do mês");
-  await expect(page.locator("#monthly-balance")).toHaveText("0h 00min");
-  await expect(page.locator("#simulator-current-balance")).toHaveText("0h 00min");
-  await expect(page.locator("#simulator-projected-balance")).toHaveText("+1h 00min");
+  await expect(page.locator("#records-body tr")).toHaveCount(3);
+  await expect(page.locator("#records-body")).not.toContainText("16/09/2026");
+  await expect(page.locator("#balance-period-label")).toHaveText("Saldo do ciclo");
+  await expect(page.locator("#monthly-balance")).toHaveText("+1h 00min");
+  await expect(page.locator("#simulator-current-balance")).toHaveText("+1h 00min");
+  await expect(page.locator("#simulator-projected-balance")).toHaveText("+2h 00min");
   await expect(page.locator("#history-date-from")).toHaveValue("");
   await expect(page.locator("#history-date-to")).toHaveValue("");
 });
@@ -230,8 +262,9 @@ test("no mobile aceita horas inteiras e permite digitar dois-pontos no teclado",
   await page.getByRole("button", { name: "Adicionar registro" }).click();
   await expect(page.locator("#records-body")).toContainText("08:30");
   await expect(page.locator("#records-body")).toContainText("17:30");
+  await expect(page.locator("#month-filter")).toHaveValue("2026-09");
   await page.locator("#manual-negative").fill("2:30");
-  await expect(page.locator("#simulator-projected-balance")).toContainText("-1h 30min");
+  await expect(page.locator("#simulator-projected-balance")).toContainText("-2h 30min");
 });
 
 test("exporta um backup JSON válido", async ({ page }) => {

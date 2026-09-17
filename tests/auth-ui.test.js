@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const html = fs.readFileSync("index.html", "utf8");
-const script = fs.readFileSync("assets/js/script.js", "utf8");
+const script = ["script.js", "app-auth.js"].map((file) => fs.readFileSync(`assets/js/${file}`, "utf8")).join("\n");
 const css = fs.readFileSync("assets/css/style.css", "utf8");
 
 test("separa login e cadastro em abas acessiveis", () => {
@@ -39,8 +39,8 @@ test("lembra somente o e-mail e mantém a sessão do Supabase", () => {
   assert.match(html, /Lembrar meu e-mail neste dispositivo/);
   assert.match(script, /REMEMBERED_EMAIL_KEY/);
   assert.match(script, /persistSession:true/);
-  assert.match(script, /localStorage\.setItem\(REMEMBERED_EMAIL_KEY, email\)/);
-  assert.doesNotMatch(script, /localStorage\.setItem\([^,]*password/i);
+  assert.match(script, /appStorage\.setItem\(REMEMBERED_EMAIL_KEY, email\)/);
+  assert.doesNotMatch(script, /appStorage\.setItem\([^,]*password/i);
 });
 
 test("permite ao usuário autenticado alterar a própria senha", () => {

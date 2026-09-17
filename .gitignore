@@ -1,6 +1,8 @@
 banco-horas-deploy.zip
 .deploy-package/
 node_modules/
+.npm-cache/
+/debug.log
 playwright-report/
 test-results/
 supabase/.temp/

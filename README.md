@@ -23,11 +23,11 @@ O botão “Apagar todos os registros” remove os registros de todos os meses e
 
 Quando existem registros e não há backup JSON recente registrado no dispositivo, aparece um lembrete discreto. Após baixar o backup, ele desaparece por 30 dias; “Lembrar depois” adia por 7 dias. O navegador não informa se o usuário guardou o arquivo após iniciar o download.
 
-No histórico, os campos editáveis “De” e “Até” permitem pesquisar um período inclusivo, mesmo entre meses diferentes (por exemplo, 16/08 a 15/09). Ao importar um XLSX/PDF Forponto ou restaurar um backup JSON, o filtro é preenchido automaticamente com a primeira e a última data dos registros importados. A tabela, as fotos, os arquivos CSV/PDF, os cartões de resumo e o saldo dos registros usado na simulação seguem o período pesquisado. Os ajustes manuais da simulação continuam vinculados ao mês selecionado. “Limpar período” volta à visualização e aos cálculos mensais.
+O painel usa por padrão ciclos de 16 a 15: o mês de fechamento `2026-09`, por exemplo, considera de 16/08/2026 a 15/09/2026. A partir do dia 16, abre automaticamente o ciclo seguinte. Os cartões, o histórico, a saída sugerida, a simulação e as exportações seguem esse período. Os campos editáveis “De” e “Até” permitem pesquisar outro período inclusivo, mesmo entre meses diferentes. Ao importar um XLSX/PDF Forponto ou restaurar um backup JSON, esse filtro personalizado é preenchido automaticamente com a primeira e a última data dos registros importados. “Limpar período” volta ao ciclo do mês de fechamento selecionado. Os ajustes manuais da simulação continuam vinculados a esse mês de fechamento.
 
 ## Desenvolvimento
 
-O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS é carregada pelo navegador.
+O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS está fixada em `2.116.0` e é servida localmente em `assets/js/vendor/`, inclusive pelo cache do PWA. Após atualizar essa dependência, execute `npm run vendor:supabase` e publique também o arquivo gerado e sua licença.
 
 Requisitos:
 
@@ -56,6 +56,7 @@ O deploy de produção é automático: cada `push` na branch `main` inicia uma p
 - [Migrações do Supabase](supabase/migrations/)
 
 A aplicação precisa de conexão com o Supabase para autenticar e sincronizar dados. O Service Worker mantém a interface básica em cache, mas não permite alterar registros offline.
+Se o navegador bloquear o armazenamento local, a interface exibirá um aviso: a sessão e as preferências funcionarão apenas enquanto a página estiver aberta.
 
 ## Estrutura do projeto
 

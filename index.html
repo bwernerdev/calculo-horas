@@ -31,6 +31,7 @@
       <button id="theme-toggle" class="icon-button" type="button" aria-label="Alternar tema">🌙</button>
     </div>
   </header>
+  <aside id="storage-warning" class="storage-warning" role="status" hidden>O armazenamento deste navegador está bloqueado. Você pode usar o site, mas o login e as preferências não serão mantidos após fechar a página.</aside>
 
   <section id="auth-screen" class="auth-screen" aria-labelledby="auth-title">
     <div class="auth-card">
@@ -83,8 +84,8 @@
     </form>
   </section>
   <main id="app-content" class="page-shell" hidden>
-    <section class="summary-grid" aria-label="Resumo do mês">
-      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do mês</span><strong id="monthly-balance">0h 00min</strong></article>
+    <section class="summary-grid" aria-label="Resumo do ciclo de 16 a 15">
+      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do ciclo</span><strong id="monthly-balance">0h 00min</strong><small id="balance-period-dates"></small></article>
       <article class="summary-card summary-card--positive"><span>Horas positivas</span><strong id="monthly-positive">+0h 00min</strong></article>
       <article class="summary-card summary-card--negative"><span>Horas negativas</span><strong id="monthly-negative">-0h 00min</strong></article>
       <article class="summary-card"><span>Total trabalhado</span><strong id="monthly-worked">0h 00min</strong></article>
@@ -139,9 +140,9 @@
 
     <section class="panel records-panel">
       <div class="panel__header panel__header--wrap">
-        <div><span class="eyebrow">Histórico</span><h2 id="history-title">Registros mensais</h2></div>
+        <div><span class="eyebrow">Histórico</span><h2 id="history-title">Registros do ciclo</h2></div>
         <div class="toolbar" aria-label="Ferramentas do histórico">
-          <div class="toolbar__group"><span class="toolbar__label">Período</span><label class="month-filter">Mês <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês no formato AAAA-MM" maxlength="7"></label></div>
+          <div class="toolbar__group"><span class="toolbar__label">Ciclo de 16 a 15</span><label class="month-filter">Mês de fechamento <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês em que o ciclo termina no dia 15, no formato AAAA-MM" maxlength="7"></label></div>
           <div class="toolbar__group"><span class="toolbar__label">Exportar dados</span><div class="toolbar__buttons"><button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button><button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button><button id="export-json" class="button button--secondary" type="button">Baixar backup</button></div></div>
           <div class="toolbar__group"><span class="toolbar__label">Importar dados</span><div class="toolbar__buttons"><button id="import-json" class="button button--secondary" type="button">Importar backup</button><button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX/PDF</button></div></div>
           <div class="toolbar__group toolbar__group--danger"><span class="toolbar__label">Gerenciar</span><button id="clear-records" class="button button--danger" type="button">Apagar todos os registros</button></div>
@@ -162,7 +163,7 @@
       </form>
       <div class="table-wrap">
         <table><thead><tr><th>Data</th><th>Tipo</th><th>Entrada</th><th>Saída</th><th>Intervalo</th><th>Trabalhado</th><th>Saldo</th><th>Ações</th></tr></thead><tbody id="records-body"></tbody></table>
-        <p id="empty-state" class="empty-state">Nenhum registro neste mês.</p>
+        <p id="empty-state" class="empty-state">Nenhum registro neste ciclo.</p>
       </div>
       <section id="photo-history" class="photo-history" aria-labelledby="photo-history-title" hidden>
         <div class="photo-history__heading"><h3 id="photo-history-title">Fotos do mês</h3><span id="photo-count"></span></div>
@@ -174,7 +175,7 @@
       <div class="balance-simulator__intro">
         <span class="eyebrow">Simulação pessoal</span>
         <h2 id="balance-simulator-title">Projete seu saldo de horas</h2>
-        <p id="simulator-description">Informe saldos anteriores ou ajustes que ainda não aparecem nos registros deste mês.</p>
+        <p id="simulator-description">Informe saldos anteriores ou ajustes que ainda não aparecem nos registros deste ciclo.</p>
       </div>
       <div class="balance-simulator__content">
         <div class="balance-simulator__fields">
@@ -262,12 +263,15 @@
     <span>Uma nova versão está disponível.</span>
     <button id="update-app" class="button button--primary" type="button">Atualizar agora</button>
   </aside>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="assets/js/vendor/supabase.min.js"></script>
   <script src="assets/js/calculations.js"></script>
+  <script src="assets/js/cycle.js"></script>
   <script src="assets/js/repository.js"></script>
   <script src="assets/js/use-cases.js"></script>
   <script src="assets/js/vendor/fflate.min.js"></script>
   <script src="assets/js/forponto-import.js"></script>
   <script src="assets/js/script.js"></script>
+  <script src="assets/js/app-auth.js"></script>
+  <script src="assets/js/app-pwa.js"></script>
 </body>
 </html>
