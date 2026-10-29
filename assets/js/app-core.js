@@ -43,7 +43,7 @@ function captureError(error, source, context = {}) {
 let repository;
 let useCases;
 let records = [];
-let settings = { target:528, break:FIXED_BREAK_MINUTES, theme:appStorage.getItem(THEME_PREFERENCE_KEY) === "dark" ? "dark" : "light", manualBalances:{} };
+let settings = { target:528, break:FIXED_BREAK_MINUTES, theme:document.documentElement.dataset.theme === "dark" ? "dark" : "light", manualBalances:{} };
 let pendingPhotos = { entrada:"", saida:"" };
 let capturedPhoto = "";
 let cameraStream;

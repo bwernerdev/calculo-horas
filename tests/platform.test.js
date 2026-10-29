@@ -3,7 +3,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const html = fs.readFileSync("index.html", "utf8");
-const css = fs.readFileSync("assets/css/style.css", "utf8");
+const { readCss } = require("./helpers/css");
+const css = readCss();
 const { uiModules, readScripts } = require("./helpers/app-source");
 const script = readScripts([...uiModules, "app-auth.js", "app-pwa.js"]);
 const worker = fs.readFileSync("service-worker.js", "utf8");
@@ -17,9 +18,9 @@ test("mantém câmera interna sem seletor de arquivos ou galeria", () => {
 });
 
 test("aplica experiência mobile por toque também em modo paisagem", () => {
-  assert.match(css, /@media \(max-width:768px\), \(max-width:1024px\) and \(pointer:coarse\)/);
-  assert.match(css, /\.mobile-photo-field \{ display:block; \}/);
-  assert.doesNotMatch(css, /#export-csv \{ display:none; \}/);
+  assert.match(css, /@media \(max-width:768px\),\(max-width:1024px\) and \(pointer:coarse\)/);
+  assert.match(css, /\.mobile-photo-field\{display:block\}/);
+  assert.doesNotMatch(css, /#export-csv\{display:none\}/);
 });
 
 test("dimensiona a interface para viewport e áreas seguras mobile", () => {
@@ -27,7 +28,7 @@ test("dimensiona a interface para viewport e áreas seguras mobile", () => {
   assert.match(css, /100dvh/);
   assert.match(css, /safe-area-inset-top/);
   assert.match(css, /max-height:600px/);
-  assert.match(css, /\.auth-card input,\.password-dialog input \{ min-height:48px; font-size:16px; \}/);
+  assert.match(css, /\.auth-card input,\.password-dialog input\{min-height:48px;font-size:16px\}/);
 });
 
 test("mantém manifesto e arquivos essenciais no cache offline", () => {

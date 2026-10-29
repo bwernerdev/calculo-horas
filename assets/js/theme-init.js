@@ -40,5 +40,10 @@
     },
   };
   window.AppStorage = storage;
-  document.documentElement.dataset.theme = storage.getItem("controle-horas-tema-v1") === "dark" ? "dark" : "light";
+  // Sem preferência salva, acompanha o tema do sistema operacional.
+  let systemTheme = "light";
+  try { if (window.matchMedia("(prefers-color-scheme: dark)").matches) systemTheme = "dark"; } catch {}
+  window.AppSystemTheme = systemTheme;
+  const savedTheme = storage.getItem("controle-horas-tema-v1");
+  document.documentElement.dataset.theme = savedTheme === "dark" || savedTheme === "light" ? savedTheme : systemTheme;
 })();

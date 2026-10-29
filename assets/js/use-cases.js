@@ -5,14 +5,14 @@
   if (typeof module === "object" && module.exports) module.exports = useCases;
   if (root) root.HoursUseCases = useCases;
 })(typeof globalThis !== "undefined" ? globalThis : this, function createUseCases() {
-  function createHoursUseCases({ calculator, repository, fixedBreakMinutes = 60, maxDailyWorkMinutes = 600 }) {
+  function createHoursUseCases({ calculator, repository, fixedBreakMinutes = 60, maxDailyWorkMinutes = 600, defaultTheme = "light" }) {
     async function getSettings() {
       const saved = await repository.getSettings();
       const manualBalances = saved.manualBalances && typeof saved.manualBalances === "object" && !Array.isArray(saved.manualBalances) ? saved.manualBalances : {};
       return {
         target: Number.isInteger(saved.target) && saved.target > 0 ? saved.target : 528,
         break: fixedBreakMinutes,
-        theme: saved.theme === "dark" ? "dark" : "light",
+        theme: saved.theme === "dark" || saved.theme === "light" ? saved.theme : defaultTheme,
         manualBalances
       };
     }

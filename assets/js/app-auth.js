@@ -74,7 +74,7 @@ async function loadApplication(user) {
   const generation=++applicationGeneration;
   loadedUserId=user.id;
   const nextRepository=HoursRepository.createSupabaseRepository(supabaseClient,user.id);
-  const nextUseCases=HoursUseCases.createHoursUseCases({ calculator:HoursCalculator, repository:nextRepository, fixedBreakMinutes:FIXED_BREAK_MINUTES, maxDailyWorkMinutes:MAX_DAILY_WORK_MINUTES });
+  const nextUseCases=HoursUseCases.createHoursUseCases({ calculator:HoursCalculator, repository:nextRepository, fixedBreakMinutes:FIXED_BREAK_MINUTES, maxDailyWorkMinutes:MAX_DAILY_WORK_MINUTES, defaultTheme:window.AppSystemTheme === "dark" ? "dark" : "light" });
   repository=nextRepository; useCases=nextUseCases;
   applicationLoad=(async()=>{
   try {

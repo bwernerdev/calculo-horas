@@ -10,9 +10,10 @@
     "serve": "node scripts/serve-static.mjs",
     "build:config": "node scripts/generate-runtime-config.mjs",
     "healthcheck": "node scripts/healthcheck.mjs",
-    "lint": "eslint .",
+    "lint": "eslint . && prettier --check assets/css/style.css",
     "typecheck": "tsc -p .",
-    "check": "npm run lint && npm run typecheck && npm run test:all"
+    "check": "npm run lint && npm run typecheck && npm run test:all",
+    "format:css": "prettier --write assets/css/style.css"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

@@ -5,7 +5,8 @@ const fs = require("node:fs");
 const html = fs.readFileSync("index.html", "utf8");
 const { uiModules, readScripts } = require("./helpers/app-source");
 const script = readScripts([...uiModules, "app-auth.js"]);
-const css = fs.readFileSync("assets/css/style.css", "utf8");
+const { readCss } = require("./helpers/css");
+const css = readCss();
 
 test("separa login e cadastro em abas acessiveis", () => {
   assert.match(html, /id="login-tab"[^>]*role="tab"/);
@@ -62,5 +63,5 @@ test("limpa dados sensíveis e recursos ao encerrar a sessão", () => {
 
 test("checkbox de lembrar e-mail não herda dimensões dos campos de texto", () => {
   assert.match(css, /\.remember-access input\[type="checkbox"\][^{]*\{[^}]*min-height:20px/);
-  assert.match(css, /\.remember-access input\[type="checkbox"\]:focus-visible/);
+  assert.match(css, /:where\([^)]*input[^)]*\):focus-visible\{outline:3px solid var\(--primary\)/);
 });

@@ -44,3 +44,16 @@ for (const theme of ["light", "dark"]) {
     expect(await violations(page)).toEqual([]);
   });
 }
+
+test("sem preferência salva, o tema acompanha o sistema operacional", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("http://127.0.0.1:4174/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("a preferência salva prevalece sobre o tema do sistema", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.addInitScript(() => localStorage.setItem("controle-horas-tema-v1", "light"));
+  await page.goto("http://127.0.0.1:4174/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});

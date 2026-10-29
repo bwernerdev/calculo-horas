@@ -27,6 +27,12 @@
   --on-accent-positive: #d8ffe9;
   --on-accent-negative: #ffe0dd;
   --app-height: 100vh;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
 }
 @supports (height: 100dvh) {
   :root {
@@ -69,7 +75,6 @@ body {
     radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 15%, transparent), transparent 32rem),
     var(--background);
   font-family:
-    Inter,
     ui-sans-serif,
     system-ui,
     -apple-system,
@@ -81,6 +86,10 @@ button,
 input,
 select {
   font: inherit;
+}
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
 }
 /* Layout: topo e contêiner */
 .topbar,
@@ -139,7 +148,7 @@ select {
   gap: 15px;
   padding: 30px;
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -151,13 +160,13 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 5px;
   padding: 5px;
-  border-radius: 13px;
+  border-radius: var(--radius-md);
   background: var(--surface-2);
 }
 .auth-tab {
   padding: 10px 12px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   color: var(--muted);
   background: transparent;
   font-weight: 800;
@@ -201,19 +210,10 @@ select {
   padding: 0;
   border: 0;
   border-radius: 4px;
-  outline: none;
   box-shadow: none;
   background: transparent;
   accent-color: var(--primary);
   appearance: auto;
-}
-.remember-access input[type="checkbox"]:focus {
-  border: 0;
-  box-shadow: none;
-}
-.remember-access input[type="checkbox"]:focus-visible {
-  outline: 3px solid var(--primary-soft);
-  outline-offset: 2px;
 }
 .password-control {
   position: relative;
@@ -230,7 +230,7 @@ select {
   padding: 0 8px;
   transform: translateY(-50%);
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   color: var(--primary);
   background: transparent;
   font-size: 0.75rem;
@@ -270,7 +270,7 @@ select {
   display: block;
   margin-bottom: 7px;
   color: var(--primary);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -311,7 +311,7 @@ h2 {
 .summary-card {
   min-width: 0;
   padding: 20px;
-  border-radius: 17px;
+  border-radius: var(--radius-lg);
 }
 .summary-card span {
   display: block;
@@ -369,7 +369,7 @@ h2 {
   margin-top: 20px;
   padding: clamp(20px, 4vw, 32px);
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
 }
 /* Avisos e painéis */
 .privacy-notice {
@@ -379,7 +379,7 @@ h2 {
   margin: 20px 0;
   padding: 16px 18px;
   border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--line));
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   color: var(--primary-dark);
   background: var(--primary-soft);
 }
@@ -388,7 +388,7 @@ h2 {
   margin: 0 auto 16px;
   padding: 14px 18px;
   border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text);
   background: var(--danger-bg);
   font-size: 0.88rem;
@@ -423,7 +423,7 @@ h2 {
   margin: -5px 0 24px;
   padding: 18px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--surface-2);
 }
 .form-grid {
@@ -448,8 +448,7 @@ select {
   min-height: 48px;
   padding: 0 13px;
   border: 1px solid var(--line);
-  border-radius: 11px;
-  outline: none;
+  border-radius: var(--radius-sm);
   color: var(--text);
   background: var(--surface-2);
 }
@@ -476,7 +475,7 @@ input[readonly] {
   gap: 8px 22px;
   margin: 16px 0 0;
   padding: 13px 15px;
-  border-radius: 11px;
+  border-radius: var(--radius-sm);
   color: var(--primary-dark);
   background: var(--primary-soft);
   font-size: 0.86rem;
@@ -504,7 +503,7 @@ input[readonly] {
   gap: 12px;
   padding: 14px;
   border: 1px dashed var(--primary);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--primary-dark);
   background: var(--primary-soft);
   font: inherit;
@@ -534,13 +533,13 @@ input[readonly] {
   gap: 12px;
   padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface-2);
 }
 .photo-preview img {
   width: 64px;
   height: 64px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
 }
 .photo-preview strong {
@@ -586,12 +585,12 @@ input[readonly] {
   gap: 10px;
   padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--surface-2);
 }
 .toolbar__label {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -617,7 +616,7 @@ input[readonly] {
   justify-content: center;
   padding: 0 16px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   font-weight: 800;
   line-height: 1.25;
@@ -625,21 +624,15 @@ input[readonly] {
   cursor: pointer;
   transition: transform 0.15s ease;
 }
-.button:hover {
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .button:hover {
+    transform: translateY(-1px);
+  }
 }
 .button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
-}
-.button:focus-visible,
-.icon-button:focus-visible,
-.auth-tab:focus-visible,
-.text-button:focus-visible,
-.table-action:focus-visible {
-  outline: 3px solid var(--primary);
-  outline-offset: 2px;
 }
 .button--primary {
   color: var(--on-brand);
@@ -684,7 +677,7 @@ input[readonly] {
   margin: -6px 0 20px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--surface-2);
 }
 .history-range .button {
@@ -698,7 +691,7 @@ input[readonly] {
   margin: -6px 0 20px;
   padding: 16px 18px;
   border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--line));
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--primary-soft);
 }
 .backup-reminder strong {
@@ -750,17 +743,17 @@ td {
 }
 th {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 .tag {
   display: inline-block;
   padding: 5px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--primary-dark);
   background: var(--primary-soft);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 800;
 }
 .value-positive {
@@ -774,7 +767,7 @@ th {
 .table-action {
   padding: 6px 8px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   color: var(--primary-dark);
   background: var(--primary-soft);
   cursor: pointer;
@@ -819,7 +812,7 @@ th {
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text);
   background: var(--surface-2);
   text-align: left;
@@ -828,9 +821,11 @@ th {
     transform 0.15s ease,
     border-color 0.15s ease;
 }
-.photo-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .photo-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+  }
 }
 .photo-card img {
   display: block;
@@ -861,7 +856,7 @@ th {
 .photo-card__info small {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 /* Simulação pessoal */
 .balance-simulator {
@@ -924,7 +919,7 @@ th {
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 15px;
+  border-radius: var(--radius-md);
   background: var(--line);
 }
 .balance-simulator__result > div {
@@ -992,16 +987,18 @@ th {
 /* Diálogos */
 .confirm-dialog {
   width: min(440px, calc(100% - 32px));
+  max-height: calc(var(--app-height) - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 26px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   color: var(--text);
   background: var(--surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
 }
 .confirm-dialog::backdrop {
   background: rgba(7, 12, 24, 0.58);
-  backdrop-filter: blur(3px);
 }
 .confirm-dialog__icon {
   display: grid;
@@ -1036,16 +1033,12 @@ th {
 }
 .forponto-dialog {
   width: min(900px, calc(100% - 24px));
-  max-height: calc(100dvh - 24px);
-  overflow: auto;
 }
 .forponto-dialog .field {
   margin: 16px 0;
 }
 .auto-backup-dialog {
   width: min(520px, calc(100% - 24px));
-  max-height: calc(100dvh - 24px);
-  overflow: auto;
 }
 .auto-backup-list {
   display: grid;
@@ -1054,6 +1047,13 @@ th {
   padding: 0;
   list-style: none;
 }
+.auto-backup-list .button {
+  flex: none;
+  white-space: nowrap;
+}
+.auto-backup-list li > span {
+  min-width: 0;
+}
 .auto-backup-list li {
   display: flex;
   align-items: center;
@@ -1061,7 +1061,7 @@ th {
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface-2);
 }
 .forponto-preview {
@@ -1069,7 +1069,7 @@ th {
   overflow: auto;
   margin: 16px 0 20px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 .forponto-preview th {
   position: sticky;
@@ -1080,7 +1080,7 @@ th {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   min-width: 150px;
 }
 .password-dialog form {
@@ -1104,16 +1104,18 @@ th {
 }
 .photo-dialog {
   width: min(720px, calc(100% - 24px));
+  max-height: calc(var(--app-height) - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   color: var(--text);
   background: var(--surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
 }
 .photo-dialog::backdrop {
   background: rgba(7, 12, 24, 0.72);
-  backdrop-filter: blur(3px);
 }
 .photo-dialog__header {
   display: flex;
@@ -1134,15 +1136,18 @@ th {
   display: block;
   width: 100%;
   max-height: 75vh;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   object-fit: contain;
   background: #0b1020;
 }
 .camera-dialog {
   width: min(640px, calc(100% - 20px));
+  max-height: calc(var(--app-height) - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   color: var(--text);
   background: var(--surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
@@ -1154,7 +1159,7 @@ th {
   display: block;
   width: 100%;
   max-height: 70vh;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: #050812;
   object-fit: contain;
 }
@@ -1180,7 +1185,7 @@ th {
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-left: 4px solid var(--primary);
-  border-radius: 11px;
+  border-radius: var(--radius-sm);
   color: var(--text);
   background: var(--surface);
   box-shadow: var(--shadow);
@@ -1201,6 +1206,9 @@ th {
   }
 }
 /* Utilitários */
+body:has(dialog[open]) {
+  overflow: hidden;
+}
 [hidden] {
   display: none !important;
 }
@@ -1227,7 +1235,7 @@ th {
   max-width: min(28rem, calc(100vw - 2rem));
   padding: 1rem;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.22);
@@ -1338,7 +1346,7 @@ th {
     margin-bottom: 12px;
     padding: 14px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     background: var(--surface-2);
   }
   .history-table td {
@@ -1355,7 +1363,7 @@ th {
   .history-table td::before {
     content: attr(data-label);
     color: var(--muted);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -1398,7 +1406,7 @@ th {
     font-size: clamp(1.05rem, 5.8vw, 1.4rem);
   }
   .topbar__brand .eyebrow {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
   }
   .topbar__actions {
     gap: 6px;
@@ -1420,7 +1428,7 @@ th {
   .auth-card {
     width: 100%;
     padding: clamp(18px, 5vw, 24px);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
   }
   .auth-card input,
   .password-dialog input {
@@ -1442,8 +1450,6 @@ th {
     flex-grow: 1;
   }
   .password-dialog {
-    max-height: calc(100dvh - 24px);
-    overflow: auto;
     padding: 20px;
   }
   .password-dialog .confirm-dialog__actions {
@@ -1529,9 +1535,14 @@ th {
   .entry-panel,
   .toolbar,
   .history-range,
-  th:last-child,
-  td:last-child {
+  .history-table th:last-child,
+  .history-table td:last-child {
     display: none !important;
+  }
+  .history-table tr,
+  .summary-card,
+  .photo-card {
+    break-inside: avoid;
   }
   .page-shell {
     width: 100%;
@@ -1617,6 +1628,22 @@ th {
   }
   .balance-simulator__result strong {
     text-align: left;
+  }
+}
+@media (pointer: coarse) {
+  .table-action,
+  .password-toggle,
+  .text-button,
+  .manual-sync .button,
+  .photo-dialog__header .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .confirm-dialog::backdrop,
+  .photo-dialog::backdrop {
+    backdrop-filter: blur(3px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
