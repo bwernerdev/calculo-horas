@@ -1,6 +1,6 @@
 {
   "name": "calculo-horas",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "test": "node --test",
@@ -9,12 +9,26 @@
     "vendor:supabase": "node scripts/vendor-supabase.mjs",
     "serve": "node scripts/serve-static.mjs",
     "build:config": "node scripts/generate-runtime-config.mjs",
-    "healthcheck": "node scripts/healthcheck.mjs"
+    "healthcheck": "node scripts/healthcheck.mjs",
+    "lint": "eslint . && prettier --check assets/css/style.css",
+    "typecheck": "tsc -p .",
+    "check": "npm run lint && npm run typecheck && npm run test:all",
+    "format:css": "prettier --write assets/css/style.css",
+    "test:visual": "node scripts/visual.mjs",
+    "test:visual:update": "node scripts/visual.mjs --update-snapshots"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^9.39.5",
+    "@fontsource-variable/inter": "^5.3.0",
     "@playwright/test": "^1.55.0",
     "@supabase/supabase-js": "2.116.0",
-    "pdfjs-dist": "5.5.207"
+    "@types/node": "^22.20.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "pdfjs-dist": "5.5.207",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20"

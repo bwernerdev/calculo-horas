@@ -1,4 +1,6 @@
-(function exposeCalculator(root, factory) {
+// @ts-check
+/** UMD: expõe o módulo como global no navegador e via module.exports no Node. */
+(function exposeCalculator(/** @type {any} */ root, factory) {
   const calculator = factory();
   if (typeof module === "object" && module.exports) module.exports = calculator;
   if (root) root.HoursCalculator = calculator;
@@ -22,7 +24,13 @@
     return `${minutes > 0 ? "+" : minutes < 0 ? "-" : ""}${duration(minutes)}`;
   }
 
-  function calculate(record, targetMinutes) {
+  /**
+   * @param {HoursRecord} record
+   * @param {number | ((record: HoursRecord) => number)} target meta fixa ou função que devolve a meta do registro
+   * @returns {{worked:number, balance:number}}
+   */
+  function calculate(record, target) {
+    const targetMinutes = typeof target === "function" ? target(record) : target;
     const official = record.importData?.source === "forponto" && Number.isInteger(record.importData.officialBalanceMinutes)
       ? record.importData.officialBalanceMinutes : null;
     if (record.type === "falta") return { worked: 0, balance: official ?? -targetMinutes };
@@ -34,6 +42,10 @@
     return { worked, balance: official ?? worked - targetMinutes };
   }
 
+  /**
+   * @param {HoursRecord[]} records
+   * @param {number | ((record: HoursRecord) => number)} targetMinutes
+   */
   function summarize(records, targetMinutes) {
     return records.reduce((total, record) => {
       const result = calculate(record, targetMinutes);

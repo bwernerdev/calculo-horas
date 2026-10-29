@@ -1,8 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 
-const script = fs.readFileSync("assets/js/script.js", "utf8");
+const { uiModules, readScripts } = require("./helpers/app-source");
+const script = readScripts(uiModules);
 
 test("backup valida calendário, relógio, volume e fotos antes da restauração", () => {
   assert.match(script, /function isValidCalendarDate/);
@@ -18,8 +18,8 @@ test("backup valida calendário, relógio, volume e fotos antes da restauração
 
 test("interface usa restauração transacional e CRUD individual", () => {
   assert.match(script, /repository\.restoreBackup\(imported,nextSettings\)/);
-  assert.match(script, /useCases\.saveRecord\(record,settings\.target,records\)/);
-  assert.match(script, /useCases\.deleteRecord\(remove,records\)/);
+  assert.match(script, /useCases\.saveRecord\(record,targetFor,records\)/);
+  assert.match(script, /useCases\.deleteRecord\(id,\[\]\)/);
   assert.doesNotMatch(script, /repository\.saveAllRecords/);
 });
 

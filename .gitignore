@@ -10,3 +10,6 @@ supabase/.branches/
 .env
 .env.*
 !.env.example
+
+# Referências da comparação visual (dependem do sistema operacional)
+e2e/visual.spec.js-snapshots/

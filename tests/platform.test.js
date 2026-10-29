@@ -3,8 +3,10 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const html = fs.readFileSync("index.html", "utf8");
-const css = fs.readFileSync("assets/css/style.css", "utf8");
-const script = ["script.js", "app-auth.js", "app-pwa.js"].map((file) => fs.readFileSync(`assets/js/${file}`, "utf8")).join("\n");
+const { readCss } = require("./helpers/css");
+const css = readCss();
+const { uiModules, readScripts } = require("./helpers/app-source");
+const script = readScripts([...uiModules, "app-auth.js", "app-pwa.js"]);
 const worker = fs.readFileSync("service-worker.js", "utf8");
 const manifest = JSON.parse(fs.readFileSync("manifest.webmanifest", "utf8"));
 const themeInit = fs.readFileSync("assets/js/theme-init.js", "utf8");
@@ -16,9 +18,9 @@ test("mantém câmera interna sem seletor de arquivos ou galeria", () => {
 });
 
 test("aplica experiência mobile por toque também em modo paisagem", () => {
-  assert.match(css, /@media \(max-width:768px\), \(max-width:1024px\) and \(pointer:coarse\)/);
-  assert.match(css, /\.mobile-photo-field \{ display:block; \}/);
-  assert.doesNotMatch(css, /#export-csv \{ display:none; \}/);
+  assert.match(css, /@media \(max-width:768px\),\(max-width:1024px\) and \(pointer:coarse\)/);
+  assert.match(css, /\.mobile-photo-field\{display:block\}/);
+  assert.doesNotMatch(css, /#export-csv\{display:none\}/);
 });
 
 test("dimensiona a interface para viewport e áreas seguras mobile", () => {
@@ -26,20 +28,23 @@ test("dimensiona a interface para viewport e áreas seguras mobile", () => {
   assert.match(css, /100dvh/);
   assert.match(css, /safe-area-inset-top/);
   assert.match(css, /max-height:600px/);
-  assert.match(css, /\.auth-card input,\.password-dialog input \{ min-height:48px; font-size:16px; \}/);
+  assert.match(css, /\.auth-card input,\.password-dialog input\{min-height:48px;font-size:16px\}/);
 });
 
 test("mantém manifesto e arquivos essenciais no cache offline", () => {
   assert.equal(manifest.display, "standalone");
   assert.deepEqual(manifest.icons.map((icon) => icon.sizes), ["192x192", "512x512"]);
-  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/runtime-config.js", "assets/js/monitoring.js", "assets/js/time-input.js", "assets/js/calculations.js", "assets/js/cycle.js", "assets/js/script.js", "assets/js/app-auth.js", "assets/js/app-pwa.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
+  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/runtime-config.js", "assets/js/monitoring.js", "assets/js/time-input.js", "assets/js/calculations.js", "assets/js/cycle.js", ...uiModules.map((file) => `assets/js/${file}`), "assets/js/app-auth.js", "assets/js/app-pwa.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
 });
 
 test("carrega autenticação e PWA após o núcleo da interface", () => {
-  const core = html.indexOf('src="assets/js/script.js"');
+  const core = html.indexOf('src="assets/js/app-core.js"');
   const auth = html.indexOf('src="assets/js/app-auth.js"');
   const pwa = html.indexOf('src="assets/js/app-pwa.js"');
-  assert.ok(core > 0 && auth > core && pwa > auth);
+  const last = html.indexOf(`src="assets/js/${uiModules.at(-1)}"`);
+  const order = uiModules.map((file) => html.indexOf(`src="assets/js/${file}"`));
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), "módulos da UI fora de ordem");
+  assert.ok(core > 0 && last > core && auth > last && pwa > auth);
 });
 
 test("simula saldo manual positivo e negativo por usuário e mês", () => {
@@ -52,7 +57,7 @@ test("simula saldo manual positivo e negativo por usuário e mês", () => {
   assert.match(html, /id="simulator-informed-balance"/);
   assert.match(script, /positive-negative/);
   assert.match(script, /MANUAL_BALANCE_KEY.*loadedUserId.*month-filter/s);
-  assert.match(script, /HoursCalculator\.suggestExit\(start,settings\.target,FIXED_BREAK_MINUTES,projected,SUGGESTED_DAILY_LIMIT_MINUTES\)/);
+  assert.match(script, /HoursCalculator\.suggestExit\(start,targetOn\(localDate\(\)\),settings\.break,projected,SUGGESTED_DAILY_LIMIT_MINUTES\)/);
   assert.match(script, /informedBalance=projected\+informed\.balance/);
 });
 

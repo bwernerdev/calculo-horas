@@ -14,8 +14,23 @@ const mimeTypes = {
   ".webp": "image/webp",
 };
 
+// Aplica os cabecalhos do bloco "/*" de _headers para que CSP e Permissions-Policy valham tambem nos testes.
+function loadSecurityHeaders(root) {
+  const file = path.join(root, "_headers");
+  if (!fs.existsSync(file)) return {};
+  const headers = {};
+  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^\s+([A-Za-z-]+):\s*(.+)$/);
+    if (!match) continue;
+    // Em http://127.0.0.1 o upgrade para https quebraria os recursos locais.
+    headers[match[1]] = match[1] === "Content-Security-Policy" ? match[2].trim().replace(/;?\s*upgrade-insecure-requests/, "") : match[2];
+  }
+  return headers;
+}
+
 export function createStaticServer(rootDirectory = ".") {
   const root = path.resolve(rootDirectory);
+  const securityHeaders = loadSecurityHeaders(root);
   return http.createServer((request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
     const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
@@ -26,6 +41,7 @@ export function createStaticServer(rootDirectory = ".") {
       return;
     }
     response.writeHead(200, {
+      ...securityHeaders,
       "Content-Type": mimeTypes[path.extname(requestedPath)] || "application/octet-stream",
       "Cache-Control": "no-store",
     });

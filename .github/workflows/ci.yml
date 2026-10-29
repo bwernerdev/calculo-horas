@@ -20,6 +20,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+      - run: npm run lint
+      - run: npm run typecheck
       - run: npx playwright install --with-deps chromium
       - run: npm run test:all
       - uses: actions/upload-artifact@v5

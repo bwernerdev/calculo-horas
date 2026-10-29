@@ -59,3 +59,12 @@ test("caso de uso valida e recupera saldos manuais mensais", async () => {
   assert.deepEqual(settings.manualBalances,{ "2026-08":{ positive:120, negative:45 } });
   await assert.rejects(useCases.saveSettings({ ...settings, manualBalances:{ agosto:{ positive:10, negative:0 } } }),/saldos manuais/);
 });
+
+test("usuário sem configuração salva recebe o tema padrão informado; o salvo prevalece", async () => {
+  const withoutRow = createHoursUseCases({ calculator, repository: { getSettings: async () => ({}) }, defaultTheme: "dark" });
+  assert.equal((await withoutRow.getSettings()).theme, "dark");
+  const withRow = createHoursUseCases({ calculator, repository: { getSettings: async () => ({ theme: "light" }) }, defaultTheme: "dark" });
+  assert.equal((await withRow.getSettings()).theme, "light");
+  const fallback = createHoursUseCases({ calculator, repository: { getSettings: async () => ({ theme: "azul" }) } });
+  assert.equal((await fallback.getSettings()).theme, "light");
+});

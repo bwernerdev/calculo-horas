@@ -27,6 +27,12 @@ As fotos são baixadas do Supabase Storage somente quando abertas, ao editar o r
 
 O painel usa por padrão ciclos de 16 a 15: o mês de fechamento `2026-09`, por exemplo, considera de 16/08/2026 a 15/09/2026. A partir do dia 16, abre automaticamente o ciclo seguinte. Os cartões, o histórico, a saída sugerida, a simulação e as exportações seguem esse período. Os campos editáveis “De” e “Até” permitem pesquisar outro período inclusivo, mesmo entre meses diferentes. Ao importar um XLSX/PDF Forponto ou restaurar um backup JSON, esse filtro personalizado é preenchido automaticamente com a primeira e a última data dos registros importados. “Limpar período” volta ao ciclo do mês de fechamento selecionado. Os ajustes manuais da simulação continuam vinculados a esse mês de fechamento.
 
+Interface: o histórico traz um calendário do ciclo (cada dia colorido pelo tipo, com o saldo; clicar abre o registro ou preenche um novo) e um gráfico de saldo por dia. Exportar, Importar e Mais (apagar tudo) ficam em menus. Os cartões mostram a variação em relação ao ciclo anterior e a meta cumprida; o formulário de jornada pode ser recolhido (e no celular há um botão flutuante de novo registro).
+
+Também há: **Entrada agora / Saída agora** (preenchem o horário atual), exclusão com **Desfazer**, intervalo padrão e meta por dia da semana (em **Configurar jornada**), exportação em XLSX e PDF com calendário e gráfico, e uso offline (os registros ficam em uma cópia local e as alterações são sincronizadas quando a internet volta; ao tocar em **Sair**, a cópia local é apagada). Veja o [histórico de mudanças](CHANGELOG.md) e o [checklist de dispositivos](docs/CHECKLIST-DISPOSITIVOS.md).
+
+Backups automáticos: uma vez por dia, ao abrir o aplicativo com registros, uma cópia dos registros e configurações (sem fotos, mesmo formato do backup JSON) é guardada na conta; as 7 mais recentes são mantidas. Em **Backups automáticos** é possível baixar uma cópia e restaurá-la por **Importar backup**. Requer a [migração de backups automáticos](supabase/migrations/20261029000000_auto_backup_snapshots.sql); sem ela o recurso fica desativado. O intervalo padrão e as metas por dia usam a [migração de preferências](supabase/migrations/20261029000100_user_preferences.sql) (também opcional). Para saber o que já foi aplicado e como aplicar, siga o passo a passo em [Configuração do Supabase](docs/CONFIGURACAO-SUPABASE.md).
+
 ## Desenvolvimento
 
 O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS está fixada em `2.116.0` e é servida localmente em `assets/js/vendor/`, inclusive pelo cache do PWA. Após atualizar essa dependência, execute `npm run vendor:supabase` e publique também o arquivo gerado e sua licença.
@@ -44,7 +50,7 @@ npx playwright install chromium
 npm run test:all
 ```
 
-`npm test` executa apenas os testes unitários; `npm run test:e2e` executa os testes reais de navegador.
+`npm run lint` e `npm run typecheck` verificam estilo e tipos (também rodam no CI); `npm run check` executa tudo. `npm test` executa apenas os testes unitários; `npm run test:e2e` executa os testes reais de navegador.
 
 Abrir `index.html` diretamente permite uma inspeção básica, mas um servidor local representa melhor o ambiente publicado.
 

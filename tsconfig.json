@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": [
+    "types/globals.d.ts",
+    "assets/js/calculations.js",
+    "assets/js/cycle.js",
+    "assets/js/time-input.js",
+    "assets/js/insights.js",
+    "assets/js/xlsx-export.js",
+    "assets/js/offline.js",
+    "assets/js/repository.js",
+    "assets/js/use-cases.js",
+    "assets/js/forponto-import.js",
+    "assets/js/monitoring.js"
+  ]
+}

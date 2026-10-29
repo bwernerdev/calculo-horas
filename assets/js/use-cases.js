@@ -1,16 +1,31 @@
-(function exposeUseCases(root, factory) {
+// @ts-check
+/** UMD: expõe o módulo como global no navegador e via module.exports no Node. */
+(function exposeUseCases(/** @type {any} */ root, factory) {
   const useCases = factory();
   if (typeof module === "object" && module.exports) module.exports = useCases;
   if (root) root.HoursUseCases = useCases;
 })(typeof globalThis !== "undefined" ? globalThis : this, function createUseCases() {
-  function createHoursUseCases({ calculator, repository, fixedBreakMinutes = 60, maxDailyWorkMinutes = 600 }) {
+  function createHoursUseCases({ calculator, repository, fixedBreakMinutes = 60, maxDailyWorkMinutes = 600, defaultTheme = "light" }) {
+    function normalizePreferences(value) {
+      const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+      const breakMinutes = Number.isInteger(source.break) && source.break >= 0 && source.break <= 600 ? source.break : fixedBreakMinutes;
+      const weekdayTargets = {};
+      const rawTargets = source.weekdayTargets && typeof source.weekdayTargets === "object" ? source.weekdayTargets : {};
+      for (const [day, minutes] of Object.entries(rawTargets)) {
+        if (/^[0-6]$/.test(day) && Number.isInteger(minutes) && minutes >= 1 && minutes <= maxDailyWorkMinutes) weekdayTargets[day] = minutes;
+      }
+      return { break: breakMinutes, weekdayTargets };
+    }
+
     async function getSettings() {
       const saved = await repository.getSettings();
+      const preferences = normalizePreferences(saved.preferences);
       const manualBalances = saved.manualBalances && typeof saved.manualBalances === "object" && !Array.isArray(saved.manualBalances) ? saved.manualBalances : {};
       return {
         target: Number.isInteger(saved.target) && saved.target > 0 ? saved.target : 528,
-        break: fixedBreakMinutes,
-        theme: saved.theme === "dark" ? "dark" : "light",
+        break: preferences.break,
+        weekdayTargets: preferences.weekdayTargets,
+        theme: saved.theme === "dark" || saved.theme === "light" ? saved.theme : defaultTheme,
         manualBalances
       };
     }
@@ -80,12 +95,21 @@
       for (const [month,balance] of Object.entries(settings.manualBalances)) {
         if (!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(month) || !Number.isInteger(balance?.positive) || balance.positive<0 || balance.positive>599999 || !Number.isInteger(balance?.negative) || balance.negative<0 || balance.negative>599999) throw new Error("Os saldos manuais são inválidos.");
       }
-      const nextSettings = { ...settings, break: fixedBreakMinutes };
+      const breakMinutes = settings.break === undefined ? fixedBreakMinutes : settings.break;
+      if (!Number.isInteger(breakMinutes) || breakMinutes < 0 || breakMinutes > 600) throw new Error("O intervalo padrão deve estar entre 0 e 600 minutos.");
+      const rawTargets = settings.weekdayTargets === undefined ? {} : settings.weekdayTargets;
+      if (!rawTargets || typeof rawTargets !== "object" || Array.isArray(rawTargets)) throw new Error("As metas por dia da semana são inválidas.");
+      const weekdayTargets = {};
+      for (const [day, minutes] of Object.entries(rawTargets)) {
+        if (!/^[0-6]$/.test(day) || !Number.isInteger(minutes) || minutes < 1 || minutes > maxDailyWorkMinutes) throw new Error("A meta de cada dia da semana deve estar entre 1 minuto e 10 horas.");
+        weekdayTargets[day] = minutes;
+      }
+      const nextSettings = { ...settings, break: breakMinutes, weekdayTargets };
       await repository.saveSettings(nextSettings);
       return nextSettings;
     }
 
-    return { getSettings, saveRecord, importForpontoRecords, deleteRecord, deleteAllRecords, saveSettings };
+    return { getSettings, validateRecord, saveRecord, importForpontoRecords, deleteRecord, deleteAllRecords, saveSettings };
   }
 
   return { createHoursUseCases };

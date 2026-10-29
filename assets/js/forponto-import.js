@@ -1,4 +1,6 @@
-(function exposeForponto(root, factory) {
+// @ts-check
+/** UMD: expõe o módulo como global no navegador e via module.exports no Node. */
+(function exposeForponto(/** @type {any} */ root, factory) {
   const importer = factory();
   if (typeof module === "object" && module.exports) module.exports = importer;
   if (root) root.ForpontoImport = importer;

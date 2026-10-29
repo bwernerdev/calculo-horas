@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { openMenu } = require("./helpers");
 const fs = require("node:fs");
 const { zipSync, strToU8 } = require("fflate");
 
@@ -103,11 +104,11 @@ test("mantém ferramentas e cartões alinhados em telas pequenas e grandes", asy
     const layout = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth > window.innerWidth,
       cards: getComputedStyle(document.querySelector(".summary-grid")).gridTemplateColumns.split(" ").length,
-      toolbar: getComputedStyle(document.querySelector(".toolbar")).gridTemplateColumns.split(" ").length,
+      menus: document.querySelectorAll(".toolbar__menus .menu__summary").length,
     }));
     expect(layout.overflow, `overflow horizontal em ${width}px`).toBe(false);
     expect(layout.cards).toBe(width <= 580 ? 2 : width <= 900 ? 2 : 3);
-    expect(layout.toolbar).toBe(width <= 580 ? 1 : 2);
+    expect(layout.menus).toBe(3);
   }
 });
 
@@ -127,10 +128,12 @@ test("apaga todos os registros somente após confirmação digitada", async ({ p
   await page.locator("#work-date").fill("2026-09-15");
   await page.locator("#submit-button").click();
   await expect(page.locator("#records-body tr")).toHaveCount(1);
+  await openMenu(page, "Mais");
   await page.locator("#clear-records").click();
   await expect(page.locator("#clear-records-dialog")).toBeVisible();
   await page.locator("#clear-records-cancel").click();
   await expect(page.locator("#records-body tr")).toHaveCount(1);
+  await openMenu(page, "Mais");
   await page.locator("#clear-records").click();
   await page.locator("#clear-records-confirmation").fill("apagar");
   await expect(page.locator("#clear-records-accept")).toBeDisabled();
@@ -181,9 +184,11 @@ test("pesquisa um período editável entre meses e recalcula o resumo e a simula
   await page.locator("#manual-positive").fill("1");
   await expect(page.locator("#simulator-projected-balance")).toHaveText("+2h 00min");
   const csvDownload=page.waitForEvent("download");
+  await openMenu(page, "Exportar");
   await page.locator("#export-csv").click();
   expect((await csvDownload).suggestedFilename()).toBe("horas-2026-08-15-a-2026-09-16.csv");
   const pdfDownload=page.waitForEvent("download");
+  await openMenu(page, "Exportar");
   await page.locator("#export-pdf").click();
   expect((await pdfDownload).suggestedFilename()).toBe("relatorio-horas-2026-08-15-a-2026-09-16.pdf");
   await page.locator("#history-range-clear").click();
@@ -243,7 +248,7 @@ test("no mobile aceita horas inteiras e permite digitar dois-pontos no teclado",
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");
   await expect(page.locator("#app-content")).toBeVisible();
-  await expect(page.locator(".time-entry[inputmode='text']")).toHaveCount(7);
+  await expect(page.locator(".time-entry[inputmode='text']")).toHaveCount(14); // 7 campos de horário + 7 metas por dia da semana
   await expect(page.locator(".time-separator")).toHaveCount(0);
   await page.locator("#manual-positive").fill("1");
   await expect(page.locator("#simulator-projected-balance")).toContainText("1h 00min");
@@ -306,6 +311,7 @@ test("exporta um backup JSON válido", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#app-content")).toBeVisible();
   const downloadPromise = page.waitForEvent("download");
+  await openMenu(page, "Exportar");
   await page.locator("#export-json").click();
   const download = await downloadPromise;
   const content = JSON.parse(await fs.promises.readFile(await download.path(), "utf8"));
@@ -356,6 +362,7 @@ test("importa XLSX Forponto com prévia e intervalo real", async ({ page }) => {
   await page.locator("#confirm-accept").click();
   await expect(page.locator("#records-body tr")).toHaveCount(5);
   const backupDownload=page.waitForEvent("download");
+  await openMenu(page, "Exportar");
   await page.locator("#export-json").click();
   const backup=JSON.parse(await fs.promises.readFile(await (await backupDownload).path(), "utf8"));
   expect(backup.registros.find((record)=>record.data==="2026-08-18").dadosImportacao.officialBalanceMinutes).toBe(-320);

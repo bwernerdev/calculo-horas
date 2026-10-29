@@ -16,9 +16,30 @@
   <script src="assets/js/runtime-config.js"></script>
   <script src="assets/js/monitoring.js"></script>
   <script src="assets/js/time-input.js"></script>
+  <link rel="preload" href="assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+  <svg class="icon-sprite" aria-hidden="true" focusable="false"><defs>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9l5-5 5 5M5 20h14"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><path d="M3 4h18v4H3zM5 8v12h14V8M10 12h4"/></symbol>
+  </defs></svg>
   <header class="topbar">
     <div class="topbar__brand">
       <img class="brand-logo" src="assets/images/logo-controladoria-cds.webp" alt="Controladoria Administrativa CDS" width="1402" height="1122">
@@ -28,12 +49,26 @@
       <button id="install-app" class="button button--install" type="button" hidden>Instalar app</button>
       <button id="change-password-button" class="button button--ghost" type="button" hidden>Alterar senha</button>
       <button id="logout-button" class="button button--ghost" type="button" hidden>Sair</button>
-      <button id="theme-toggle" class="icon-button" type="button" aria-label="Alternar tema">🌙</button>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Alternar tema"><svg class="icon icon--moon" aria-hidden="true"><use href="#i-moon"/></svg><svg class="icon icon--sun" aria-hidden="true"><use href="#i-sun"/></svg></button>
     </div>
   </header>
   <aside id="storage-warning" class="storage-warning" role="status" hidden>O armazenamento deste navegador está bloqueado. Você pode usar o site, mas o login e as preferências não serão mantidos após fechar a página.</aside>
 
+  <div id="app-skeleton" class="app-skeleton" aria-hidden="true">
+    <div class="skeleton skeleton--card"></div><div class="skeleton skeleton--card"></div><div class="skeleton skeleton--card"></div>
+    <div class="skeleton skeleton--panel"></div>
+  </div>
+
   <section id="auth-screen" class="auth-screen" aria-labelledby="auth-title">
+    <div class="auth-layout">
+    <aside class="auth-hero">
+      <p class="auth-hero__title">Suas horas, sempre em dia.</p>
+      <ul class="auth-hero__list">
+        <li><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span>Saldo do ciclo de 16 a 15 calculado automaticamente</span></li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span>Registros e fotos privados, só na sua conta</span></li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg><span>Funciona no celular e instala como aplicativo</span></li>
+      </ul>
+    </aside>
     <div class="auth-card">
       <span class="eyebrow">Acesso seguro</span>
       <div class="auth-tabs" role="tablist" aria-label="Acesso à conta">
@@ -70,6 +105,7 @@
         <button id="recovery-back-button" class="text-button" type="button">Voltar para o login</button>
       </form>
     </div>
+    </div>
   </section>
   <section id="password-setup-screen" class="auth-screen" aria-labelledby="password-setup-title" hidden>
     <form id="password-setup-form" class="auth-card">
@@ -84,28 +120,31 @@
     </form>
   </section>
   <main id="app-content" class="page-shell" hidden>
+    <div id="offline-banner" class="offline-banner" role="status" hidden></div>
     <section class="summary-grid" aria-label="Resumo do ciclo de 16 a 15">
-      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do ciclo</span><strong id="monthly-balance">0h 00min</strong><small id="balance-period-dates"></small></article>
+      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do ciclo</span><strong id="monthly-balance">0h 00min</strong><small id="balance-period-dates"></small><small id="balance-delta" class="balance-delta" hidden></small><small id="cycle-forecast" class="balance-delta" hidden></small></article>
       <article class="summary-card summary-card--positive"><span>Horas positivas</span><strong id="monthly-positive">+0h 00min</strong></article>
       <article class="summary-card summary-card--negative"><span>Horas negativas</span><strong id="monthly-negative">-0h 00min</strong></article>
-      <article class="summary-card"><span>Total trabalhado</span><strong id="monthly-worked">0h 00min</strong></article>
+      <article class="summary-card"><span>Total trabalhado</span><strong id="monthly-worked">0h 00min</strong><div id="worked-meter" class="meter" role="progressbar" aria-label="Meta cumprida" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="meter__fill"></span></div><small id="worked-meter-label" hidden></small></article>
       <article class="summary-card"><span>Dias registrados</span><strong id="registered-days">0</strong></article>
       <article class="summary-card"><span>Meta diária</span><strong id="target-summary">8h 48min</strong></article>
     </section>
 
-    <aside class="privacy-notice" aria-label="Privacidade dos dados">
-      <span class="privacy-notice__icon" aria-hidden="true">🔒</span>
-      <div><strong>Seus dados ficam protegidos na sua conta.</strong><p>Registros e fotos são armazenados com segurança no Supabase e só podem ser acessados pela sua conta. As imagens não são salvas na galeria do dispositivo. Baixe um backup JSON regularmente.</p></div>
-    </aside>
+    <details class="privacy-notice">
+      <summary><svg class="icon privacy-notice__icon" aria-hidden="true"><use href="#i-lock"/></svg><strong>Seus dados ficam protegidos na sua conta.</strong><span class="privacy-notice__more">Saiba mais</span></summary>
+      <p>Registros e fotos são armazenados com segurança no Supabase e só podem ser acessados pela sua conta. As imagens não são salvas na galeria do dispositivo. Baixe um backup JSON regularmente.</p>
+    </details>
 
     <section class="panel entry-panel">
       <div class="panel__header">
         <div><span class="eyebrow">Novo apontamento</span><h2 id="form-title">Registrar jornada</h2></div>
-        <button id="settings-toggle" class="button button--ghost" type="button">⚙ Configurar jornada</button>
+        <div class="panel__actions"><button id="entry-toggle" class="icon-button entry-toggle" type="button" aria-expanded="true" aria-controls="hours-form" aria-label="Recolher formulário"><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></button><button id="settings-toggle" class="button button--ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg>Configurar jornada</button></div>
       </div>
 
       <form id="settings-form" class="settings" hidden>
         <label class="field"><span>Meta diária</span><input id="daily-target" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="08:48" value="08:48" autocapitalize="off" spellcheck="false" required></label>
+        <label class="field"><span>Intervalo padrão (min)</span><input id="default-break" type="number" min="0" max="600" step="1" value="60" required></label>
+        <details class="settings__weekdays"><summary>Metas por dia da semana <small>(vazio = usa a meta diária)</small></summary><div class="settings__weekdays-grid"><label class="field"><span>Seg</span><input id="target-dow-1" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Ter</span><input id="target-dow-2" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Qua</span><input id="target-dow-3" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Qui</span><input id="target-dow-4" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Sex</span><input id="target-dow-5" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Sáb</span><input id="target-dow-6" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Dom</span><input id="target-dow-0" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label></div></details>
         <button class="button button--secondary" type="submit">Salvar configuração</button>
       </form>
 
@@ -120,7 +159,7 @@
         </div>
         <div class="mobile-photo-field">
           <button id="open-camera" class="photo-capture" type="button">
-            <span class="photo-capture__icon" aria-hidden="true">📷</span>
+            <svg class="icon photo-capture__icon" aria-hidden="true"><use href="#i-camera"/></svg>
             <span><strong>Fotografar o ponto</strong><small>Use a câmera para anexar um comprovante a este dia.</small></span>
           </button>
           <div id="photo-preview" class="photo-preview" hidden>
@@ -134,6 +173,7 @@
           <button id="submit-button" class="button button--primary" type="submit">Adicionar registro</button>
           <button id="cancel-edit" class="button button--secondary" type="button" hidden>Cancelar edição</button>
           <button class="button button--ghost" type="reset">Limpar</button>
+          <span class="actions__quick"><button id="clock-in-now" class="button button--secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>Entrada agora</button><button id="clock-out-now" class="button button--secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>Saída agora</button></span>
         </div>
       </form>
     </section>
@@ -142,10 +182,32 @@
       <div class="panel__header panel__header--wrap">
         <div><span class="eyebrow">Histórico</span><h2 id="history-title">Registros do ciclo</h2></div>
         <div class="toolbar" aria-label="Ferramentas do histórico">
-          <div class="toolbar__group"><span class="toolbar__label">Ciclo de 16 a 15</span><label class="month-filter">Mês de fechamento <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês em que o ciclo termina no dia 15, no formato AAAA-MM" maxlength="7"></label></div>
-          <div class="toolbar__group"><span class="toolbar__label">Exportar dados</span><div class="toolbar__buttons"><button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button><button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button><button id="export-json" class="button button--secondary" type="button">Baixar backup</button></div></div>
-          <div class="toolbar__group"><span class="toolbar__label">Importar dados</span><div class="toolbar__buttons"><button id="import-json" class="button button--secondary" type="button">Importar backup</button><button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX/PDF</button></div></div>
-          <div class="toolbar__group toolbar__group--danger"><span class="toolbar__label">Gerenciar</span><button id="clear-records" class="button button--danger" type="button">Apagar todos os registros</button></div>
+          <div class="toolbar__group toolbar__group--cycle"><span class="toolbar__label">Ciclo de 16 a 15</span><label class="month-filter">Mês de fechamento <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês em que o ciclo termina no dia 15, no formato AAAA-MM" maxlength="7"></label></div>
+          <div class="toolbar__menus">
+          <details class="menu" data-menu>
+            <summary class="button button--secondary menu__summary"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Exportar<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="menu__panel" role="group" aria-label="Exportar dados">
+              <button id="export-csv" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Exportar CSV</button>
+              <button id="export-xlsx" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Exportar XLSX</button>
+              <button id="export-pdf" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Baixar PDF</button>
+              <button id="export-json" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Baixar backup</button>
+              <button id="open-auto-backups" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-archive"/></svg>Backups automáticos</button>
+            </div>
+          </details>
+          <details class="menu" data-menu>
+            <summary class="button button--secondary menu__summary"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Importar<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="menu__panel" role="group" aria-label="Importar dados">
+              <button id="import-json" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Importar backup</button>
+              <button id="import-forponto" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Importar Forponto XLSX/PDF</button>
+            </div>
+          </details>
+          <details class="menu" data-menu>
+            <summary class="button button--ghost menu__summary"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg>Mais<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="menu__panel" role="group" aria-label="Mais ações">
+              <button id="clear-records" class="menu__item menu__item--danger" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Apagar todos os registros</button>
+            </div>
+          </details>
+          </div>
           <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup JSON">
           <input id="forponto-file" class="visually-hidden" type="file" accept=".xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf" aria-label="Selecionar relatório Forponto XLSX ou PDF">
         </div>
@@ -161,9 +223,37 @@
         <button id="history-range-clear" class="button button--ghost" type="button">Limpar período</button>
         <p id="history-range-message" class="history-range__message" role="status" aria-live="polite"></p>
       </form>
+      <details id="cycle-calendar" class="cycle-calendar" open>
+        <summary><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span>Calendário e saldo diário</span><span id="pending-count" class="calendar-pending" hidden></span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <div class="calendar-body">
+          <div class="calendar-weekdays" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+          <ul class="calendar-legend" aria-label="Legenda dos tipos de dia"><li><span class="legend-dot legend-dot--pending"></span>Dia útil sem registro</li><li><span class="legend-dot legend-dot--trabalho"></span>Trabalho</li><li><span class="legend-dot legend-dot--folga"></span>Folga</li><li><span class="legend-dot legend-dot--feriado"></span>Feriado</li><li><span class="legend-dot legend-dot--ferias"></span>Férias</li><li><span class="legend-dot legend-dot--falta"></span>Falta</li><li><span class="legend-dot legend-dot--compensacao"></span>Compensação</li></ul>
+          <figure class="balance-chart-figure">
+            <svg id="balance-chart" class="balance-chart" viewBox="0 0 600 140" preserveAspectRatio="none" role="img" aria-label="Saldo por dia"></svg>
+            <figcaption id="balance-chart-caption">Saldo por dia: barras acima da linha são horas positivas e abaixo, negativas.</figcaption>
+          </figure>
+        </div>
+      </details>
+      <details id="cycle-history" class="cycle-calendar" hidden>
+        <summary><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg><span>Evolução por ciclo</span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <div class="calendar-body">
+          <div class="cycle-history-scroll">
+            <div class="cycle-history-inner">
+              <svg id="cycle-history-chart" class="cycle-history-chart" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="Saldo por ciclo"></svg>
+              <div id="cycle-history-labels" class="cycle-history-labels"></div>
+            </div>
+          </div>
+          <p id="cycle-history-caption" class="calendar-caption"></p>
+        </div>
+      </details>
       <div class="table-wrap history-table">
         <table><thead><tr><th>Data</th><th>Tipo</th><th>Entrada</th><th>Saída</th><th>Intervalo</th><th>Trabalhado</th><th>Saldo</th><th>Ações</th></tr></thead><tbody id="records-body"></tbody></table>
-        <p id="empty-state" class="empty-state">Nenhum registro neste ciclo.</p>
+        <div id="empty-state" class="empty-state">
+          <svg class="empty-state__art" viewBox="0 0 120 90" aria-hidden="true"><rect class="art-card" x="22" y="14" width="76" height="62" rx="10"/><path class="art-line" d="M22 32h76M42 8v12M78 8v12"/><circle class="art-dot" cx="46" cy="50" r="4"/><circle class="art-dot art-dot--soft" cx="60" cy="50" r="4"/><circle class="art-dot art-dot--soft" cx="74" cy="50" r="4"/><circle class="art-dot art-dot--soft" cx="46" cy="64" r="4"/></svg>
+          <p id="empty-state-text">Nenhum registro neste ciclo.</p>
+          <button id="empty-state-add" class="button button--primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Registrar primeira jornada</button>
+        </div>
       </div>
       <section id="photo-history" class="photo-history" aria-labelledby="photo-history-title" hidden>
         <div class="photo-history__heading"><h3 id="photo-history-title">Fotos do mês</h3><span id="photo-count"></span></div>
@@ -185,18 +275,19 @@
           <div class="manual-sync"><span id="manual-sync-status" role="status" aria-live="polite"></span><button id="manual-sync-retry" class="button button--ghost" type="button" hidden>Tentar sincronizar</button></div>
           <label class="field"><span>Horário de entrada</span><input id="simulator-start-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="08:00" value="08:00" autocapitalize="off" spellcheck="false"></label>
           <label class="field"><span>Horário de saída</span><input id="simulator-end-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="17:48" value="17:48" autocapitalize="off" spellcheck="false"></label>
-          <p class="field-help">O intervalo fixo de 60 minutos e a margem preventiva de 15 minutos antes do limite de 10 horas também são aplicados aqui.</p>
+          <p class="field-help">O intervalo padrão e a margem preventiva de 15 minutos antes do limite de 10 horas também são aplicados aqui.</p>
         </div>
         <div class="balance-simulator__result" aria-live="polite">
+          <div class="balance-simulator__suggestion"><span>Horário sugerido para sair</span><strong id="simulator-suggested-exit">17:48</strong></div>
           <div><span>Saldo dos registros</span><strong id="simulator-current-balance">0h 00min</strong></div>
           <div><span>Ajuste manual</span><strong id="simulator-adjustment">0h 00min</strong></div>
           <div class="balance-simulator__total"><span>Saldo projetado</span><strong id="simulator-projected-balance">0h 00min</strong></div>
           <div><span>Saldo após a saída informada</span><strong id="simulator-informed-balance">0h 00min</strong></div>
-          <div class="balance-simulator__suggestion"><span>Horário sugerido para sair</span><strong id="simulator-suggested-exit">17:48</strong></div>
           <p id="simulator-limit-warning" class="balance-simulator__warning" hidden></p>
         </div>
       </div>
     </section>
+    <button id="fab-add" class="fab" type="button" aria-label="Novo registro" hidden><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
   </main>
   <dialog id="clear-records-dialog" class="confirm-dialog" aria-labelledby="clear-records-title" aria-describedby="clear-records-message">
     <form id="clear-records-form">
@@ -218,6 +309,13 @@
     <label class="remember-access"><input id="forponto-update-existing" type="checkbox"><span>Atualizar datas já cadastradas com os dados do relatório (mantém as fotos)</span></label>
     <div class="table-wrap forponto-preview"><table><thead><tr><th>Data</th><th>Dia</th><th>Marcações</th><th>Resultado</th></tr></thead><tbody id="forponto-preview-body"></tbody></table></div>
     <div class="confirm-dialog__actions"><button id="forponto-cancel" class="button button--ghost" type="button">Cancelar</button><button id="forponto-confirm" class="button button--primary" type="button">Importar dias válidos</button></div>
+  </dialog>
+  <dialog id="auto-backup-dialog" class="confirm-dialog auto-backup-dialog" aria-labelledby="auto-backup-title">
+    <h2 id="auto-backup-title">Backups automáticos</h2>
+    <p>Uma cópia dos registros e configurações (sem fotos) é guardada na sua conta no máximo uma vez por dia, mantendo as 7 mais recentes. Baixe uma cópia e use “Importar backup” para restaurá-la.</p>
+    <p id="auto-backup-status" role="status"></p>
+    <ul id="auto-backup-list" class="auto-backup-list"></ul>
+    <div class="confirm-dialog__actions"><button id="auto-backup-close" class="button button--ghost" type="button">Fechar</button></div>
   </dialog>
   <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
     <div class="confirm-dialog__icon" aria-hidden="true">!</div>
@@ -245,7 +343,7 @@
     <img id="photo-dialog-image" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Foto anexada ao registro de ponto">
   </dialog>
   <dialog id="photo-type-dialog" class="confirm-dialog" aria-labelledby="photo-type-title">
-    <div class="confirm-dialog__icon photo-type-icon" aria-hidden="true">📷</div>
+    <div class="confirm-dialog__icon photo-type-icon" aria-hidden="true"><svg class="icon"><use href="#i-camera"/></svg></div>
     <h2 id="photo-type-title">Esta foto é de qual ponto?</h2>
     <p>Selecione o momento correspondente para anexar a imagem ao registro.</p>
     <div class="photo-type-actions">
@@ -259,6 +357,7 @@
     <video id="camera-preview" playsinline muted></video>
     <div class="camera-dialog__actions"><button id="capture-photo" class="button button--primary" type="button">Capturar foto</button></div>
   </dialog>
+  <footer class="app-footer"><span>Meu Banco de Horas</span> · <span id="app-version"></span></footer>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
   <aside id="update-notice" class="update-notice" role="status" aria-live="polite" hidden>
     <span>Uma nova versão está disponível.</span>
@@ -267,12 +366,27 @@
   <script src="assets/js/vendor/supabase.min.js"></script>
   <script src="assets/js/calculations.js"></script>
   <script src="assets/js/cycle.js"></script>
+  <script src="assets/js/insights.js"></script>
   <script src="assets/js/repository.js"></script>
   <script src="assets/js/use-cases.js"></script>
   <script src="assets/js/vendor/fflate.min.js"></script>
   <script src="assets/js/forponto-import.js"></script>
-  <script src="assets/js/script.js"></script>
+  <script src="assets/js/xlsx-export.js"></script>
+  <script src="assets/js/offline.js"></script>
+  <script src="assets/js/app-core.js"></script>
+  <script src="assets/js/app-simulation.js"></script>
+  <script src="assets/js/app-render.js"></script>
+  <script src="assets/js/app-photos.js"></script>
+  <script src="assets/js/app-records.js"></script>
+  <script src="assets/js/app-export.js"></script>
+  <script src="assets/js/app-backup.js"></script>
+  <script src="assets/js/app-autobackup.js"></script>
+  <script src="assets/js/app-menus.js"></script>
+  <script src="assets/js/app-offline.js"></script>
+  <script src="assets/js/app-calendar.js"></script>
+  <script src="assets/js/app-import.js"></script>
   <script src="assets/js/app-auth.js"></script>
   <script src="assets/js/app-pwa.js"></script>
+  <script src="assets/js/app-footer.js"></script>
 </body>
 </html>

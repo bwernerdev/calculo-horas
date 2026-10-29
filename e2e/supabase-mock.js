@@ -4,22 +4,43 @@
   let session = authenticated ? { user } : null;
   let authListener;
 
+  const offlineError = () => ({ message: "TypeError: Failed to fetch" });
+  const isOffline = () => localStorage.getItem("e2e-offline") === "true";
+
   function query(table) {
     let selectedRow = {};
     const builder = {
       select() { return builder; },
       order() { return builder; },
-      eq() { return builder; },
-      upsert(value) { selectedRow = value; return builder; },
-      then(resolve) { resolve({ error: table === "settings" && window.__failSettingsSave ? { message: "Falha simulada nas configurações." } : null }); },
-      delete() { return builder; },
-      insert: async () => ({ data: null, error: null }),
-      single: async () => ({ data: selectedRow, error: null }),
-      maybeSingle: async () => ({
+      eq(column, value) {
+        if (builder.__op === "delete" && column === "id") (window.__deletes ||= []).push(value);
+        return builder;
+      },
+      in() { return builder; },
+      upsert(value) {
+        selectedRow = value;
+        if (table === "records" && !isOffline()) (window.__upserts ||= []).push(value);
+        return builder;
+      },
+      then(resolve) {
+        const snapshots = table === "backup_snapshots" ? (window.__snapshots || []) : undefined;
+        if (isOffline()) return resolve({ data: null, error: offlineError() });
+        resolve({ data: snapshots, error: window.__snapshotsMissing && table === "backup_snapshots" ? { code: "42P01", message: "relation backup_snapshots does not exist" } : table === "settings" && window.__failSettingsSave ? { message: "Falha simulada nas configurações." } : null });
+      },
+      delete() {
+        builder.__op = "delete";
+        return builder;
+      },
+      insert: async (value) => {
+        if (table === "backup_snapshots") (window.__snapshotInserts ||= []).push(value);
+        return { data: null, error: null };
+      },
+      single: async () => isOffline() ? { data: null, error: offlineError() } : ({ data: table === "backup_snapshots" ? { payload: window.__snapshotPayload || {} } : selectedRow, error: null }),
+      maybeSingle: async () => isOffline() ? { data: null, error: offlineError() } : ({
         data: table === "settings" ? { target_minutes: 528, theme: "light", balance_adjustments: {} } : null,
         error: null,
       }),
-      range: async () => ({ data: [], error: null }),
+      range: async () => isOffline() ? { data: null, error: offlineError() } : ({ data: table === "records" ? (window.__mockRecords || []) : [], error: null }),
     };
     return builder;
   }

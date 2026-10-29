@@ -95,3 +95,107 @@ test("PDF rejeita colunas deslocadas antes de abrir a prévia", () => {
   ] };
   assert.throws(()=>parsePdfPages([page]),/Layout do PDF não reconhecido/);
 });
+
+test("rejeita data inexistente sem derrubar o restante do bloco", () => {
+  const [block] = parseRows([
+    { A:"31/02/2026 Sex-Norm", F:"08:00", G:"12:00", H:"13:00", I:"17:00" },
+    { A:"01/03/2026 Dom-Folg" }
+  ]);
+  assert.equal(block.days[0].status, "invalid");
+  assert.equal(block.days[0].reason, "Data inválida");
+  assert.equal(block.days[1].status, "ready");
+});
+
+test("duas marcações atravessando a meia-noite usam o saldo final do relatório", () => {
+  const [block] = parseRows([{ A:"10/09/2026 Qui-Norm", F:"22:00", G:"06:00", S:"+00:00" }]);
+  assert.equal(block.days[0].status, "ready");
+  assert.equal(block.days[0].record.start, "22:00");
+  assert.equal(block.days[0].record.end, "06:00");
+});
+
+test("duas marcações acima de 10 horas ficam pendentes", () => {
+  const [block] = parseRows([{ A:"11/09/2026 Sex-Norm", F:"06:00", G:"17:00", S:"+02:00" }]);
+  assert.equal(block.days[0].status, "skipped");
+  assert.match(block.days[0].reason, /10 horas/);
+});
+
+test("saldo oficial com formato inválido ou acima de 24h deixa o dia pendente", () => {
+  const rows = ["1h30", "+25:00", "12:75", "abc"].map((saldo, index) => (
+    { A:`0${index + 1}/09/2026 Ter-Norm`, F:"08:00", G:"12:00", S:saldo }
+  ));
+  const [block] = parseRows(rows);
+  assert.deepEqual(block.days.map((day) => day.status), ["skipped", "skipped", "skipped", "skipped"]);
+  assert.ok(block.days.every((day) => day.reason === "Saldo oficial inválido"));
+});
+
+test("aceita saldo com sinal positivo explícito e sem sinal", () => {
+  const [block] = parseRows([
+    { A:"01/09/2026 Ter-Norm", F:"08:00", G:"12:00", S:"+01:30" },
+    { A:"02/09/2026 Qua-Norm", F:"08:00", G:"12:00", S:"01:30" }
+  ]);
+  assert.equal(block.days[0].record.importData.officialBalanceMinutes, 90);
+  assert.equal(block.days[1].record.importData.officialBalanceMinutes, 90);
+});
+
+test("intervalo invertido, acima de 10 horas ou jornada negativa ficam pendentes", () => {
+  const [block] = parseRows([
+    { A:"01/09/2026 Ter-Norm", F:"08:00", G:"13:00", H:"12:00", I:"17:00" },
+    { A:"02/09/2026 Qua-Norm", F:"08:00", G:"08:30", H:"20:00", I:"21:00" },
+    { A:"03/09/2026 Qui-Norm", F:"12:00", G:"13:00", H:"14:00", I:"11:00" }
+  ]);
+  assert.deepEqual(block.days.map((day) => day.status), ["skipped", "skipped", "skipped"]);
+  assert.ok(block.days.every((day) => /fora dos limites/.test(day.reason)));
+});
+
+test("descrição do dia acima de 100 caracteres não é importada", () => {
+  const [block] = parseRows([{ A:`01/09/2026 ${"x".repeat(101)}` }]);
+  assert.equal(block.days[0].status, "skipped");
+  assert.match(block.days[0].reason, /extensa demais/);
+});
+
+test("classifica férias, feriado e folga sem confundir rótulos parecidos", () => {
+  const [block] = parseRows([
+    { A:"01/09/2026 Ter-Férias" },
+    { A:"02/09/2026 Qua-Fer" },
+    { A:"03/09/2026 Qui-Comp" },
+    { A:"04/09/2026 Sex-Norm" }
+  ]);
+  assert.deepEqual(block.days.map((day) => day.record?.type), ["ferias", "feriado", "folga", undefined]);
+  assert.equal(block.days[3].status, "skipped");
+});
+
+test("usa o cabeçalho da coluna C para identificar cada bloco", () => {
+  const blocks = parseRows([
+    { C:"123 - Maria da Silva" },
+    { A:"01/09/2026 Ter-Folg" },
+    { C:"456 - João Souza" },
+    { A:"01/09/2026 Ter-Folg" }
+  ]);
+  assert.deepEqual(blocks.map((block) => block.header), ["123 - Maria da Silva", "456 - João Souza"]);
+});
+
+test("planilha sem nenhum dia produz zero blocos", () => {
+  assert.deepEqual(parseRows([{ A:"Relatório de ponto" }, {}, { C:"1 - Fulano" }]), []);
+});
+
+test("PDF em página de largura diferente é normalizado para a mesma escala", () => {
+  const scale = 842 / 792;
+  const item = (str, x, y) => ({ str, transform:[1,0,0,1,x * scale,y] });
+  const [block] = parsePdfPages([{ width:842, items:[
+    item("SALDO", 605.8, 505.6),
+    item("17/08/2026 Seg-Norm", 39.8, 475.6),
+    item("08:00", 196.8, 475.6), item("12:00", 226, 475.6), item("13:00", 255.1, 475.6), item("17:00", 284.3, 475.6)
+  ] }]);
+  assert.equal(block.days[0].record.break, 60);
+});
+
+test("PDF sem coluna de saldo é recusado", () => {
+  const item = (str, x, y) => ({ str, transform:[1,0,0,1,x,y] });
+  assert.throws(() => parsePdfPages([{ width:792, items:[
+    item("17/08/2026 Seg-Norm", 39.8, 475.6), item("08:00", 196.8, 475.6), item("12:00", 226, 475.6)
+  ] }]), /coluna de saldo/);
+});
+
+test("PDF sem texto de dias (digitalizado) é recusado com orientação", () => {
+  assert.throws(() => parsePdfPages([{ width:792, items:[] }]), /texto selecionável/);
+});

@@ -1,0 +1,15 @@
+# Configuração mínima do Supabase CLI (usada para o banco local e para os testes pgTAP).
+project_id = "banco-horas-controladoria"
+
+[api]
+enabled = true
+
+[db]
+port = 54322
+major_version = 15
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
