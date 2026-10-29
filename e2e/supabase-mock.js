@@ -9,14 +9,20 @@
     const builder = {
       select() { return builder; },
       order() { return builder; },
-      eq() { return builder; },
+      eq(column, value) {
+        if (builder.__op === "delete" && column === "id") (window.__deletes ||= []).push(value);
+        return builder;
+      },
       in() { return builder; },
       upsert(value) { selectedRow = value; return builder; },
       then(resolve) {
         const snapshots = table === "backup_snapshots" ? (window.__snapshots || []) : undefined;
         resolve({ data: snapshots, error: window.__snapshotsMissing && table === "backup_snapshots" ? { code: "42P01", message: "relation backup_snapshots does not exist" } : table === "settings" && window.__failSettingsSave ? { message: "Falha simulada nas configurações." } : null });
       },
-      delete() { return builder; },
+      delete() {
+        builder.__op = "delete";
+        return builder;
+      },
       insert: async (value) => {
         if (table === "backup_snapshots") (window.__snapshotInserts ||= []).push(value);
         return { data: null, error: null };

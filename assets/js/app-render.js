@@ -58,9 +58,15 @@ function resetForm() {
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhotos={entrada:"",saida:""}; capturedPhoto=""; updatePhotoPreview(); updateForecast();
 }
 function showError(message) { $("#error-message").textContent=message; $("#error-message").hidden=false; }
-function showToast(message,type="success") {
-  const toast=document.createElement("div"); toast.className=`toast toast--${type}`; toast.textContent=message;
-  $("#toast-region").append(toast); setTimeout(()=>toast.remove(),4000);
+function showToast(message,type="success",options={}) {
+  const toast=document.createElement("div"); toast.className=`toast toast--${type}`;
+  const text=document.createElement("span"); text.textContent=message; toast.append(text);
+  if (options.actionLabel) {
+    const action=document.createElement("button"); action.type="button"; action.className="toast__action"; action.textContent=options.actionLabel;
+    action.addEventListener("click",()=>{ options.onAction?.(); toast.remove(); });
+    toast.append(action);
+  }
+  $("#toast-region").append(toast); setTimeout(()=>toast.remove(),options.duration || 4000);
 }
 function requestConfirmation(message) {
   const dialog=$("#confirm-dialog"), accept=$("#confirm-accept"), cancel=$("#confirm-cancel");

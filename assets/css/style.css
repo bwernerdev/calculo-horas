@@ -693,6 +693,12 @@ input[readonly] {
   cursor: pointer;
 }
 /* Ações e barra de ferramentas */
+.actions__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+}
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -1767,6 +1773,11 @@ dialog[open]::backdrop {
   pointer-events: none;
 }
 .toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: auto;
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-left: 4px solid var(--primary);
@@ -1777,6 +1788,16 @@ dialog[open]::backdrop {
   font-size: 0.88rem;
   font-weight: 700;
   animation: toast-in 0.2s ease-out;
+}
+.toast__action {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  background: transparent;
+  font-weight: 800;
+  cursor: pointer;
 }
 .toast--success {
   border-left-color: var(--success);

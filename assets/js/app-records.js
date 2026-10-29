@@ -53,11 +53,7 @@ async function showRecordPhoto(id,kind) {
 $("#records-body").addEventListener("click", async(event) => {
   const target=event.target.closest("button"); if (!target) return; const edit=target.dataset.edit, remove=target.dataset.delete, photo=target.dataset.photo; if (edit) editRecord(edit);
   if (photo) await showRecordPhoto(photo,target.dataset.photoKind);
-  if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) {
-    const button=target; button.disabled=true;
-    try { records=await useCases.deleteRecord(remove,records); render(); showToast("Registro excluído."); }
-    catch (error) { captureError(error,"record-delete"); button.disabled=false; showToast(error.message || "Não foi possível excluir o registro.","error"); }
-  }
+  if (remove) scheduleRecordDeletion(remove);
 });
 $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) void showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
 
@@ -197,3 +193,52 @@ $("#entry-toggle").addEventListener("click",()=>setEntryCollapsed(!$("#hours-for
 $("#fab-add").addEventListener("click",focusNewRecord);
 if ("IntersectionObserver" in window) new IntersectionObserver(([entry])=>{ $("#fab-add").hidden=entry.isIntersecting; }).observe($(".entry-panel"));
 else $("#fab-add").hidden=false;
+
+const UNDO_WINDOW_MS=6000;
+const pendingDeletions=new Map();
+function scheduleRecordDeletion(id) {
+  const record=records.find((item)=>item.id===id); if (!record) return;
+  records=records.filter((item)=>item.id!==id); render();
+  const timer=setTimeout(()=>{ void commitRecordDeletion(id); },UNDO_WINDOW_MS);
+  pendingDeletions.set(id,{ record,timer,generation:applicationGeneration,useCases });
+  showToast("Registro de "+pt(record.date)+" excluído.","success",{ actionLabel:"Desfazer",duration:UNDO_WINDOW_MS,onAction:()=>undoRecordDeletion(id) });
+}
+async function commitRecordDeletion(id) {
+  const entry=pendingDeletions.get(id); if (!entry) return;
+  pendingDeletions.delete(id); clearTimeout(entry.timer);
+  try { await entry.useCases.deleteRecord(id,[]); }
+  catch (error) {
+    captureError(error,"record-delete");
+    if (entry.generation===applicationGeneration) { records=[...records,entry.record]; render(); showToast(error.message || "Não foi possível excluir o registro; ele foi restaurado.","error"); }
+  }
+}
+function undoRecordDeletion(id) {
+  const entry=pendingDeletions.get(id); if (!entry) return;
+  if (records.some((item)=>item.date===entry.record.date)) { showToast("Já existe um registro nesta data; a exclusão foi mantida.","error"); void commitRecordDeletion(id); return; }
+  clearTimeout(entry.timer); pendingDeletions.delete(id);
+  records=[...records,entry.record]; render(); showToast("Registro restaurado.");
+}
+async function flushPendingDeletions() { await Promise.all([...pendingDeletions.keys()].map(commitRecordDeletion)); }
+document.addEventListener("visibilitychange",()=>{ if (document.hidden) void flushPendingDeletions(); });
+
+function currentClock() { const now=new Date(); return String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"); }
+$("#clock-in-now").addEventListener("click",()=>{
+  setEntryCollapsed(false); resetForm();
+  setTimeout(()=>{
+    const start=currentClock();
+    $("#day-type").value="trabalho"; $("#work-date").value=localDate(); $("#start-time").value=start;
+    $("#end-time").value=suggestedExit(start,Number($("#break-time").value)).suggestedExit;
+    updateForecast(); $("#submit-button").focus();
+    showToast("Entrada às "+start+" preenchida com a saída sugerida. Confira e adicione o registro.");
+  },0);
+});
+$("#clock-out-now").addEventListener("click",()=>{
+  const today=localDate(), existing=records.find((item)=>item.date===today && item.type==="trabalho");
+  if (existing) editRecord(existing.id); else { setEntryCollapsed(false); resetForm(); }
+  setTimeout(()=>{
+    const end=currentClock();
+    $("#day-type").value="trabalho"; $("#work-date").value=today; $("#end-time").value=end;
+    updateForecast(); $("#submit-button").focus();
+    showToast("Saída às "+end+" preenchida. Confira e salve o registro.");
+  },0);
+});

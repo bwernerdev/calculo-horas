@@ -21,6 +21,12 @@ function selectedRange() { return historyRange || HoursCycle.rangeForMonth($("#m
 function filteredRecords() {
   return recordsInRange(selectedRange());
 }
+function suggestedExit(start,breakMinutes,editingId="") {
+  const cycle=HoursCycle.rangeForMonth(HoursCycle.monthForDate($("#work-date").value));
+  const basisRecords=(historyRange ? filteredRecords() : recordsInRange(cycle)).filter((record)=>record.id!==editingId);
+  const currentBalance=HoursCalculator.summarize(basisRecords,settings.target).balance;
+  return HoursCalculator.suggestExit(start,settings.target,breakMinutes,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
+}
 function previousCycleRange() {
   if (historyRange) return null;
   const range=selectedRange(); if (!range) return null;

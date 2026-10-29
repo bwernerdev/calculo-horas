@@ -146,3 +146,31 @@ test("calendário navega por setas com um único ponto de tabulação", async ({
   await expect(page.locator('[data-date="2026-10-16"]')).toBeFocused();
   await expect(page.locator('#calendar-grid [tabindex="0"]')).toHaveCount(1);
 });
+
+test("excluir mostra Desfazer e o registro volta ao desfazer", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  const rowsBefore = await page.locator("#records-body tr").count();
+  await page.locator("#records-body tr").first().getByRole("button", { name: "Excluir" }).click();
+  await expect(page.locator("#records-body tr")).toHaveCount(rowsBefore - 1);
+  await expect(page.locator("#toast-region")).toContainText("excluído");
+  await page.locator(".toast__action", { hasText: "Desfazer" }).click();
+  await expect(page.locator("#records-body tr")).toHaveCount(rowsBefore);
+  expect(await page.evaluate(() => window.__deletes?.length || 0)).toBe(0);
+});
+
+test("excluir sem desfazer remove de fato depois de alguns segundos", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await page.locator("#records-body tr").first().getByRole("button", { name: "Excluir" }).click();
+  await expect.poll(() => page.evaluate(() => window.__deletes?.length || 0), { timeout: 12000 }).toBe(1);
+});
+
+test("Entrada agora preenche a hora atual e a saída sugerida; Saída agora preenche a saída", async ({ page }) => {
+  await open(page);
+  await page.getByRole("button", { name: "Entrada agora" }).click();
+  await expect(page.locator("#start-time")).toHaveValue(/^\d\d:\d\d$/);
+  await expect(page.locator("#end-time")).toHaveValue(/^\d\d:\d\d$/);
+  await expect(page.locator("#submit-button")).toBeFocused();
+  await page.getByRole("button", { name: "Saída agora" }).click();
+  await expect(page.locator("#end-time")).toHaveValue(/^\d\d:\d\d$/);
+  await expect(page.locator("#work-date")).toHaveValue("2026-10-29");
+});
