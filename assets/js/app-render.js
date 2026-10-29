@@ -24,7 +24,7 @@ function render() {
   $("#photo-history").hidden=photos.length===0; $("#photo-count").textContent=`${photos.length} ${photos.length===1 ? "foto" : "fotos"}`;
   $("#photo-gallery").innerHTML=photos.map(({record,kind,photo})=>{
     const date=new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
-    const preview=/^(?:blob:|data:image\/)/.test(photo) ? `<img src="${photo}" alt="" loading="lazy">` : `<span class="photo-card__placeholder" aria-hidden="true">📷</span>`;
+    const preview=/^(?:blob:|data:image\/)/.test(photo) ? `<img src="${photo}" alt="" loading="lazy">` : `<span class="photo-card__placeholder" aria-hidden="true"><svg class="icon"><use href="#i-camera"/></svg></span>`;
     return `<button class="photo-card" type="button" data-view-photo="${record.id}" data-photo-kind="${kind}" aria-label="Ver foto de ${kind} de ${date}">${preview}<span class="photo-card__info"><strong>${date}</strong><small>${kind === "entrada" ? "Entrada" : "Saída"} · ${TYPES[record.type]}</small></span></button>`;
   }).join("");
   const totals = HoursCalculator.summarize(list,settings.target);

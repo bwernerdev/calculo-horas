@@ -165,7 +165,7 @@ form.addEventListener("reset",()=>setTimeout(()=>{
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhotos={entrada:"",saida:""}; capturedPhoto=""; updatePhotoPreview(); updateForecast();
 }));
 
-function applyTheme() { document.documentElement.dataset.theme=settings.theme; appStorage.setItem(THEME_PREFERENCE_KEY,settings.theme); $("#theme-toggle").textContent=settings.theme==="dark" ? "☀️" : "🌙"; document.querySelector('meta[name="theme-color"]').content=settings.theme==="dark" ? "#0d1321" : "#3157d5"; }
+function applyTheme() { document.documentElement.dataset.theme=settings.theme; appStorage.setItem(THEME_PREFERENCE_KEY,settings.theme); document.querySelector('meta[name="theme-color"]').content=settings.theme==="dark" ? "#0d1321" : "#3157d5"; }
 $("#theme-toggle").addEventListener("click",async ()=>{
   const theme=settings.theme==="dark" ? "light" : "dark";
   $("#theme-toggle").disabled=true;

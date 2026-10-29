@@ -1,8 +1,9 @@
-const CACHE_NAME = "banco-horas-v60";
+const CACHE_NAME = "banco-horas-v61";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./assets/css/style.css",
+  "./assets/fonts/inter-latin-wght-normal.woff2",
   "./assets/js/theme-init.js",
   "./assets/js/calculations.js",
   "./assets/js/cycle.js",

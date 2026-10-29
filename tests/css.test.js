@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
 const { readCss } = require("./helpers/css");
 
 const css = readCss();
@@ -38,9 +39,11 @@ test("foco visível padronizado e nenhum outline removido", () => {
   assert.doesNotMatch(css, /outline:none/);
 });
 
-test("fontes não ficam abaixo de 0,7rem e a Inter não é prometida sem estar carregada", () => {
+test("fontes não ficam abaixo de 0,7rem e a Inter é carregada localmente", () => {
   for (const [, size] of css.matchAll(/font-size:(0?\.\d+)rem/g)) assert.ok(Number(size) >= 0.7, `fonte ${size}rem pequena demais`);
-  assert.doesNotMatch(css, /font-family:[^;}]*Inter/);
+  assert.ok(css.includes('@font-face{font-family:"Inter"'));
+  assert.ok(fs.existsSync("assets/fonts/inter-latin-wght-normal.woff2"));
+  assert.ok(fs.existsSync("assets/fonts/Inter-LICENSE.txt"));
 });
 
 test("alvos de toque de 44px em telas por toque", () => {
