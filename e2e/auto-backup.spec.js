@@ -1,5 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const fs = require("node:fs");
+const { openMenu } = require("./helpers");
 
 const supabaseMock = fs.readFileSync("e2e/supabase-mock.js", "utf8");
 const row = { id: "11111111-1111-4111-8111-111111111111", date: "2026-09-01", type: "folga", start_time: "", end_time: "", break_minutes: 0, photos: {}, import_data: {} };
@@ -55,7 +56,8 @@ test("lista as cópias e baixa uma delas em formato importável", async ({ page 
   const payload = { versao: 1, configuracoes: { metaDiariaMinutos: 528, intervaloPadraoMinutos: 60, tema: "light", saldosManuais: {} }, registros: [] };
   const old = { id: "s1", created_at: new Date(Date.now() - 3 * 86400_000).toISOString(), record_count: 4 };
   await open(page, { __snapshots: [old], __snapshotPayload: payload });
-  await page.getByRole("button", { name: "Backups automáticos" }).click();
+  await openMenu(page, "Exportar");
+  await page.locator("#open-auto-backups").click();
   await expect(page.locator("#auto-backup-list li")).toHaveCount(1);
   await expect(page.locator("#auto-backup-list")).toContainText("4 registro(s)");
   const downloadPromise = page.waitForEvent("download");
@@ -67,6 +69,7 @@ test("lista as cópias e baixa uma delas em formato importável", async ({ page 
 
 test("avisa para aplicar a migração quando a tabela não existe", async ({ page }) => {
   await open(page, { __snapshotsMissing: true });
-  await page.getByRole("button", { name: "Backups automáticos" }).click();
+  await openMenu(page, "Exportar");
+  await page.locator("#open-auto-backups").click();
   await expect(page.locator("#auto-backup-status")).toContainText("Aplique a migração");
 });

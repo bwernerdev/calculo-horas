@@ -73,7 +73,7 @@ test("usa logo transparente e adaptável aos dois temas no cabeçalho", () => {
   assert.ok(fs.readFileSync("assets/images/logo-controladoria-cds.webp").includes(Buffer.from("ALPH")));
   assert.ok(worker.includes("./assets/images/logo-controladoria-cds.webp"));
   assert.match(css, /topbar__brand-copy[^}]+text-align:center/);
-  assert.match(css, /\[data-theme="dark"\] \.brand-logo[^}]+background:#fff/);
+  assert.match(css, /\[data-theme="dark"\] \.brand-logo[^}]+drop-shadow/);
 });
 
 test("oferece instalação específica para Android e iPhone", () => {

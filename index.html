@@ -113,10 +113,10 @@
       <article class="summary-card"><span>Meta diária</span><strong id="target-summary">8h 48min</strong></article>
     </section>
 
-    <aside class="privacy-notice" aria-label="Privacidade dos dados">
-      <svg class="icon privacy-notice__icon" aria-hidden="true"><use href="#i-lock"/></svg>
-      <div><strong>Seus dados ficam protegidos na sua conta.</strong><p>Registros e fotos são armazenados com segurança no Supabase e só podem ser acessados pela sua conta. As imagens não são salvas na galeria do dispositivo. Baixe um backup JSON regularmente.</p></div>
-    </aside>
+    <details class="privacy-notice">
+      <summary><svg class="icon privacy-notice__icon" aria-hidden="true"><use href="#i-lock"/></svg><strong>Seus dados ficam protegidos na sua conta.</strong><span class="privacy-notice__more">Saiba mais</span></summary>
+      <p>Registros e fotos são armazenados com segurança no Supabase e só podem ser acessados pela sua conta. As imagens não são salvas na galeria do dispositivo. Baixe um backup JSON regularmente.</p>
+    </details>
 
     <section class="panel entry-panel">
       <div class="panel__header">
@@ -162,10 +162,31 @@
       <div class="panel__header panel__header--wrap">
         <div><span class="eyebrow">Histórico</span><h2 id="history-title">Registros do ciclo</h2></div>
         <div class="toolbar" aria-label="Ferramentas do histórico">
-          <div class="toolbar__group"><span class="toolbar__label">Ciclo de 16 a 15</span><label class="month-filter">Mês de fechamento <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês em que o ciclo termina no dia 15, no formato AAAA-MM" maxlength="7"></label></div>
-          <div class="toolbar__group"><span class="toolbar__label">Exportar dados</span><div class="toolbar__buttons"><button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button><button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button><button id="export-json" class="button button--secondary" type="button">Baixar backup</button><button id="open-auto-backups" class="button button--secondary" type="button">Backups automáticos</button></div></div>
-          <div class="toolbar__group"><span class="toolbar__label">Importar dados</span><div class="toolbar__buttons"><button id="import-json" class="button button--secondary" type="button">Importar backup</button><button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX/PDF</button></div></div>
-          <div class="toolbar__group toolbar__group--danger"><span class="toolbar__label">Gerenciar</span><button id="clear-records" class="button button--danger" type="button">Apagar todos os registros</button></div>
+          <div class="toolbar__group toolbar__group--cycle"><span class="toolbar__label">Ciclo de 16 a 15</span><label class="month-filter">Mês de fechamento <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês em que o ciclo termina no dia 15, no formato AAAA-MM" maxlength="7"></label></div>
+          <div class="toolbar__menus">
+          <details class="menu" data-menu>
+            <summary class="button button--secondary menu__summary"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Exportar<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="menu__panel" role="group" aria-label="Exportar dados">
+              <button id="export-csv" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Exportar CSV</button>
+              <button id="export-pdf" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Baixar PDF</button>
+              <button id="export-json" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Baixar backup</button>
+              <button id="open-auto-backups" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-archive"/></svg>Backups automáticos</button>
+            </div>
+          </details>
+          <details class="menu" data-menu>
+            <summary class="button button--secondary menu__summary"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Importar<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="menu__panel" role="group" aria-label="Importar dados">
+              <button id="import-json" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Importar backup</button>
+              <button id="import-forponto" class="menu__item" type="button"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Importar Forponto XLSX/PDF</button>
+            </div>
+          </details>
+          <details class="menu" data-menu>
+            <summary class="button button--ghost menu__summary"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg>Mais<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="menu__panel" role="group" aria-label="Mais ações">
+              <button id="clear-records" class="menu__item menu__item--danger" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Apagar todos os registros</button>
+            </div>
+          </details>
+          </div>
           <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup JSON">
           <input id="forponto-file" class="visually-hidden" type="file" accept=".xlsx,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf" aria-label="Selecionar relatório Forponto XLSX ou PDF">
         </div>
@@ -306,6 +327,7 @@
   <script src="assets/js/app-export.js"></script>
   <script src="assets/js/app-backup.js"></script>
   <script src="assets/js/app-autobackup.js"></script>
+  <script src="assets/js/app-menus.js"></script>
   <script src="assets/js/app-import.js"></script>
   <script src="assets/js/app-auth.js"></script>
   <script src="assets/js/app-pwa.js"></script>

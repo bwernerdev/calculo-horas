@@ -29,7 +29,7 @@ test("mantém exportação e registro acessíveis por toque no celular", async (
   await page.goto("/");
   await expect(page.locator("#app-content")).toBeVisible();
   expect(await page.evaluate(() => navigator.maxTouchPoints)).toBeGreaterThan(0);
-  await expect(page.locator("#export-csv")).toBeVisible();
+  await expect(page.locator("details.menu > summary", { hasText: "Exportar" })).toBeVisible();
   await page.locator("#theme-toggle").tap();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.locator("#work-date").fill("2026-09-15");
