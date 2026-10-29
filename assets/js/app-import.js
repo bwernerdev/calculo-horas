@@ -85,7 +85,7 @@ $("#forponto-confirm").addEventListener("click",async()=>{
       const existing=knownDates.get(day.date);
       return { ...day.record, id:existing?.id || crypto.randomUUID(), photos:existing ? recordPhotos(existing) : { entrada:"", saida:"" } };
     });
-    const updatedRecords=await useCases.importForpontoRecords(importedRecords,settings.target,records,updateExisting);
+    const updatedRecords=await useCases.importForpontoRecords(importedRecords,targetFor,records,updateExisting);
     if (forpontoGeneration!==applicationGeneration) return;
     records=updatedRecords;
     if (pending.length) applyImportedPeriod(pending.map((day)=>day.date));
@@ -120,10 +120,13 @@ $("#json-file").addEventListener("change",async(event)=>{
     importButton.textContent="Restaurando...";
     const manualBalances=config.saldosManuais || {};
     if (!manualBalances || typeof manualBalances!=="object" || Array.isArray(manualBalances) || Object.keys(manualBalances).length>240 || Object.entries(manualBalances).some(([month,balance])=>!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(month) || !Number.isInteger(balance?.positive) || balance.positive<0 || balance.positive>599999 || !Number.isInteger(balance?.negative) || balance.negative<0 || balance.negative>599999)) throw new Error("Os saldos manuais do backup são inválidos.");
-    const nextSettings={ target:config.metaDiariaMinutos, break:FIXED_BREAK_MINUTES, theme:config.tema==="dark" ? "dark" : "light", manualBalances };
+    const weekdayTargets=config.metasPorDiaSemana ?? {};
+    if (!weekdayTargets || typeof weekdayTargets!=="object" || Array.isArray(weekdayTargets) || Object.entries(weekdayTargets).some(([day,minutes])=>!/^[0-6]$/.test(day) || !Number.isInteger(minutes) || minutes<1 || minutes>MAX_DAILY_WORK_MINUTES)) throw new Error("As metas por dia da semana do backup são inválidas.");
+    const nextSettings={ target:config.metaDiariaMinutos, break:config.intervaloPadraoMinutos, weekdayTargets, theme:config.tema==="dark" ? "dark" : "light", manualBalances };
     records=await repository.restoreBackup(imported,nextSettings); settings=nextSettings;
+    await saveSettingsQueued(nextSettings).catch((error)=>captureError(error,"restore-preferences"));
     for (const [month,balance] of Object.entries(manualBalances)) appStorage.setItem(`${MANUAL_BALANCE_KEY}:${loadedUserId}:${month}`,JSON.stringify({ positive:manualDurationInput(balance.positive), negative:manualDurationInput(balance.negative) }));
-    $("#daily-target").value=toClock(settings.target); applyTheme(); applyImportedPeriod(records.map((record)=>record.date)); loadManualBalance(); resetForm(); render();
+    fillSettingsForm(); applyTheme(); applyImportedPeriod(records.map((record)=>record.date)); loadManualBalance(); resetForm(); render();
     showToast("Backup restaurado com sucesso.");
   } catch (error) {
     captureError(error,"backup-import");

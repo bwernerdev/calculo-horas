@@ -552,7 +552,7 @@ h2 {
 /* Formulário de jornada */
 .settings {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: end;
   gap: 14px;
   margin: -5px 0 24px;
@@ -560,6 +560,25 @@ h2 {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface-2);
+}
+.settings__weekdays {
+  grid-column: 1 / -1;
+}
+.settings__weekdays summary {
+  min-height: 36px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+.settings__weekdays summary small {
+  color: var(--muted);
+  font-weight: 600;
+}
+.settings__weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
 }
 .form-grid {
   width: 100%;
@@ -2240,6 +2259,11 @@ body:has(dialog[open]) {
   .toast-region,
   .update-notice {
     bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 900px) {
+  .settings__weekdays-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 @media (max-width: 580px) {

@@ -84,8 +84,8 @@ async function loadApplication(user) {
     if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
     records=loadedRecords; settings=loadedSettings;
     clearHistoryRange();
-    $("#work-date").value=localDate(); $("#month-filter").value=HoursCycle.monthForDate(localDate()); $("#daily-target").value=toClock(settings.target); loadManualBalance();
-    $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
+    $("#work-date").value=localDate(); $("#month-filter").value=HoursCycle.monthForDate(localDate()); fillSettingsForm(); loadManualBalance();
+    $("#break-time").value=settings.break; applyTheme(); updateForecast(); render();
     $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
     document.documentElement.classList.remove("is-loading");
     window.AppMonitor?.flush();

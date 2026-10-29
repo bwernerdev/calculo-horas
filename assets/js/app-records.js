@@ -15,7 +15,7 @@ form.addEventListener("submit", async (event) => {
         record.importData={};
       }
     }
-    const result=await useCases.saveRecord(record,settings.target,records);
+    const result=await useCases.saveRecord(record,targetFor,records);
     records=result.records;
     const savedCycle=HoursCycle.monthForDate(record.date);
     if (!historyRange && savedCycle && $("#month-filter").value!==savedCycle) {
@@ -58,12 +58,36 @@ $("#records-body").addEventListener("click", async(event) => {
 $("#photo-gallery").addEventListener("click",(event)=>{ const card=event.target.closest("[data-view-photo]"); if (card) void showRecordPhoto(card.dataset.viewPhoto,card.dataset.photoKind); });
 
 $("#settings-toggle").addEventListener("click",()=>$("#settings-form").hidden=!$("#settings-form").hidden);
+function fillSettingsForm() {
+  $("#daily-target").value=toClock(settings.target);
+  $("#default-break").value=settings.break;
+  for (let day=0; day<7; day++) $(`#target-dow-${day}`).value=settings.weekdayTargets?.[day] ? toClock(settings.weekdayTargets[day]) : "";
+}
 $("#settings-form").addEventListener("submit",async (event)=>{
   event.preventDefault(); const submit=event.submitter; submit.disabled=true;
-  try { const target=normalizeClock($("#daily-target").value); if (!target) throw new Error("Informe uma meta válida, como 8 ou 08:48."); settings=await saveSettingsQueued({ ...settings, target:toMinutes(target) }); $("#daily-target").value=target; $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva."); }
+  try {
+    const target=normalizeClock($("#daily-target").value);
+    if (!target) throw new Error("Informe uma meta válida, como 8 ou 08:48.");
+    const breakMinutes=Number($("#default-break").value);
+    if (!Number.isInteger(breakMinutes) || breakMinutes<0 || breakMinutes>600) throw new Error("O intervalo padrão deve estar entre 0 e 600 minutos.");
+    const weekdayTargets={};
+    for (let day=0; day<7; day++) {
+      const raw=$(`#target-dow-${day}`).value.trim(); if (!raw) continue;
+      const value=normalizeClock(raw);
+      if (!value) throw new Error("Meta inválida para "+WEEKDAY_NAMES[day]+". Use 8 ou 08:48.");
+      weekdayTargets[day]=toMinutes(value);
+    }
+    settings=await saveSettingsQueued({ ...settings, target:toMinutes(target), break:breakMinutes, weekdayTargets });
+    fillSettingsForm(); $("#settings-form").hidden=true; resetForm(); render(); showToast("Configuração salva.");
+  }
   catch (error) { captureError(error,"settings-save"); showToast(error.message || "Não foi possível salvar a configuração.","error"); }
   finally { submit.disabled=false; }
 });
+for (let day=0; day<7; day++) {
+  const input=$(`#target-dow-${day}`);
+  input.addEventListener("blur",()=>{ const formatted=normalizeClock(input.value); if (formatted) { input.value=formatted; input.setCustomValidity(""); } else if (input.value.trim()) { input.setCustomValidity("Digite um horário válido, como 8 ou 08:30."); showToast(input.validationMessage,"error"); } });
+  input.addEventListener("input",()=>input.setCustomValidity(""));
+}
 $("#day-type").addEventListener("change",updateForecast); $("#work-date").addEventListener("change",updateForecast); $("#start-time").addEventListener("input",updateForecast); $("#break-time").addEventListener("input",updateForecast);
 $("#month-filter").addEventListener("change",()=>{ clearHistoryRange(); loadManualBalance(); render(); }); $("#cancel-edit").addEventListener("click",resetForm);
 $("#history-range-form").addEventListener("submit",(event)=>{
@@ -92,7 +116,7 @@ for (const input of [$("#manual-positive"),$("#manual-negative")]) {
   input.addEventListener("input",()=>{
     input.setCustomValidity("");
     saveManualSimulationLocally();
-    updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance);
+    updateManualBalance(HoursCalculator.summarize(filteredRecords(),targetFor).balance);
     const month=$("#month-filter").value;
     clearTimeout(manualBalanceSaveTimers.get(month));
     const positive=$("#manual-positive").value, negative=$("#manual-negative").value;
@@ -151,13 +175,13 @@ $("#clear-records-form").addEventListener("submit",async(event)=>{
     accept.disabled=$("#clear-records-confirmation").value.trim()!=="APAGAR";
   }
 });
-for (const input of [$("#simulator-start-time"),$("#simulator-end-time")]) input.addEventListener("input",()=>{ saveManualSimulationLocally(); updateManualBalance(HoursCalculator.summarize(filteredRecords(),settings.target).balance); });
+for (const input of [$("#simulator-start-time"),$("#simulator-end-time")]) input.addEventListener("input",()=>{ saveManualSimulationLocally(); updateManualBalance(HoursCalculator.summarize(filteredRecords(),targetFor).balance); });
 for (const input of [$("#daily-target"),$("#start-time"),$("#end-time"),$("#simulator-start-time"),$("#simulator-end-time")]) {
   input.addEventListener("blur",()=>{ const formatted=normalizeClock(input.value); if (!formatted) { if (input.value.trim()) { input.setCustomValidity("Digite um horário válido, como 8, 830 ou 08:30."); showToast(input.validationMessage,"error"); } return; } input.value=formatted; input.setCustomValidity(""); input.dispatchEvent(new Event("input",{ bubbles:true })); });
   input.addEventListener("input",()=>input.setCustomValidity(""));
 }
 form.addEventListener("reset",()=>setTimeout(()=>{
-  $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
+  $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=settings.break;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhotos={entrada:"",saida:""}; capturedPhoto=""; updatePhotoPreview(); updateForecast();
 }));

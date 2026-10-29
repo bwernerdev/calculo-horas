@@ -27,13 +27,13 @@ function render() {
     const preview=/^(?:blob:|data:image\/)/.test(photo) ? `<img src="${photo}" alt="" loading="lazy">` : `<span class="photo-card__placeholder" aria-hidden="true"><svg class="icon"><use href="#i-camera"/></svg></span>`;
     return `<button class="photo-card" type="button" data-view-photo="${record.id}" data-photo-kind="${kind}" aria-label="Ver foto de ${kind} de ${date}">${preview}<span class="photo-card__info"><strong>${date}</strong><small>${kind === "entrada" ? "Entrada" : "Saída"} · ${TYPES[record.type]}</small></span></button>`;
   }).join("");
-  const totals = HoursCalculator.summarize(list,settings.target);
+  const totals = HoursCalculator.summarize(list,targetFor);
   $(".summary-grid").setAttribute("aria-label",historyRange ? "Resumo do período pesquisado" : "Resumo do ciclo de 16 a 15");
   $("#balance-period-label").textContent=historyRange ? "Saldo do período" : "Saldo do ciclo";
   $("#balance-period-dates").textContent=historyPeriodLabel();
   const previousRange=previousCycleRange(), previousRecords=previousRange ? recordsInRange(previousRange) : [], deltaElement=$("#balance-delta");
   deltaElement.hidden=!previousRecords.length;
-  if (previousRecords.length) { const change=totals.balance-HoursCalculator.summarize(previousRecords,settings.target).balance; deltaElement.textContent=(change>0 ? "↑ " : change<0 ? "↓ " : "= ")+signed(change)+" em relação ao ciclo anterior"; }
+  if (previousRecords.length) { const change=totals.balance-HoursCalculator.summarize(previousRecords,targetFor).balance; deltaElement.textContent=(change>0 ? "↑ " : change<0 ? "↓ " : "= ")+signed(change)+" em relação ao ciclo anterior"; }
   $("#history-title").textContent=historyRange ? "Registros do período" : "Registros do ciclo";
   $("#simulator-description").textContent=historyRange
     ? "O saldo dos registros considera o período pesquisado. Os ajustes manuais continuam vinculados ao mês selecionado."
@@ -42,7 +42,7 @@ function render() {
   $("#monthly-positive").textContent = `+${duration(totals.positive)}`;
   $("#monthly-negative").textContent = `-${duration(totals.negative)}`;
   $("#monthly-balance").className = totals.balance > 0 ? "value-positive" : totals.balance < 0 ? "value-negative" : "";
-  const owedMinutes=list.filter((record)=>record.type==="trabalho" || record.type==="falta").length*settings.target, meter=$("#worked-meter");
+  const owedMinutes=list.filter((record)=>record.type==="trabalho" || record.type==="falta").reduce((sum,record)=>sum+targetFor(record),0), meter=$("#worked-meter");
   meter.hidden=owedMinutes===0; $("#worked-meter-label").hidden=owedMinutes===0;
   if (owedMinutes) { const percent=Math.round(totals.worked/owedMinutes*100), shown=Math.min(percent,100); meter.setAttribute("aria-valuenow",String(shown)); meter.firstElementChild.style.width=shown+"%"; $("#worked-meter-label").textContent="Meta cumprida: "+percent+"%"; }
   $("#registered-days").textContent = list.length; $("#target-summary").textContent = duration(settings.target);
@@ -53,7 +53,7 @@ function render() {
 }
 
 function resetForm() {
-  form.reset(); $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=FIXED_BREAK_MINUTES;
+  form.reset(); $("#editing-id").value=""; $("#work-date").value=localDate(); $("#break-time").value=settings.break;
   $("#form-title").textContent="Registrar jornada"; $("#submit-button").textContent="Adicionar registro";
   $("#cancel-edit").hidden=true; $("#error-message").hidden=true; pendingPhotos={entrada:"",saida:""}; capturedPhoto=""; updatePhotoPreview(); updateForecast();
 }

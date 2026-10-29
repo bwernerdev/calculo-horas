@@ -7,10 +7,10 @@ function updateForecast() {
   if (!visible || !start) { $("#exit-forecast").textContent="Informe um horário de entrada válido."; return; }
   const date=$("#work-date").value, cycle=HoursCycle.rangeForMonth(HoursCycle.monthForDate(date)), editingId=$("#editing-id").value;
   const basisRecords=(historyRange ? filteredRecords() : recordsInRange(cycle)).filter((record)=>record.id!==editingId);
-  const currentBalance=HoursCalculator.summarize(basisRecords,settings.target).balance;
+  const currentBalance=HoursCalculator.summarize(basisRecords,targetFor).balance;
   const breakMinutes=Number($("#break-time").value);
   if (!Number.isInteger(breakMinutes) || breakMinutes<0 || breakMinutes>600) { $("#exit-forecast").textContent="Informe um intervalo entre 0 e 600 minutos."; return; }
-  const suggestion=HoursCalculator.suggestExit(start,settings.target,breakMinutes,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
+  const suggestion=HoursCalculator.suggestExit(start,targetOn($("#work-date").value),breakMinutes,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
   const balanceClass=currentBalance>0 ? "value-positive" : currentBalance<0 ? "value-negative" : "";
   const pending=suggestion.worked===SUGGESTED_DAILY_LIMIT_MINUTES && suggestion.remainingBalance<0 ? `<span class="forecast__warning"><b>Margem preventiva de 15 min aplicada</b> antes do limite de 10h. Saldo restante: <b>${signed(suggestion.remainingBalance)}</b></span>` : "";
   $("#exit-forecast").innerHTML = `<span>Saída-base: <b>${suggestion.baseExit}</b></span><span>Saldo atual: <b class="${balanceClass}">${signed(currentBalance)}</b></span><strong>Saída sugerida: ${suggestion.suggestedExit}</strong>${pending}`;
@@ -24,8 +24,8 @@ function filteredRecords() {
 function suggestedExit(start,breakMinutes,editingId="") {
   const cycle=HoursCycle.rangeForMonth(HoursCycle.monthForDate($("#work-date").value));
   const basisRecords=(historyRange ? filteredRecords() : recordsInRange(cycle)).filter((record)=>record.id!==editingId);
-  const currentBalance=HoursCalculator.summarize(basisRecords,settings.target).balance;
-  return HoursCalculator.suggestExit(start,settings.target,breakMinutes,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
+  const currentBalance=HoursCalculator.summarize(basisRecords,targetFor).balance;
+  return HoursCalculator.suggestExit(start,targetOn($("#work-date").value),breakMinutes,currentBalance,SUGGESTED_DAILY_LIMIT_MINUTES);
 }
 function previousCycleRange() {
   if (historyRange) return null;
@@ -129,14 +129,14 @@ function updateManualBalance(monthlyBalance) {
   const informedElement=$("#simulator-informed-balance"), suggestedElement=$("#simulator-suggested-exit"), warning=$("#simulator-limit-warning");
   warning.hidden=true; warning.textContent="";
   if (!start) { informedElement.textContent="—"; informedElement.className=""; suggestedElement.textContent="—"; return; }
-  const suggestion=HoursCalculator.suggestExit(start,settings.target,FIXED_BREAK_MINUTES,projected,SUGGESTED_DAILY_LIMIT_MINUTES);
+  const suggestion=HoursCalculator.suggestExit(start,targetOn(localDate()),settings.break,projected,SUGGESTED_DAILY_LIMIT_MINUTES);
   suggestedElement.textContent=suggestion.suggestedExit;
   if (suggestion.worked===SUGGESTED_DAILY_LIMIT_MINUTES && suggestion.remainingBalance<0) {
     warning.textContent=`Margem preventiva de 15 minutos aplicada antes do limite de 10 horas. Ainda restariam ${signed(suggestion.remainingBalance)}.`;
     warning.hidden=false;
   }
   if (!end) { informedElement.textContent="—"; informedElement.className=""; return; }
-  const informed=HoursCalculator.calculate({ type:"trabalho",start,end,break:FIXED_BREAK_MINUTES },settings.target);
+  const informed=HoursCalculator.calculate({ type:"trabalho",start,end,break:settings.break },targetOn(localDate()));
   if (informed.worked<0 || informed.worked>MAX_DAILY_WORK_MINUTES) {
     informedElement.textContent="Horário inválido"; informedElement.className="value-negative";
     warning.textContent="A saída informada deve resultar em uma jornada entre 0 e 10 horas trabalhadas."; warning.hidden=false; return;

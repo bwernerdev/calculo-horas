@@ -248,7 +248,7 @@ test("no mobile aceita horas inteiras e permite digitar dois-pontos no teclado",
   await page.addInitScript(() => localStorage.setItem("e2e-authenticated", "true"));
   await page.goto("/");
   await expect(page.locator("#app-content")).toBeVisible();
-  await expect(page.locator(".time-entry[inputmode='text']")).toHaveCount(7);
+  await expect(page.locator(".time-entry[inputmode='text']")).toHaveCount(14); // 7 campos de horário + 7 metas por dia da semana
   await expect(page.locator(".time-separator")).toHaveCount(0);
   await page.locator("#manual-positive").fill("1");
   await expect(page.locator("#simulator-projected-balance")).toContainText("1h 00min");

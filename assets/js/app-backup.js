@@ -70,7 +70,7 @@ $("#export-json").addEventListener("click",async (event)=>{
   const backup={
     versao:1,
     exportadoEm:new Date().toISOString(),
-    configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:settings.theme, saldosManuais:settings.manualBalances || {} },
+    configuracoes:{ metaDiariaMinutos:settings.target, intervaloPadraoMinutos:settings.break, metasPorDiaSemana:settings.weekdayTargets || {}, tema:settings.theme, saldosManuais:settings.manualBalances || {} },
     registros:backupRecords
   };
   let content=JSON.stringify(backup);

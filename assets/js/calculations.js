@@ -26,10 +26,11 @@
 
   /**
    * @param {HoursRecord} record
-   * @param {number} targetMinutes
+   * @param {number | ((record: HoursRecord) => number)} target meta fixa ou função que devolve a meta do registro
    * @returns {{worked:number, balance:number}}
    */
-  function calculate(record, targetMinutes) {
+  function calculate(record, target) {
+    const targetMinutes = typeof target === "function" ? target(record) : target;
     const official = record.importData?.source === "forponto" && Number.isInteger(record.importData.officialBalanceMinutes)
       ? record.importData.officialBalanceMinutes : null;
     if (record.type === "falta") return { worked: 0, balance: official ?? -targetMinutes };
@@ -43,7 +44,7 @@
 
   /**
    * @param {HoursRecord[]} records
-   * @param {number} targetMinutes
+   * @param {number | ((record: HoursRecord) => number)} targetMinutes
    */
   function summarize(records, targetMinutes) {
     return records.reduce((total, record) => {

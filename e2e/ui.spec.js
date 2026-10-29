@@ -174,3 +174,31 @@ test("Entrada agora preenche a hora atual e a saída sugerida; Saída agora pree
   await expect(page.locator("#end-time")).toHaveValue(/^\d\d:\d\d$/);
   await expect(page.locator("#work-date")).toHaveValue("2026-10-29");
 });
+
+test("configuração aceita intervalo padrão e meta por dia da semana", async ({ page }) => {
+  await open(page);
+  await page.locator("#settings-toggle").click();
+  await page.locator("#default-break").fill("45");
+  await page.locator("#settings-form summary").click();
+  await page.locator("#target-dow-5").fill("6");
+  await page.locator("#target-dow-5").blur();
+  await expect(page.locator("#target-dow-5")).toHaveValue("06:00");
+  await page.locator("#settings-form").getByRole("button", { name: "Salvar configuração" }).click();
+  await expect(page.locator("#toast-region")).toContainText("Configuração salva");
+  await expect(page.locator("#break-time")).toHaveValue("45");
+  await page.locator("#settings-toggle").click();
+  await expect(page.locator("#target-dow-5")).toHaveValue("06:00");
+  await expect(page.locator("#default-break")).toHaveValue("45");
+});
+
+test("meta por dia da semana altera o saldo do dia correspondente", async ({ page }) => {
+  await open(page, { __mockRecords: [row(20, "2026-10-23", "trabalho", "08:00", "14:00")] });
+  await expect(page.locator('[data-date="2026-10-23"] .calendar-day__v')).toHaveText("−3:48");
+  await page.locator("#settings-toggle").click();
+  await page.locator("#settings-form summary").click();
+  await page.locator("#target-dow-5").fill("5");
+  await page.locator("#target-dow-5").blur();
+  await page.locator("#settings-form").getByRole("button", { name: "Salvar configuração" }).click();
+  await expect(page.locator("#toast-region")).toContainText("Configuração salva");
+  await expect(page.locator('[data-date="2026-10-23"] .calendar-day__v')).toHaveText("0:00");
+});

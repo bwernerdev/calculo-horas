@@ -11,7 +11,7 @@ function pdfText(value) {
 
 function buildPdf() {
   const list=filteredRecords();
-  const totals=HoursCalculator.summarize(list,settings.target);
+  const totals=HoursCalculator.summarize(list,targetFor);
   const rows=list.map((record)=>({record,calc:calculate(record)}));
   const pages=[]; let position=0;
   if (!rows.length) pages.push([]);

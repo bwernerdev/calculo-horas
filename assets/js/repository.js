@@ -66,7 +66,7 @@
     const photoUrlCache = new Map();
     const bucket = client.storage.from("point-photos");
     const throwIfError = (error) => { if (error) throw new Error(error.message); };
-    const missingBalanceColumn = (error) => error && (error.code === "42703" || /balance_adjustments/i.test(error.message || ""));
+    const missingColumn = (error) => error && (error.code === "42703" || /balance_adjustments|preferences/i.test(error.message || ""));
     const emptyPhotos = () => ({ entrada: "", saida: "" });
     const isInlinePhoto = (value) => typeof value === "string" && value.startsWith("data:image/");
     const isDisplayUrl = (value) => typeof value === "string" && /^(?:https?:|blob:)/.test(value);
@@ -250,24 +250,31 @@
       },
 
       async getSettings() {
-        let { data, error } = await client.from("settings").select("target_minutes, theme, balance_adjustments").maybeSingle();
-        if (missingBalanceColumn(error)) ({ data, error } = await client.from("settings").select("target_minutes, theme").maybeSingle());
+        const columnSets = ["target_minutes, theme, balance_adjustments, preferences", "target_minutes, theme, balance_adjustments", "target_minutes, theme"];
+        let data = null, error = null;
+        for (const columns of columnSets) {
+          ({ data, error } = await client.from("settings").select(columns).maybeSingle());
+          if (!missingColumn(error)) break;
+        }
         throwIfError(error);
-        return data ? { target: data.target_minutes, theme: data.theme, manualBalances:data.balance_adjustments || {} } : {};
+        return data ? { target: data.target_minutes, theme: data.theme, manualBalances:data.balance_adjustments || {}, preferences:data.preferences || {} } : {};
       },
 
       async saveSettings(settings) {
-        const row={ user_id:userId, target_minutes:settings.target, theme:settings.theme, balance_adjustments:settings.manualBalances || {}, updated_at:new Date().toISOString() };
-        let { error } = await client.from("settings").upsert(
-          row,
-          { onConflict: "user_id" }
-        );
-        if (missingBalanceColumn(error)) {
-          if (Object.keys(row.balance_adjustments).length) throw new Error("A coluna de saldos manuais não existe no Supabase. Aplique a migração de segurança antes de sincronizar.");
-          ({ error } = await client.from("settings").upsert(
-            { user_id:row.user_id, target_minutes:row.target_minutes, theme:row.theme, updated_at:row.updated_at },
-            { onConflict:"user_id" }
-          ));
+        const preferences={ break:settings.break, weekdayTargets:settings.weekdayTargets || {} };
+        const hasCustomPreferences=Object.keys(preferences.weekdayTargets).length>0 || (Number.isInteger(settings.break) && settings.break!==60);
+        const base={ user_id:userId, target_minutes:settings.target, theme:settings.theme, updated_at:new Date().toISOString() };
+        const attempts=[
+          { ...base, balance_adjustments:settings.manualBalances || {}, preferences },
+          { ...base, balance_adjustments:settings.manualBalances || {} },
+          base
+        ];
+        let error=null;
+        for (const [index,row] of attempts.entries()) {
+          ({ error } = await client.from("settings").upsert(row,{ onConflict:"user_id" }));
+          if (!missingColumn(error)) break;
+          if (index===0 && hasCustomPreferences) throw new Error("A coluna de preferências não existe no Supabase. Aplique a migração de preferências antes de salvar o intervalo ou as metas por dia.");
+          if (index===1 && Object.keys(settings.manualBalances || {}).length) throw new Error("A coluna de saldos manuais não existe no Supabase. Aplique a migração de segurança antes de sincronizar.");
         }
         throwIfError(error);
       },

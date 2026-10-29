@@ -142,6 +142,8 @@
 
       <form id="settings-form" class="settings" hidden>
         <label class="field"><span>Meta diária</span><input id="daily-target" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="08:48" value="08:48" autocapitalize="off" spellcheck="false" required></label>
+        <label class="field"><span>Intervalo padrão (min)</span><input id="default-break" type="number" min="0" max="600" step="1" value="60" required></label>
+        <details class="settings__weekdays"><summary>Metas por dia da semana <small>(vazio = usa a meta diária)</small></summary><div class="settings__weekdays-grid"><label class="field"><span>Seg</span><input id="target-dow-1" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Ter</span><input id="target-dow-2" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Qua</span><input id="target-dow-3" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Qui</span><input id="target-dow-4" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Sex</span><input id="target-dow-5" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Sáb</span><input id="target-dow-6" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label><label class="field"><span>Dom</span><input id="target-dow-0" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="—" autocapitalize="off" spellcheck="false"></label></div></details>
         <button class="button button--secondary" type="submit">Salvar configuração</button>
       </form>
 
@@ -271,7 +273,7 @@
           <div class="manual-sync"><span id="manual-sync-status" role="status" aria-live="polite"></span><button id="manual-sync-retry" class="button button--ghost" type="button" hidden>Tentar sincronizar</button></div>
           <label class="field"><span>Horário de entrada</span><input id="simulator-start-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="08:00" value="08:00" autocapitalize="off" spellcheck="false"></label>
           <label class="field"><span>Horário de saída</span><input id="simulator-end-time" class="time-entry" type="text" inputmode="text" maxlength="5" placeholder="17:48" value="17:48" autocapitalize="off" spellcheck="false"></label>
-          <p class="field-help">O intervalo fixo de 60 minutos e a margem preventiva de 15 minutos antes do limite de 10 horas também são aplicados aqui.</p>
+          <p class="field-help">O intervalo padrão e a margem preventiva de 15 minutos antes do limite de 10 horas também são aplicados aqui.</p>
         </div>
         <div class="balance-simulator__result" aria-live="polite">
           <div class="balance-simulator__suggestion"><span>Horário sugerido para sair</span><strong id="simulator-suggested-exit">17:48</strong></div>

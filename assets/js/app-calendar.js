@@ -69,8 +69,8 @@ function renderForecast() {
   if (historyRange || !range) return;
   const list=filteredRecords();
   const remaining=HoursInsights.remainingWorkdays(range,new Set(list.map((record)=>record.date)),localDate());
-  const balance=HoursCalculator.summarize(list,settings.target).balance;
-  const forecast=HoursInsights.forecastToZero({ balance,remainingDays:remaining.length,targetMinutes:settings.target,maxMinutes:MAX_DAILY_WORK_MINUTES });
+  const balance=HoursCalculator.summarize(list,targetFor).balance;
+  const forecast=HoursInsights.forecastToZero({ balance,remainingDays:remaining.length,targetMinutes:Math.round(remaining.reduce((sum,day)=>sum+targetOn(day),0)/remaining.length),maxMinutes:MAX_DAILY_WORK_MINUTES });
   if (!forecast) return;
   const days=forecast.remainingDays+(forecast.remainingDays===1 ? " dia útil" : " dias úteis");
   element.textContent=balance===0 ? `Faltam ${days}: mantenha ${duration(settings.target)} por dia.`
@@ -83,7 +83,7 @@ function renderForecast() {
 function renderCycleHistory() {
   const svg=$("#cycle-history-chart"), labels=$("#cycle-history-labels");
   svg.replaceChildren(); labels.replaceChildren();
-  const items=HoursInsights.cycleBalances(records,(list)=>HoursCalculator.summarize(list,settings.target).balance,HoursCycle,12);
+  const items=HoursInsights.cycleBalances(records,(list)=>HoursCalculator.summarize(list,targetFor).balance,HoursCycle,12);
   $("#cycle-history").hidden=items.length<2;
   if (items.length<2) return;
   const width=600, height=150, top=10, bottom=10, plot=height-top-bottom;

@@ -57,7 +57,7 @@ test("simula saldo manual positivo e negativo por usuário e mês", () => {
   assert.match(html, /id="simulator-informed-balance"/);
   assert.match(script, /positive-negative/);
   assert.match(script, /MANUAL_BALANCE_KEY.*loadedUserId.*month-filter/s);
-  assert.match(script, /HoursCalculator\.suggestExit\(start,settings\.target,FIXED_BREAK_MINUTES,projected,SUGGESTED_DAILY_LIMIT_MINUTES\)/);
+  assert.match(script, /HoursCalculator\.suggestExit\(start,targetOn\(localDate\(\)\),settings\.break,projected,SUGGESTED_DAILY_LIMIT_MINUTES\)/);
   assert.match(script, /informedBalance=projected\+informed\.balance/);
 });
 

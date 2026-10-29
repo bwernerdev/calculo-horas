@@ -12,6 +12,7 @@ const form = $("#hours-form");
 const { toMinutes, toClock, duration, signed } = HoursCalculator;
 const { normalizeClock, parseDuration, formatDuration } = HoursTimeInput;
 const FIXED_BREAK_MINUTES = 60;
+const WEEKDAY_NAMES = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
 const MAX_DAILY_WORK_MINUTES = 10 * 60;
 const SUGGESTED_DAILY_LIMIT_MINUTES = 9 * 60 + 45;
 const MAX_BACKUP_FILE_BYTES = 50 * 1024 * 1024;
@@ -43,7 +44,7 @@ function captureError(error, source, context = {}) {
 let repository;
 let useCases;
 let records = [];
-let settings = { target:528, break:FIXED_BREAK_MINUTES, theme:document.documentElement.dataset.theme === "dark" ? "dark" : "light", manualBalances:{} };
+let settings = { target:528, break:FIXED_BREAK_MINUTES, theme:document.documentElement.dataset.theme === "dark" ? "dark" : "light", manualBalances:{}, weekdayTargets:{} };
 let pendingPhotos = { entrada:"", saida:"" };
 let capturedPhoto = "";
 let cameraStream;
@@ -64,6 +65,8 @@ $("#remember-access").checked = Boolean(rememberedEmail);
 function localDate(date = new Date()) { const offset = date.getTimezoneOffset() * 60000; return new Date(date - offset).toISOString().slice(0,10); }
 function escapeCell(value) { const text = String(value ?? ""); return /[";,\n]/.test(text) ? `"${text.replaceAll('"','""')}"` : text; }
 
-function calculate(record) { return HoursCalculator.calculate(record,settings.target); }
+function targetOn(date) { return settings.weekdayTargets?.[HoursInsights.weekdayOf(date)] ?? settings.target; }
+function targetFor(record) { return targetOn(record.date); }
+function calculate(record) { return HoursCalculator.calculate(record,targetFor); }
 function recordPhotos(record) { return record.photos || { entrada:record.photo || "", saida:"" }; }
 

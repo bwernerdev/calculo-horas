@@ -6,7 +6,7 @@ function buildBackupPayload(sourceRecords, sourceSettings) {
   return {
     versao:1,
     exportadoEm:new Date().toISOString(),
-    configuracoes:{ metaDiariaMinutos:sourceSettings.target, intervaloPadraoMinutos:FIXED_BREAK_MINUTES, tema:sourceSettings.theme, saldosManuais:sourceSettings.manualBalances || {} },
+    configuracoes:{ metaDiariaMinutos:sourceSettings.target, intervaloPadraoMinutos:sourceSettings.break, metasPorDiaSemana:sourceSettings.weekdayTargets || {}, tema:sourceSettings.theme, saldosManuais:sourceSettings.manualBalances || {} },
     registros:sourceRecords.map((record) => ({ id:record.id, data:record.date, tipo:record.type, entrada:record.start, saida:record.end, intervaloMinutos:record.break, dadosImportacao:record.importData || {}, fotos:{ entrada:"", saida:"" } }))
   };
 }
