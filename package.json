@@ -15,6 +15,7 @@
     "check": "npm run lint && npm run typecheck && npm run test:all"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.55.0",
     "@supabase/supabase-js": "2.116.0",
