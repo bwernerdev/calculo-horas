@@ -19,7 +19,7 @@ test("backup valida calendário, relógio, volume e fotos antes da restauração
 test("interface usa restauração transacional e CRUD individual", () => {
   assert.match(script, /repository\.restoreBackup\(imported,nextSettings\)/);
   assert.match(script, /useCases\.saveRecord\(record,settings\.target,records\)/);
-  assert.match(script, /useCases\.deleteRecord\(remove,records\)/);
+  assert.match(script, /useCases\.deleteRecord\(id,\[\]\)/);
   assert.doesNotMatch(script, /repository\.saveAllRecords/);
 });
 
