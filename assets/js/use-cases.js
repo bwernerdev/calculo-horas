@@ -1,4 +1,6 @@
-(function exposeUseCases(root, factory) {
+// @ts-check
+/** UMD: expõe o módulo como global no navegador e via module.exports no Node. */
+(function exposeUseCases(/** @type {any} */ root, factory) {
   const useCases = factory();
   if (typeof module === "object" && module.exports) module.exports = useCases;
   if (root) root.HoursUseCases = useCases;

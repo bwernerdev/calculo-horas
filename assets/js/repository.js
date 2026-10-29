@@ -1,4 +1,6 @@
-(function exposeRepository(root, factory) {
+// @ts-check
+/** UMD: expõe o módulo como global no navegador e via module.exports no Node. */
+(function exposeRepository(/** @type {any} */ root, factory) {
   const repository = factory();
   if (typeof module === "object" && module.exports) module.exports = repository;
   if (root) root.HoursRepository = repository;

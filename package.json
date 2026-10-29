@@ -9,12 +9,20 @@
     "vendor:supabase": "node scripts/vendor-supabase.mjs",
     "serve": "node scripts/serve-static.mjs",
     "build:config": "node scripts/generate-runtime-config.mjs",
-    "healthcheck": "node scripts/healthcheck.mjs"
+    "healthcheck": "node scripts/healthcheck.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc -p .",
+    "check": "npm run lint && npm run typecheck && npm run test:all"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.55.0",
     "@supabase/supabase-js": "2.116.0",
-    "pdfjs-dist": "5.5.207"
+    "@types/node": "^22.20.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "pdfjs-dist": "5.5.207",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20"

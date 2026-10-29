@@ -15,12 +15,12 @@ test("define cabecalhos de seguranca compativeis com Supabase", () => {
 });
 
 test("forca renovacao do cache para a publicacao corrigida", () => {
-  assert.match(worker, /banco-horas-v56/);
+  assert.match(worker, /banco-horas-v57/);
   assert.match(worker, /assets\/js\/vendor\/supabase\.min\.js/);
   assert.match(headers, /script-src 'self';/);
   assert.doesNotMatch(headers, /unpkg\.com/);
-  assert.match(worker, /assets\/js\/vendor\/pdf\.min\.mjs/);
-  assert.match(worker, /assets\/js\/vendor\/pdf\.worker\.min\.mjs/);
+  assert.doesNotMatch(worker, /vendor\/pdf\./, "pdf.js é carregado sob demanda, fora do pré-cache");
+  assert.doesNotMatch(headers, /style-src[^;]*'unsafe-inline'/);
   assert.ok(fs.existsSync("assets/js/vendor/pdf.min.mjs"));
   assert.ok(fs.existsSync("assets/js/vendor/pdf.worker.min.mjs"));
   assert.ok(fs.existsSync("assets/js/vendor/pdfjs-LICENSE.txt"));

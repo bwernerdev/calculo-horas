@@ -1,6 +1,9 @@
-const siteUrl = process.env.SITE_URL || "https://banco-horas-controladoria.pages.dev/";
-const supabaseUrl = process.env.SUPABASE_URL || "https://kainqngxsiawowbaslhi.supabase.co";
-const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_8LklqHCaeOzWassgK9FV_A_2D0EoudO";
+import fs from "node:fs";
+
+const production = JSON.parse(fs.readFileSync(new URL("../config/production.json", import.meta.url), "utf8"));
+const siteUrl = process.env.SITE_URL || production.siteUrl;
+const supabaseUrl = process.env.SUPABASE_URL || production.supabaseUrl;
+const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || production.supabasePublishableKey;
 
 async function check(name, url, validate, headers = {}) {
   const controller = new AbortController();

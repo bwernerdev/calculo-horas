@@ -6,10 +6,9 @@ const currentBranch = process.env.CF_PAGES_BRANCH || "local";
 const environment = process.env.APP_ENVIRONMENT || (
   currentBranch === "local" ? "local" : currentBranch === productionBranch ? "production" : "preview"
 );
-const productionFallback = {
-  url: "https://kainqngxsiawowbaslhi.supabase.co",
-  key: "sb_publishable_8LklqHCaeOzWassgK9FV_A_2D0EoudO",
-};
+const production = JSON.parse(fs.readFileSync(path.resolve("config/production.json"), "utf8"));
+const packageVersion = JSON.parse(fs.readFileSync(path.resolve("package.json"), "utf8")).version;
+const productionFallback = { url: production.supabaseUrl, key: production.supabasePublishableKey };
 const canUseProductionFallback = environment === "production" || environment === "local";
 const supabaseUrl = process.env.SUPABASE_URL || (canUseProductionFallback ? productionFallback.url : "");
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || (canUseProductionFallback ? productionFallback.key : "");
@@ -20,7 +19,7 @@ if (!supabaseUrl || !supabasePublishableKey) {
 
 const config = {
   environment,
-  version: process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12) || process.env.npm_package_version || "development",
+  version: process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12) || packageVersion,
   supabaseUrl,
   supabasePublishableKey,
   errorReporting: process.env.ERROR_REPORTING !== "false",
