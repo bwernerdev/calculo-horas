@@ -24,6 +24,7 @@ declare var HoursRepository: any;
 declare var HoursUseCases: any;
 declare var HoursTimeInput: any;
 declare var HoursInsights: any;
+declare var HoursXlsx: any;
 declare var ForpontoImport: any;
 interface Window {
   APP_CONFIG: Readonly<AppConfig>;

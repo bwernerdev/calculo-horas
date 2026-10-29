@@ -1,4 +1,4 @@
-const CACHE_NAME = "banco-horas-v64";
+const CACHE_NAME = "banco-horas-v65";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -16,6 +16,7 @@ const APP_SHELL = [
   "./assets/js/vendor/fflate.min.js",
   "./assets/js/vendor/supabase.min.js",
   "./assets/js/forponto-import.js",
+  "./assets/js/xlsx-export.js",
   "./assets/js/app-core.js",
   "./assets/js/app-simulation.js",
   "./assets/js/app-render.js",

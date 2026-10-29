@@ -4,7 +4,7 @@ const globals = require("globals");
 // Scripts clássicos do navegador compartilham estes globais (ver ordem em index.html).
 const appGlobals = {
   HoursCalculator: "readonly", HoursCycle: "readonly", HoursRepository: "readonly", HoursUseCases: "readonly",
-  HoursTimeInput: "readonly", ForpontoImport: "readonly", AppMonitor: "readonly", AppStorage: "readonly",
+  HoursTimeInput: "readonly", HoursInsights: "readonly", HoursXlsx: "readonly", ForpontoImport: "readonly", AppMonitor: "readonly", AppStorage: "readonly",
   SUPABASE_URL: "readonly", SUPABASE_PUBLISHABLE_KEY: "readonly", supabase: "readonly", fflate: "readonly",
 };
 

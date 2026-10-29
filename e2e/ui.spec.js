@@ -202,3 +202,23 @@ test("meta por dia da semana altera o saldo do dia correspondente", async ({ pag
   await expect(page.locator("#toast-region")).toContainText("Configuração salva");
   await expect(page.locator('[data-date="2026-10-23"] .calendar-day__v')).toHaveText("0:00");
 });
+
+test("PDF inclui a página do calendário e o XLSX traz os registros", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await openMenu(page, "Exportar");
+  const pdfPromise = page.waitForEvent("download");
+  await page.locator("#export-pdf").click();
+  const pdf = await fs.promises.readFile(await (await pdfPromise).path(), "latin1");
+  expect(pdf).toContain("/Count 2");
+  expect(pdf).toContain("Calend");
+  await openMenu(page, "Exportar");
+  const xlsxPromise = page.waitForEvent("download");
+  await page.locator("#export-xlsx").click();
+  const download = await xlsxPromise;
+  expect(download.suggestedFilename()).toMatch(/^horas-.*\.xlsx$/);
+  const files = require("fflate").unzipSync(new Uint8Array(await fs.promises.readFile(await download.path())));
+  const sheet = new TextDecoder().decode(files["xl/worksheets/sheet1.xml"]);
+  expect(sheet).toContain("Trabalho");
+  expect(sheet).toContain("Folga");
+  expect(sheet).toContain("Total");
+});
