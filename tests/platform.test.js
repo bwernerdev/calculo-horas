@@ -4,7 +4,8 @@ const fs = require("node:fs");
 
 const html = fs.readFileSync("index.html", "utf8");
 const css = fs.readFileSync("assets/css/style.css", "utf8");
-const script = ["script.js", "app-auth.js", "app-pwa.js"].map((file) => fs.readFileSync(`assets/js/${file}`, "utf8")).join("\n");
+const { uiModules, readScripts } = require("./helpers/app-source");
+const script = readScripts([...uiModules, "app-auth.js", "app-pwa.js"]);
 const worker = fs.readFileSync("service-worker.js", "utf8");
 const manifest = JSON.parse(fs.readFileSync("manifest.webmanifest", "utf8"));
 const themeInit = fs.readFileSync("assets/js/theme-init.js", "utf8");
@@ -32,14 +33,17 @@ test("dimensiona a interface para viewport e áreas seguras mobile", () => {
 test("mantém manifesto e arquivos essenciais no cache offline", () => {
   assert.equal(manifest.display, "standalone");
   assert.deepEqual(manifest.icons.map((icon) => icon.sizes), ["192x192", "512x512"]);
-  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/runtime-config.js", "assets/js/monitoring.js", "assets/js/time-input.js", "assets/js/calculations.js", "assets/js/cycle.js", "assets/js/script.js", "assets/js/app-auth.js", "assets/js/app-pwa.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
+  for (const asset of ["index.html", "assets/css/style.css", "assets/js/theme-init.js", "assets/js/runtime-config.js", "assets/js/monitoring.js", "assets/js/time-input.js", "assets/js/calculations.js", "assets/js/cycle.js", ...uiModules.map((file) => `assets/js/${file}`), "assets/js/app-auth.js", "assets/js/app-pwa.js", "manifest.webmanifest"]) assert.ok(worker.includes(asset));
 });
 
 test("carrega autenticação e PWA após o núcleo da interface", () => {
-  const core = html.indexOf('src="assets/js/script.js"');
+  const core = html.indexOf('src="assets/js/app-core.js"');
   const auth = html.indexOf('src="assets/js/app-auth.js"');
   const pwa = html.indexOf('src="assets/js/app-pwa.js"');
-  assert.ok(core > 0 && auth > core && pwa > auth);
+  const last = html.indexOf(`src="assets/js/${uiModules.at(-1)}"`);
+  const order = uiModules.map((file) => html.indexOf(`src="assets/js/${file}"`));
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), "módulos da UI fora de ordem");
+  assert.ok(core > 0 && last > core && auth > last && pwa > auth);
 });
 
 test("simula saldo manual positivo e negativo por usuário e mês", () => {

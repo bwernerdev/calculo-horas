@@ -18,7 +18,7 @@ module.exports = [
   },
   {
     // Estes scripts dividem declarações de topo ($, showToast, supabaseClient...), então no-undef não se aplica entre eles.
-    files: ["assets/js/script.js", "assets/js/app-*.js"],
+    files: ["assets/js/app-*.js"],
     rules: { "no-undef": "off" },
   },
   {

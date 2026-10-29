@@ -3,7 +3,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const monitoring = fs.readFileSync("assets/js/monitoring.js", "utf8");
-const script = fs.readFileSync("assets/js/script.js", "utf8");
+const { uiModules, readScripts } = require("./helpers/app-source");
+const script = readScripts(uiModules);
 const generator = fs.readFileSync("scripts/generate-runtime-config.mjs", "utf8");
 const runtimeConfig = fs.readFileSync("assets/js/runtime-config.js", "utf8");
 

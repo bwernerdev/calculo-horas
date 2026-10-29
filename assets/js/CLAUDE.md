@@ -15,5 +15,13 @@ Ordem de carga definida em `../../index.html`. Scripts clássicos (sem bundler).
 - `monitoring.js` — `AppMonitor`: fila local de erros, sanitiza e-mail/token, envia à tabela `client_errors`.
 - `app-auth.js` — login, cadastro, recuperação, senha, carregamento da app por usuário.
 - `app-pwa.js` — botão de instalar PWA / registro do service worker.
-- `script.js` (~800 linhas) — UI principal: render, formulário, fotos/câmera, histórico, filtro de período, simulação/saldo manual, backup JSON, CSV/PDF, diálogos.
+- UI principal, dividida em scripts clássicos que compartilham o escopo global (ordem em index.html):
+  - `app-core.js` — constantes, cliente Supabase, estado (`records`, `settings`...), `captureError`.
+  - `app-simulation.js` — previsão de saída, intervalo do histórico, saldo manual/simulação.
+  - `app-render.js` — `render()`, formulário, toasts, confirmação.
+  - `app-photos.js` — prévia de fotos e câmera.
+  - `app-records.js` — salvar/editar/excluir, configurações, filtros, apagar tudo, tema.
+  - `app-export.js` — CSV, PDF, `downloadFile`.
+  - `app-backup.js` — validação/exportação de backup JSON e lembrete.
+  - `app-import.js` — importação Forponto e restauração de backup.
 - `vendor/` — libs de terceiros (não editar).

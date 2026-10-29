@@ -3,7 +3,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const html = fs.readFileSync("index.html", "utf8");
-const script = ["script.js", "app-auth.js"].map((file) => fs.readFileSync(`assets/js/${file}`, "utf8")).join("\n");
+const { uiModules, readScripts } = require("./helpers/app-source");
+const script = readScripts([...uiModules, "app-auth.js"]);
 const css = fs.readFileSync("assets/css/style.css", "utf8");
 
 test("separa login e cadastro em abas acessiveis", () => {
