@@ -1358,7 +1358,6 @@ th {
 }
 .balance-simulator__result {
   display: grid;
-  grid-auto-rows: minmax(min-content, 1fr);
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1379,10 +1378,11 @@ th {
 }
 .balance-simulator__result .balance-simulator__total span {
   color: var(--primary-dark);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 750;
 }
 .balance-simulator__result strong {
+  white-space: nowrap;
   font-size: 1rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -1395,7 +1395,7 @@ th {
   font-size: clamp(1.2rem, 3vw, 1.55rem);
 }
 .balance-simulator__result .balance-simulator__suggestion {
-  padding-block: 24px;
+  padding-block: 18px;
   color: var(--on-brand);
   background: var(--brand-gradient);
 }
@@ -1404,7 +1404,7 @@ th {
 }
 .balance-simulator__suggestion strong {
   color: var(--on-brand);
-  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
   line-height: 1.1;
 }
 .balance-simulator__warning {
