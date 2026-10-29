@@ -50,10 +50,10 @@ async function showRecordPhoto(id,kind) {
   } catch (error) { captureError(error,"photo-load"); showToast("Não foi possível carregar esta foto. Tente novamente.","error"); }
 }
 $("#records-body").addEventListener("click", async(event) => {
-  const edit=event.target.dataset.edit, remove=event.target.dataset.delete, photo=event.target.dataset.photo; if (edit) editRecord(edit);
-  if (photo) await showRecordPhoto(photo,event.target.dataset.photoKind);
+  const target=event.target.closest("button"); if (!target) return; const edit=target.dataset.edit, remove=target.dataset.delete, photo=target.dataset.photo; if (edit) editRecord(edit);
+  if (photo) await showRecordPhoto(photo,target.dataset.photoKind);
   if (remove && await requestConfirmation("Deseja excluir este registro? Essa ação não poderá ser desfeita.")) {
-    const button=event.target; button.disabled=true;
+    const button=target; button.disabled=true;
     try { records=await useCases.deleteRecord(remove,records); render(); showToast("Registro excluído."); }
     catch (error) { captureError(error,"record-delete"); button.disabled=false; showToast(error.message || "Não foi possível excluir o registro.","error"); }
   }
@@ -176,3 +176,4 @@ $("#theme-toggle").addEventListener("click",async ()=>{
   } catch (error) { captureError(error,"theme-sync"); showToast("Tema salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
   finally { $("#theme-toggle").disabled=false; }
 });
+$("#empty-state-add").addEventListener("click",()=>{ $("#work-date").scrollIntoView({ block:"center", behavior:"smooth" }); $("#work-date").focus({ preventScroll:true }); });

@@ -2,11 +2,11 @@
 function render() {
   const list = filteredRecords();
   $("#records-body").innerHTML = list.map((record) => {
-    const calc = calculate(record); const css = calc.balance > 0 ? "value-positive" : calc.balance < 0 ? "value-negative" : "";
+    const calc = calculate(record); const css = calc.balance > 0 ? "balance-pill--positive" : calc.balance < 0 ? "balance-pill--negative" : "";
     const date = new Date(`${record.date}T12:00:00`).toLocaleDateString("pt-BR");
     const photos=recordPhotos(record);
-    const photoButtons=[photos.entrada ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="entrada">Entrada</button>` : "",photos.saida ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="saida">Saída</button>` : ""].filter(Boolean).join(" ");
-    return `<tr><td data-label="Data">${date}</td><td data-label="Tipo"><span class="tag">${TYPES[record.type]}</span></td><td data-label="Entrada">${record.start || "—"}</td><td data-label="Saída">${record.end || "—"}</td><td data-label="Intervalo">${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td data-label="Trabalhado">${duration(calc.worked)}</td><td data-label="Saldo" class="${css}">${signed(calc.balance)}</td><td data-label="Ações" class="history-actions">${photoButtons} <button class="table-action" data-edit="${record.id}">Editar</button> <button class="table-action table-action--delete" data-delete="${record.id}">Excluir</button></td></tr>`;
+    const photoButtons=[photos.entrada ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="entrada"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Entrada</button>` : "",photos.saida ? `<button class="table-action" data-photo="${record.id}" data-photo-kind="saida"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Saída</button>` : ""].filter(Boolean).join(" ");
+    return `<tr><td data-label="Data">${date}</td><td data-label="Tipo"><span class="tag tag--${record.type}">${TYPES[record.type]}</span></td><td data-label="Entrada">${record.start || "—"}</td><td data-label="Saída">${record.end || "—"}</td><td data-label="Intervalo">${record.type === "trabalho" ? `${record.break} min` : "—"}</td><td data-label="Trabalhado">${duration(calc.worked)}</td><td data-label="Saldo"><span class="balance-pill ${css}">${signed(calc.balance)}</span></td><td data-label="Ações" class="history-actions">${photoButtons} <button class="table-action" data-edit="${record.id}" title="Editar"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg><span class="table-action__label">Editar</span></button> <button class="table-action table-action--delete" data-delete="${record.id}" title="Excluir"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="table-action__label">Excluir</span></button></td></tr>`;
   }).join("");
   list.forEach((record,index)=>{
     if (record.importData?.source!=="forponto") return;
@@ -17,7 +17,7 @@ function render() {
     $("#records-body").rows[index].cells[1].append(badge);
   });
   $("#empty-state").hidden = list.length > 0;
-  $("#empty-state").textContent=historyRange ? "Nenhum registro neste período." : "Nenhum registro neste ciclo.";
+  $("#empty-state-text").textContent=historyRange ? "Nenhum registro neste período." : "Nenhum registro neste ciclo.";
   $("#clear-records").disabled=records.length===0;
   const photos=list.flatMap((record)=>Object.entries(recordPhotos(record)).filter(([,photo])=>photo).map(([kind,photo])=>({record,kind,photo})));
   $("#photo-history-title").textContent=historyRange ? "Fotos do período" : "Fotos do ciclo";

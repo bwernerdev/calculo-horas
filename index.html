@@ -204,7 +204,11 @@
       </form>
       <div class="table-wrap history-table">
         <table><thead><tr><th>Data</th><th>Tipo</th><th>Entrada</th><th>Saída</th><th>Intervalo</th><th>Trabalhado</th><th>Saldo</th><th>Ações</th></tr></thead><tbody id="records-body"></tbody></table>
-        <p id="empty-state" class="empty-state">Nenhum registro neste ciclo.</p>
+        <div id="empty-state" class="empty-state">
+          <svg class="empty-state__art" viewBox="0 0 120 90" aria-hidden="true"><rect class="art-card" x="22" y="14" width="76" height="62" rx="10"/><path class="art-line" d="M22 32h76M42 8v12M78 8v12"/><circle class="art-dot" cx="46" cy="50" r="4"/><circle class="art-dot art-dot--soft" cx="60" cy="50" r="4"/><circle class="art-dot art-dot--soft" cx="74" cy="50" r="4"/><circle class="art-dot art-dot--soft" cx="46" cy="64" r="4"/></svg>
+          <p id="empty-state-text">Nenhum registro neste ciclo.</p>
+          <button id="empty-state-add" class="button button--primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Registrar primeira jornada</button>
+        </div>
       </div>
       <section id="photo-history" class="photo-history" aria-labelledby="photo-history-title" hidden>
         <div class="photo-history__heading"><h3 id="photo-history-title">Fotos do mês</h3><span id="photo-count"></span></div>
