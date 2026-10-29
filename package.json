@@ -19,16 +19,16 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@fontsource-variable/inter": "^5.3.0",
-    "@playwright/test": "^1.55.0",
-    "@supabase/supabase-js": "2.116.0",
-    "@types/node": "^22.20.5",
-    "eslint": "^9.39.5",
+    "@playwright/test": "^1.64.1",
+    "@supabase/supabase-js": "2.118.0",
+    "@types/node": "^26.6.5",
+    "eslint": "^10.13.0",
     "globals": "^17.13.0",
-    "pdfjs-dist": "5.5.207",
+    "pdfjs-dist": "6.4.299",
     "prettier": "^3.9.10",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=20"
