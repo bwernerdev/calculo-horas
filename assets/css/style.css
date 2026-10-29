@@ -1759,6 +1759,17 @@ dialog[open] {
 dialog[open]::backdrop {
   animation: fade-in 0.18s ease-out;
 }
+/* Aviso de modo offline */
+.offline-banner {
+  margin: 0 0 16px;
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--type-feriado) 45%, var(--line));
+  border-radius: var(--radius-md);
+  color: var(--text);
+  background: color-mix(in srgb, var(--type-feriado) 14%, var(--surface));
+  font-size: 0.86rem;
+  font-weight: 700;
+}
 /* Botão flutuante */
 .fab {
   position: fixed;

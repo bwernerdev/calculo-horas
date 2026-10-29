@@ -109,7 +109,7 @@
       return nextSettings;
     }
 
-    return { getSettings, saveRecord, importForpontoRecords, deleteRecord, deleteAllRecords, saveSettings };
+    return { getSettings, validateRecord, saveRecord, importForpontoRecords, deleteRecord, deleteAllRecords, saveSettings };
   }
 
   return { createHoursUseCases };

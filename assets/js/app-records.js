@@ -15,7 +15,7 @@ form.addEventListener("submit", async (event) => {
         record.importData={};
       }
     }
-    const result=await useCases.saveRecord(record,targetFor,records);
+    const result=await saveRecordResilient(record);
     records=result.records;
     const savedCycle=HoursCycle.monthForDate(record.date);
     if (!historyRange && savedCycle && $("#month-filter").value!==savedCycle) {
@@ -232,6 +232,7 @@ async function commitRecordDeletion(id) {
   pendingDeletions.delete(id); clearTimeout(entry.timer);
   try { await entry.useCases.deleteRecord(id,[]); }
   catch (error) {
+    if (HoursOffline.isNetworkError(error) && entry.generation===applicationGeneration && offlineQueue) { queueDeleteOffline(id); return; }
     captureError(error,"record-delete");
     if (entry.generation===applicationGeneration) { records=[...records,entry.record]; render(); showToast(error.message || "Não foi possível excluir o registro; ele foi restaurado.","error"); }
   }

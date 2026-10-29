@@ -10,6 +10,9 @@ const records = [
   row(12, "2026-10-21", "folga", "", ""),
   row(13, "2026-09-18", "trabalho", "08:00", "17:48"),
 ];
+// O service worker passaria por cima do mock do Supabase após um reload.
+test.use({ serviceWorkers: "block" });
+
 let server;
 
 test.beforeAll(async () => {
@@ -221,4 +224,64 @@ test("PDF inclui a página do calendário e o XLSX traz os registros", async ({ 
   expect(sheet).toContain("Trabalho");
   expect(sheet).toContain("Folga");
   expect(sheet).toContain("Total");
+});
+
+test("sem conexão: salva localmente, avisa e sincroniza quando a internet volta", async ({ page, context }) => {
+  await open(page, { __mockRecords: records });
+  await expect(page.locator("#offline-banner")).toBeHidden();
+  await page.evaluate(() => localStorage.setItem("e2e-offline", "true"));
+  await context.setOffline(true);
+  await expect(page.locator("#offline-banner")).toContainText("Sem conexão");
+  await page.locator("#work-date").fill("2026-10-27");
+  await page.locator("#start-time").fill("08:00");
+  await page.locator("#end-time").fill("17:48");
+  await page.getByRole("button", { name: "Adicionar registro" }).click();
+  await expect(page.locator("#toast-region")).toContainText("salvo neste dispositivo");
+  await expect(page.locator("#offline-banner")).toContainText("1 alteração aguarda");
+  await expect(page.locator('[data-date="2026-10-27"]')).toHaveClass(/calendar-day--trabalho/);
+  expect(await page.evaluate(() => window.__upserts?.length || 0)).toBe(0);
+  await page.evaluate(() => localStorage.setItem("e2e-offline", "false"));
+  await context.setOffline(false);
+  await expect.poll(() => page.evaluate(() => window.__upserts?.length || 0)).toBe(1);
+  await expect(page.locator("#offline-banner")).toBeHidden();
+});
+
+test("abre sem conexão usando a cópia local e volta ao normal ao reconectar", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await expect(page.locator('[data-date="2026-10-19"]')).toHaveClass(/calendar-day--trabalho/);
+  await page.waitForTimeout(600);
+  await page.evaluate(() => localStorage.setItem("e2e-offline", "true"));
+  await page.reload();
+  await expect(page.locator("#app-content")).toBeVisible();
+  await expect(page.locator("#offline-banner")).toContainText("Modo offline");
+  await expect(page.locator('[data-date="2026-10-19"]')).toHaveClass(/calendar-day--trabalho/);
+  await page.evaluate(() => {
+    localStorage.setItem("e2e-offline", "false");
+    window.dispatchEvent(new Event("online"));
+  });
+  await expect(page.locator("#offline-banner")).toBeHidden();
+});
+
+test("sem cópia local e sem conexão, volta para a tela de entrada", async ({ page }) => {
+  await page.addInitScript(() => { localStorage.setItem("e2e-authenticated", "true"); localStorage.setItem("e2e-offline", "true"); });
+  await page.goto("http://127.0.0.1:4176/");
+  await expect(page.getByRole("heading", { name: "Entre no seu banco de horas" })).toBeVisible();
+  await expect(page.locator("#auth-message")).toContainText("Não foi possível carregar");
+});
+
+test("sair apaga a cópia local dos dados", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("controle-horas-cache-v1")).length)).toBe(1);
+  await page.getByRole("button", { name: "Sair" }).click();
+  await expect(page.getByRole("heading", { name: "Entre no seu banco de horas" })).toBeVisible();
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("controle-horas-cache-v1")).length)).toBe(0);
+});
+
+test("exclusão sem conexão fica na fila de sincronização", async ({ page, context }) => {
+  await open(page, { __mockRecords: records });
+  await page.evaluate(() => localStorage.setItem("e2e-offline", "true"));
+  await context.setOffline(true);
+  await page.locator("#records-body tr").first().getByRole("button", { name: "Excluir" }).click();
+  await expect(page.locator("#offline-banner")).toContainText("1 alteração aguarda", { timeout: 15000 });
 });

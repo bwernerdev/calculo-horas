@@ -19,6 +19,7 @@
     "assets/js/time-input.js",
     "assets/js/insights.js",
     "assets/js/xlsx-export.js",
+    "assets/js/offline.js",
     "assets/js/repository.js",
     "assets/js/use-cases.js",
     "assets/js/forponto-import.js",

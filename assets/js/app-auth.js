@@ -70,11 +70,19 @@ function showPasswordSetup() {
   document.documentElement.classList.remove("is-loading");
   applyTheme(); $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = false; $("#app-content").hidden = true; $("#logout-button").hidden = false; $("#change-password-button").hidden = true;
 }
+function showLoadedApplication() {
+  clearHistoryRange();
+  $("#work-date").value=localDate(); $("#month-filter").value=HoursCycle.monthForDate(localDate()); fillSettingsForm(); loadManualBalance();
+  $("#break-time").value=settings.break; applyTheme(); updateForecast(); render();
+  $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
+  document.documentElement.classList.remove("is-loading");
+  renderOfflineBanner();
+}
 async function loadApplication(user) {
   if (loadedUserId===user.id && repository) return applicationLoad;
   repository?.dispose?.();
   const generation=++applicationGeneration;
-  loadedUserId=user.id;
+  loadedUserId=user.id; setupOfflineForUser(user.id);
   const nextRepository=HoursRepository.createSupabaseRepository(supabaseClient,user.id);
   const nextUseCases=HoursUseCases.createHoursUseCases({ calculator:HoursCalculator, repository:nextRepository, fixedBreakMinutes:FIXED_BREAK_MINUTES, maxDailyWorkMinutes:MAX_DAILY_WORK_MINUTES, defaultTheme:window.AppSystemTheme === "dark" ? "dark" : "light" });
   repository=nextRepository; useCases=nextUseCases;
@@ -82,17 +90,16 @@ async function loadApplication(user) {
   try {
     const [loadedRecords,loadedSettings] = await Promise.all([nextRepository.findAllRecords(), nextUseCases.getSettings()]);
     if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
-    records=loadedRecords; settings=loadedSettings;
-    clearHistoryRange();
-    $("#work-date").value=localDate(); $("#month-filter").value=HoursCycle.monthForDate(localDate()); fillSettingsForm(); loadManualBalance();
-    $("#break-time").value=settings.break; applyTheme(); updateForecast(); render();
-    $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
-    document.documentElement.classList.remove("is-loading");
+    records=loadedRecords; settings=loadedSettings; offlineMode=false;
+    showLoadedApplication();
     window.AppMonitor?.flush();
     void maybeCreateAutoBackup();
+    void syncOfflineQueue();
   } catch (error) {
     captureError(error,"application-load");
     if (generation!==applicationGeneration) { nextRepository.dispose(); return; }
+    const snapshot=HoursOffline.isNetworkError(error) ? HoursOffline.loadSnapshot(appStorage,offlineKeys(user.id).cache) : null;
+    if (snapshot) { records=snapshot.records; settings={ ...settings,...snapshot.settings }; offlineMode=true; showLoadedApplication(); return; }
     showAuthentication(); setAuthMessage(`Não foi possível carregar seus dados: ${error.message}`);
   }
   finally { if (generation===applicationGeneration) applicationLoad=undefined; }
@@ -101,7 +108,11 @@ async function loadApplication(user) {
 }
 async function restoreSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) showAuthentication();
+  if (!session) {
+    const lastUser=appStorage.getItem(LAST_USER_KEY);
+    if (navigator.onLine===false && lastUser && HoursOffline.loadSnapshot(appStorage,offlineKeys(lastUser).cache)) await loadApplication({ id:lastUser });
+    else showAuthentication();
+  }
   else if (requiresPasswordSetup) showPasswordSetup();
   else await loadApplication(session.user);
 }
@@ -219,11 +230,14 @@ $("#change-password-form").addEventListener("submit", async (event) => {
   closeChangePasswordDialog(); showToast("Senha alterada com sucesso.");
 });
 $("#logout-button").addEventListener("click", async () => {
+  const userId=loadedUserId, pending=offlineQueue?.size() || 0;
+  if (pending && !await requestConfirmation("Há "+pending+(pending===1 ? " alteração" : " alterações")+" ainda não sincronizada(s). Sair agora vai descartá-la(s). Continuar?")) return;
   $("#logout-button").disabled=true;
+  await flushPendingDeletions().catch(()=>{});
   const { error }=await supabaseClient.auth.signOut();
   $("#logout-button").disabled=false;
   if (error) showToast(translateAuthError(error),"error");
-  else showAuthentication();
+  else { if (userId) clearOfflineData(userId); showAuthentication(); }
 });
 supabaseClient.auth.onAuthStateChange((event, session) => {
   queueMicrotask(()=>{

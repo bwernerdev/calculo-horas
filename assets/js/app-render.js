@@ -48,6 +48,7 @@ function render() {
   $("#registered-days").textContent = list.length; $("#target-summary").textContent = duration(settings.target);
   updateManualBalance(totals.balance);
   renderCalendar();
+  scheduleCacheSnapshot();
   updateForecast();
   renderBackupReminder();
 }
