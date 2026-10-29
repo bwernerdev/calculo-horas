@@ -1759,6 +1759,15 @@ dialog[open] {
 dialog[open]::backdrop {
   animation: fade-in 0.18s ease-out;
 }
+/* Rodapé */
+.app-footer {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 8px 0 calc(32px + env(safe-area-inset-bottom));
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
 /* Aviso de modo offline */
 .offline-banner {
   margin: 0 0 16px;

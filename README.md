@@ -29,7 +29,9 @@ O painel usa por padrão ciclos de 16 a 15: o mês de fechamento `2026-09`, por 
 
 Interface: o histórico traz um calendário do ciclo (cada dia colorido pelo tipo, com o saldo; clicar abre o registro ou preenche um novo) e um gráfico de saldo por dia. Exportar, Importar e Mais (apagar tudo) ficam em menus. Os cartões mostram a variação em relação ao ciclo anterior e a meta cumprida; o formulário de jornada pode ser recolhido (e no celular há um botão flutuante de novo registro).
 
-Backups automáticos: uma vez por dia, ao abrir o aplicativo com registros, uma cópia dos registros e configurações (sem fotos, mesmo formato do backup JSON) é guardada na conta; as 7 mais recentes são mantidas. Em **Backups automáticos** é possível baixar uma cópia e restaurá-la por **Importar backup**. Requer a [migração de backups automáticos](supabase/migrations/20261029000000_auto_backup_snapshots.sql); sem ela o recurso fica desativado.
+Também há: **Entrada agora / Saída agora** (preenchem o horário atual), exclusão com **Desfazer**, intervalo padrão e meta por dia da semana (em **Configurar jornada**), exportação em XLSX e PDF com calendário e gráfico, e uso offline (os registros ficam em uma cópia local e as alterações são sincronizadas quando a internet volta; ao tocar em **Sair**, a cópia local é apagada). Veja o [histórico de mudanças](CHANGELOG.md) e o [checklist de dispositivos](docs/CHECKLIST-DISPOSITIVOS.md).
+
+Backups automáticos: uma vez por dia, ao abrir o aplicativo com registros, uma cópia dos registros e configurações (sem fotos, mesmo formato do backup JSON) é guardada na conta; as 7 mais recentes são mantidas. Em **Backups automáticos** é possível baixar uma cópia e restaurá-la por **Importar backup**. Requer a [migração de backups automáticos](supabase/migrations/20261029000000_auto_backup_snapshots.sql); sem ela o recurso fica desativado. O intervalo padrão e as metas por dia usam a [migração de preferências](supabase/migrations/20261029000100_user_preferences.sql) (também opcional). Para saber o que já foi aplicado e como aplicar, siga o passo a passo em [Configuração do Supabase](docs/CONFIGURACAO-SUPABASE.md).
 
 ## Desenvolvimento
 

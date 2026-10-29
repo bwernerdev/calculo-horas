@@ -8,6 +8,8 @@ const documentationFiles = [
   "docs/CONFIGURACAO-SUPABASE.md",
   "docs/DEPLOY-CLOUDFLARE.md",
   "docs/AMBIENTES-E-MONITORAMENTO.md",
+  "docs/CHECKLIST-DISPOSITIVOS.md",
+  "CHANGELOG.md",
 ];
 
 test("mantém válidos os links locais da documentação", () => {

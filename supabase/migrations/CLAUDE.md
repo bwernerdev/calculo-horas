@@ -4,4 +4,5 @@ Aplicar em ordem; nunca editar migração já aplicada (criar nova com timestamp
 2. `20260915000100_client_error_monitoring` — tabela `client_errors` (insert pelo próprio usuário, limites de tamanho).
 3. `20260916000000_forponto_import` — coluna `import_data` (jsonb, validada), tipo `compensacao`.
 4. `20260916010000_atomic_forponto_import` — RPC `import_forponto_records(p_records, p_update_existing)`: importação transacional (máx. 5000), preserva fotos/IDs.
+6. `20261029000100_user_preferences` — coluna `settings.preferences` (jsonb validado: `break` e `weekdayTargets`). Opcional.
 5. `20261029000000_auto_backup_snapshots` — tabela `backup_snapshots` (RLS: select/insert/delete próprios; app mantém 7 por usuário). Opcional.

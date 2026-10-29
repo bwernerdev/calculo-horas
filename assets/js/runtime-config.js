@@ -8,7 +8,7 @@ const USE_PRODUCTION_DEFAULT = DEFAULT_PRODUCTION_HOSTS.has(window.location.host
 
 window.APP_CONFIG = Object.freeze({
   environment: USE_PRODUCTION_DEFAULT ? "production" : "preview",
-  version: "1.1.0",
+  version: "1.2.0",
   supabaseUrl: USE_PRODUCTION_DEFAULT ? "https://kainqngxsiawowbaslhi.supabase.co" : "",
   supabasePublishableKey: USE_PRODUCTION_DEFAULT ? "sb_publishable_8LklqHCaeOzWassgK9FV_A_2D0EoudO" : "",
   errorReporting: true,
