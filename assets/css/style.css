@@ -168,6 +168,47 @@ select {
   padding: 30px max(20px, env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom))
     max(20px, env(safe-area-inset-left));
 }
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  align-items: center;
+  gap: 48px;
+  width: min(980px, 100%);
+}
+.auth-hero {
+  display: grid;
+  gap: 24px;
+  padding: 40px;
+  border-radius: var(--radius-xl);
+  color: var(--on-brand);
+  background: var(--brand-gradient);
+  box-shadow: var(--shadow);
+}
+.auth-hero__title {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.auth-hero__list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.auth-hero__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.45;
+}
+.auth-hero__list .icon {
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+}
 .auth-card {
   display: grid;
   width: min(440px, 100%);
@@ -760,6 +801,7 @@ input[readonly] {
   position: relative;
 }
 .menu__summary {
+  white-space: nowrap;
   list-style: none;
   cursor: pointer;
   user-select: none;
@@ -889,6 +931,7 @@ input[readonly] {
 }
 .calendar-day__v {
   align-self: flex-end;
+  white-space: nowrap;
   color: var(--muted);
   font-size: 0.75rem;
   font-weight: 800;
@@ -965,7 +1008,7 @@ input[readonly] {
 .balance-chart {
   display: block;
   width: 100%;
-  height: auto;
+  height: 140px;
 }
 .balance-chart-figure figcaption {
   color: var(--muted);
@@ -1280,7 +1323,7 @@ th {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
-  align-content: center;
+  align-content: start;
 }
 .field-help {
   grid-column: 1/-1;
@@ -1571,6 +1614,38 @@ th {
 }
 .camera-dialog__actions .button {
   width: 100%;
+}
+/* Carregamento */
+.app-skeleton {
+  display: none;
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.is-loading .app-skeleton {
+  display: grid;
+}
+.is-loading #auth-screen {
+  display: none;
+}
+.skeleton {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--surface-2), var(--surface), var(--surface-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+.skeleton--card {
+  height: 96px;
+}
+.skeleton--panel {
+  grid-column: 1 / -1;
+  height: 320px;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
 }
 /* Movimento */
 @keyframes dialog-in {
@@ -2094,7 +2169,19 @@ body:has(dialog[open]) {
     font-size: 0.7rem;
   }
 }
+@media (max-width: 900px) {
+  .auth-layout {
+    grid-template-columns: minmax(0, 440px);
+    justify-content: center;
+  }
+  .auth-hero {
+    display: none;
+  }
+}
 @media (max-width: 580px) {
+  .app-skeleton {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .history-table .table-action__label {
     position: static;
     width: auto;
@@ -2111,6 +2198,10 @@ body:has(dialog[open]) {
   .menu__summary {
     width: 100%;
     padding-inline: 8px;
+    font-size: 0.85rem;
+  }
+  .menu__summary .icon:last-child {
+    display: none;
   }
   .menu__panel {
     position: fixed;
@@ -2146,6 +2237,7 @@ body:has(dialog[open]) {
     transform: none;
   }
   .toast,
+  .skeleton,
   dialog[open],
   dialog[open]::backdrop {
     animation: none;

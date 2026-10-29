@@ -42,7 +42,7 @@ function renderBalanceChart(chart,series) {
   chart.parentElement.hidden=series.length===0;
   if (!series.length) return;
   const width=600, height=140, mid=height/2, room=mid-16, maxAbs=Math.max(60,...series.map((item)=>Math.abs(item.balance)));
-  const slot=width/series.length, barWidth=Math.min(28,slot*0.7);
+  const slot=width/series.length, barWidth=Math.min(16,slot*0.7);
   chart.append(svgNode("line",{ class:"chart-axis",x1:0,y1:mid,x2:width,y2:mid }));
   series.forEach((item,index)=>{
     const barHeight=Math.max(2,Math.abs(item.balance)/maxAbs*room), x=index*slot+(slot-barWidth)/2;

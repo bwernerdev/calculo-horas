@@ -62,10 +62,12 @@ function clearSensitiveState() {
   $("#change-password-form").reset();
 }
 function showAuthentication() {
+  document.documentElement.classList.remove("is-loading");
   clearSensitiveState();
   applyTheme(); $("#auth-screen").hidden = false; $("#password-setup-screen").hidden = true; $("#app-content").hidden = true; $("#logout-button").hidden = true; $("#change-password-button").hidden = true;
 }
 function showPasswordSetup() {
+  document.documentElement.classList.remove("is-loading");
   applyTheme(); $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = false; $("#app-content").hidden = true; $("#logout-button").hidden = false; $("#change-password-button").hidden = true;
 }
 async function loadApplication(user) {
@@ -85,6 +87,7 @@ async function loadApplication(user) {
     $("#work-date").value=localDate(); $("#month-filter").value=HoursCycle.monthForDate(localDate()); $("#daily-target").value=toClock(settings.target); loadManualBalance();
     $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
     $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
+    document.documentElement.classList.remove("is-loading");
     window.AppMonitor?.flush();
     void maybeCreateAutoBackup();
   } catch (error) {

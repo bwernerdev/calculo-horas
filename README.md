@@ -27,6 +27,8 @@ As fotos são baixadas do Supabase Storage somente quando abertas, ao editar o r
 
 O painel usa por padrão ciclos de 16 a 15: o mês de fechamento `2026-09`, por exemplo, considera de 16/08/2026 a 15/09/2026. A partir do dia 16, abre automaticamente o ciclo seguinte. Os cartões, o histórico, a saída sugerida, a simulação e as exportações seguem esse período. Os campos editáveis “De” e “Até” permitem pesquisar outro período inclusivo, mesmo entre meses diferentes. Ao importar um XLSX/PDF Forponto ou restaurar um backup JSON, esse filtro personalizado é preenchido automaticamente com a primeira e a última data dos registros importados. “Limpar período” volta ao ciclo do mês de fechamento selecionado. Os ajustes manuais da simulação continuam vinculados a esse mês de fechamento.
 
+Interface: o histórico traz um calendário do ciclo (cada dia colorido pelo tipo, com o saldo; clicar abre o registro ou preenche um novo) e um gráfico de saldo por dia. Exportar, Importar e Mais (apagar tudo) ficam em menus. Os cartões mostram a variação em relação ao ciclo anterior e a meta cumprida; o formulário de jornada pode ser recolhido (e no celular há um botão flutuante de novo registro).
+
 Backups automáticos: uma vez por dia, ao abrir o aplicativo com registros, uma cópia dos registros e configurações (sem fotos, mesmo formato do backup JSON) é guardada na conta; as 7 mais recentes são mantidas. Em **Backups automáticos** é possível baixar uma cópia e restaurá-la por **Importar backup**. Requer a [migração de backups automáticos](supabase/migrations/20261029000000_auto_backup_snapshots.sql); sem ela o recurso fica desativado.
 
 ## Desenvolvimento

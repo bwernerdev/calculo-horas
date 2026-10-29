@@ -24,5 +24,7 @@ Ordem de carga definida em `../../index.html`. Scripts clássicos (sem bundler).
   - `app-export.js` — CSV, PDF, `downloadFile`.
   - `app-backup.js` — validação/exportação de backup JSON e lembrete.
   - `app-autobackup.js` — backup automático diário (sem fotos) em `backup_snapshots` + diálogo "Backups automáticos".
+  - `app-menus.js` — menus suspensos do histórico (`details.menu`): um aberto por vez, Esc/clique fora fecham.
+  - `app-calendar.js` — calendário do ciclo (status por dia, clique abre edição/novo registro) e gráfico SVG de saldo diário.
   - `app-import.js` — importação Forponto e restauração de backup.
 - `vendor/` — libs de terceiros (não editar).

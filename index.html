@@ -53,7 +53,21 @@
   </header>
   <aside id="storage-warning" class="storage-warning" role="status" hidden>O armazenamento deste navegador está bloqueado. Você pode usar o site, mas o login e as preferências não serão mantidos após fechar a página.</aside>
 
+  <div id="app-skeleton" class="app-skeleton" aria-hidden="true">
+    <div class="skeleton skeleton--card"></div><div class="skeleton skeleton--card"></div><div class="skeleton skeleton--card"></div>
+    <div class="skeleton skeleton--panel"></div>
+  </div>
+
   <section id="auth-screen" class="auth-screen" aria-labelledby="auth-title">
+    <div class="auth-layout">
+    <aside class="auth-hero">
+      <p class="auth-hero__title">Suas horas, sempre em dia.</p>
+      <ul class="auth-hero__list">
+        <li><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span>Saldo do ciclo de 16 a 15 calculado automaticamente</span></li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span>Registros e fotos privados, só na sua conta</span></li>
+        <li><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg><span>Funciona no celular e instala como aplicativo</span></li>
+      </ul>
+    </aside>
     <div class="auth-card">
       <span class="eyebrow">Acesso seguro</span>
       <div class="auth-tabs" role="tablist" aria-label="Acesso à conta">
@@ -89,6 +103,7 @@
         <button class="button button--primary" type="submit">Enviar link</button>
         <button id="recovery-back-button" class="text-button" type="button">Voltar para o login</button>
       </form>
+    </div>
     </div>
   </section>
   <section id="password-setup-screen" class="auth-screen" aria-labelledby="password-setup-title" hidden>
@@ -209,7 +224,7 @@
           <div id="calendar-grid" class="calendar-grid"></div>
           <ul class="calendar-legend" aria-label="Legenda dos tipos de dia"><li><span class="legend-dot legend-dot--trabalho"></span>Trabalho</li><li><span class="legend-dot legend-dot--folga"></span>Folga</li><li><span class="legend-dot legend-dot--feriado"></span>Feriado</li><li><span class="legend-dot legend-dot--ferias"></span>Férias</li><li><span class="legend-dot legend-dot--falta"></span>Falta</li><li><span class="legend-dot legend-dot--compensacao"></span>Compensação</li></ul>
           <figure class="balance-chart-figure">
-            <svg id="balance-chart" class="balance-chart" viewBox="0 0 600 140" role="img" aria-label="Saldo por dia"></svg>
+            <svg id="balance-chart" class="balance-chart" viewBox="0 0 600 140" preserveAspectRatio="none" role="img" aria-label="Saldo por dia"></svg>
             <figcaption id="balance-chart-caption">Saldo por dia: barras acima da linha são horas positivas e abaixo, negativas.</figcaption>
           </figure>
         </div>
