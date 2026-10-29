@@ -10,16 +10,23 @@
       select() { return builder; },
       order() { return builder; },
       eq() { return builder; },
+      in() { return builder; },
       upsert(value) { selectedRow = value; return builder; },
-      then(resolve) { resolve({ error: table === "settings" && window.__failSettingsSave ? { message: "Falha simulada nas configurações." } : null }); },
+      then(resolve) {
+        const snapshots = table === "backup_snapshots" ? (window.__snapshots || []) : undefined;
+        resolve({ data: snapshots, error: window.__snapshotsMissing && table === "backup_snapshots" ? { code: "42P01", message: "relation backup_snapshots does not exist" } : table === "settings" && window.__failSettingsSave ? { message: "Falha simulada nas configurações." } : null });
+      },
       delete() { return builder; },
-      insert: async () => ({ data: null, error: null }),
-      single: async () => ({ data: selectedRow, error: null }),
+      insert: async (value) => {
+        if (table === "backup_snapshots") (window.__snapshotInserts ||= []).push(value);
+        return { data: null, error: null };
+      },
+      single: async () => ({ data: table === "backup_snapshots" ? { payload: window.__snapshotPayload || {} } : selectedRow, error: null }),
       maybeSingle: async () => ({
         data: table === "settings" ? { target_minutes: 528, theme: "light", balance_adjustments: {} } : null,
         error: null,
       }),
-      range: async () => ({ data: [], error: null }),
+      range: async () => ({ data: table === "records" ? (window.__mockRecords || []) : [], error: null }),
     };
     return builder;
   }

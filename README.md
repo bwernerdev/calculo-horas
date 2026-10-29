@@ -27,6 +27,8 @@ As fotos são baixadas do Supabase Storage somente quando abertas, ao editar o r
 
 O painel usa por padrão ciclos de 16 a 15: o mês de fechamento `2026-09`, por exemplo, considera de 16/08/2026 a 15/09/2026. A partir do dia 16, abre automaticamente o ciclo seguinte. Os cartões, o histórico, a saída sugerida, a simulação e as exportações seguem esse período. Os campos editáveis “De” e “Até” permitem pesquisar outro período inclusivo, mesmo entre meses diferentes. Ao importar um XLSX/PDF Forponto ou restaurar um backup JSON, esse filtro personalizado é preenchido automaticamente com a primeira e a última data dos registros importados. “Limpar período” volta ao ciclo do mês de fechamento selecionado. Os ajustes manuais da simulação continuam vinculados a esse mês de fechamento.
 
+Backups automáticos: uma vez por dia, ao abrir o aplicativo com registros, uma cópia dos registros e configurações (sem fotos, mesmo formato do backup JSON) é guardada na conta; as 7 mais recentes são mantidas. Em **Backups automáticos** é possível baixar uma cópia e restaurá-la por **Importar backup**. Requer a [migração de backups automáticos](supabase/migrations/20261029000000_auto_backup_snapshots.sql); sem ela o recurso fica desativado.
+
 ## Desenvolvimento
 
 O projeto usa HTML, CSS e JavaScript sem etapa de compilação. A biblioteca Supabase JS está fixada em `2.116.0` e é servida localmente em `assets/js/vendor/`, inclusive pelo cache do PWA. Após atualizar essa dependência, execute `npm run vendor:supabase` e publique também o arquivo gerado e sua licença.
@@ -44,7 +46,7 @@ npx playwright install chromium
 npm run test:all
 ```
 
-`npm test` executa apenas os testes unitários; `npm run test:e2e` executa os testes reais de navegador.
+`npm run lint` e `npm run typecheck` verificam estilo e tipos (também rodam no CI); `npm run check` executa tudo. `npm test` executa apenas os testes unitários; `npm run test:e2e` executa os testes reais de navegador.
 
 Abrir `index.html` diretamente permite uma inspeção básica, mas um servidor local representa melhor o ambiente publicado.
 

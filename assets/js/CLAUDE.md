@@ -23,5 +23,6 @@ Ordem de carga definida em `../../index.html`. Scripts clássicos (sem bundler).
   - `app-records.js` — salvar/editar/excluir, configurações, filtros, apagar tudo, tema.
   - `app-export.js` — CSV, PDF, `downloadFile`.
   - `app-backup.js` — validação/exportação de backup JSON e lembrete.
+  - `app-autobackup.js` — backup automático diário (sem fotos) em `backup_snapshots` + diálogo "Backups automáticos".
   - `app-import.js` — importação Forponto e restauração de backup.
 - `vendor/` — libs de terceiros (não editar).

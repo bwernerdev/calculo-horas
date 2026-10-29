@@ -140,6 +140,8 @@ th { color:var(--muted); font-size:.72rem; letter-spacing:.05em; text-transform:
 #clear-records-dialog .confirm-dialog__actions { flex-wrap:wrap; }
 .forponto-dialog { width:min(900px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
 .forponto-dialog .field { margin:16px 0; }
+.auto-backup-dialog { width:min(520px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
+.auto-backup-list { display:grid; gap:8px; margin:0 0 18px; padding:0; list-style:none; } .auto-backup-list li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
 .forponto-preview { max-height:45dvh; overflow:auto; margin:16px 0 20px; border:1px solid var(--line); border-radius:12px; }
 .forponto-preview th { position:sticky; top:0; background:var(--surface); }
 .source-badge { display:block; margin-top:4px; color:var(--muted); font-size:.68rem; min-width:150px; }

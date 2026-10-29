@@ -143,7 +143,7 @@
         <div><span class="eyebrow">Histórico</span><h2 id="history-title">Registros do ciclo</h2></div>
         <div class="toolbar" aria-label="Ferramentas do histórico">
           <div class="toolbar__group"><span class="toolbar__label">Ciclo de 16 a 15</span><label class="month-filter">Mês de fechamento <input id="month-filter" type="text" inputmode="numeric" pattern="[0-9]{4}-(0[1-9]|1[0-2])" placeholder="AAAA-MM" title="Informe o mês em que o ciclo termina no dia 15, no formato AAAA-MM" maxlength="7"></label></div>
-          <div class="toolbar__group"><span class="toolbar__label">Exportar dados</span><div class="toolbar__buttons"><button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button><button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button><button id="export-json" class="button button--secondary" type="button">Baixar backup</button></div></div>
+          <div class="toolbar__group"><span class="toolbar__label">Exportar dados</span><div class="toolbar__buttons"><button id="export-csv" class="button button--secondary" type="button">Exportar CSV</button><button id="export-pdf" class="button button--secondary" type="button">Baixar PDF</button><button id="export-json" class="button button--secondary" type="button">Baixar backup</button><button id="open-auto-backups" class="button button--secondary" type="button">Backups automáticos</button></div></div>
           <div class="toolbar__group"><span class="toolbar__label">Importar dados</span><div class="toolbar__buttons"><button id="import-json" class="button button--secondary" type="button">Importar backup</button><button id="import-forponto" class="button button--secondary" type="button">Importar Forponto XLSX/PDF</button></div></div>
           <div class="toolbar__group toolbar__group--danger"><span class="toolbar__label">Gerenciar</span><button id="clear-records" class="button button--danger" type="button">Apagar todos os registros</button></div>
           <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json" aria-label="Selecionar arquivo de backup JSON">
@@ -219,6 +219,13 @@
     <div class="table-wrap forponto-preview"><table><thead><tr><th>Data</th><th>Dia</th><th>Marcações</th><th>Resultado</th></tr></thead><tbody id="forponto-preview-body"></tbody></table></div>
     <div class="confirm-dialog__actions"><button id="forponto-cancel" class="button button--ghost" type="button">Cancelar</button><button id="forponto-confirm" class="button button--primary" type="button">Importar dias válidos</button></div>
   </dialog>
+  <dialog id="auto-backup-dialog" class="confirm-dialog auto-backup-dialog" aria-labelledby="auto-backup-title">
+    <h2 id="auto-backup-title">Backups automáticos</h2>
+    <p>Uma cópia dos registros e configurações (sem fotos) é guardada na sua conta no máximo uma vez por dia, mantendo as 7 mais recentes. Baixe uma cópia e use “Importar backup” para restaurá-la.</p>
+    <p id="auto-backup-status" role="status"></p>
+    <ul id="auto-backup-list" class="auto-backup-list"></ul>
+    <div class="confirm-dialog__actions"><button id="auto-backup-close" class="button button--ghost" type="button">Fechar</button></div>
+  </dialog>
   <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
     <div class="confirm-dialog__icon" aria-hidden="true">!</div>
     <h2 id="confirm-title">Confirmar ação</h2>
@@ -278,6 +285,7 @@
   <script src="assets/js/app-records.js"></script>
   <script src="assets/js/app-export.js"></script>
   <script src="assets/js/app-backup.js"></script>
+  <script src="assets/js/app-autobackup.js"></script>
   <script src="assets/js/app-import.js"></script>
   <script src="assets/js/app-auth.js"></script>
   <script src="assets/js/app-pwa.js"></script>

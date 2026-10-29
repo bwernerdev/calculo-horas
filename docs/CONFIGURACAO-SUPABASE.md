@@ -8,6 +8,7 @@ O banco agora é controlado por migrações numeradas em [`supabase/migrations`]
 2. [`20260915000100_client_error_monitoring.sql`](../supabase/migrations/20260915000100_client_error_monitoring.sql): armazenamento privado de erros sanitizados do navegador.
 3. [`20260916000000_forponto_import.sql`](../supabase/migrations/20260916000000_forponto_import.sql): marcações e saldo oficial do Forponto.
 4. [`20260916010000_atomic_forponto_import.sql`](../supabase/migrations/20260916010000_atomic_forponto_import.sql): importação de blocos Forponto em uma única transação.
+5. [`20261029000000_auto_backup_snapshots.sql`](../supabase/migrations/20261029000000_auto_backup_snapshots.sql): tabela `backup_snapshots` (RLS por usuário) para os backups automáticos diários. Opcional: sem ela o aplicativo funciona normalmente e apenas avisa que o recurso está desativado.
 
 ## Banco de produção já existente
 

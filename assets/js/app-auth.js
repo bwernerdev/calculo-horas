@@ -86,6 +86,7 @@ async function loadApplication(user) {
     $("#break-time").value=FIXED_BREAK_MINUTES; applyTheme(); updateForecast(); render();
     $("#auth-screen").hidden = true; $("#password-setup-screen").hidden = true; $("#app-content").hidden = false; $("#logout-button").hidden = false; $("#change-password-button").hidden = false;
     window.AppMonitor?.flush();
+    void maybeCreateAutoBackup();
   } catch (error) {
     captureError(error,"application-load");
     if (generation!==applicationGeneration) { nextRepository.dispose(); return; }

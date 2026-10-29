@@ -312,6 +312,32 @@
         return records.map((record,index) => materializeRecord(record,stages[index].stored));
       },
 
+      async listSnapshots() {
+        const { data, error } = await client.from("backup_snapshots").select("id, created_at, record_count").order("created_at", { ascending: false });
+        throwIfError(error);
+        return data || [];
+      },
+
+      async createSnapshot(payload, recordCount) {
+        const { error } = await client.from("backup_snapshots").insert({ user_id: userId, record_count: recordCount, payload });
+        throwIfError(error);
+      },
+
+      async loadSnapshot(id) {
+        const { data, error } = await client.from("backup_snapshots").select("payload").eq("id", id).single();
+        throwIfError(error);
+        return data.payload;
+      },
+
+      async pruneSnapshots(keep) {
+        const { data, error } = await client.from("backup_snapshots").select("id").order("created_at", { ascending: false });
+        throwIfError(error);
+        const obsolete = (data || []).slice(keep).map((row) => row.id);
+        if (!obsolete.length) return;
+        const result = await client.from("backup_snapshots").delete().in("id", obsolete);
+        throwIfError(result.error);
+      },
+
       dispose() {
         objectUrls.forEach((url) => URL.revokeObjectURL(url));
         objectUrls.clear();
