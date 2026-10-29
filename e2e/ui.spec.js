@@ -111,3 +111,38 @@ test("no celular o botão flutuante aparece fora do formulário e leva até ele"
   await page.locator("#fab-add").click();
   await expect(page.locator("#work-date")).toBeFocused();
 });
+
+test("marca dias úteis passados sem registro como pendência", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await expect(page.locator("#pending-count")).toContainText("pendência");
+  await expect(page.locator('[data-date="2026-10-16"]')).toHaveClass(/calendar-day--pending/);
+  await expect(page.locator('[data-date="2026-10-19"]')).not.toHaveClass(/calendar-day--pending/);
+  await expect(page.locator('[data-date="2026-10-17"]')).not.toHaveClass(/calendar-day--pending/);
+});
+
+test("mostra a previsão de horas por dia útil para zerar o ciclo", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await expect(page.locator("#cycle-forecast")).toBeVisible();
+  await expect(page.locator("#cycle-forecast")).toContainText("dias úteis");
+});
+
+test("evolução por ciclo compara os ciclos com registros", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await expect(page.locator("#cycle-history")).toBeVisible();
+  await page.locator("#cycle-history > summary").click();
+  await expect(page.locator("#cycle-history-chart .chart-bar")).toHaveCount(2);
+  await expect(page.locator("#cycle-history-labels > span")).toHaveCount(2);
+});
+
+test("calendário navega por setas com um único ponto de tabulação", async ({ page }) => {
+  await open(page, { __mockRecords: records });
+  await expect(page.locator('#calendar-grid [tabindex="0"]')).toHaveCount(1);
+  await page.locator('[data-date="2026-10-29"]').focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-date="2026-10-30"]')).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator('[data-date="2026-11-06"]')).toBeFocused();
+  await page.keyboard.press("Home");
+  await expect(page.locator('[data-date="2026-10-16"]')).toBeFocused();
+  await expect(page.locator('#calendar-grid [tabindex="0"]')).toHaveCount(1);
+});

@@ -17,6 +17,7 @@
     "assets/js/calculations.js",
     "assets/js/cycle.js",
     "assets/js/time-input.js",
+    "assets/js/insights.js",
     "assets/js/repository.js",
     "assets/js/use-cases.js",
     "assets/js/forponto-import.js",

@@ -24,8 +24,7 @@ function filteredRecords() {
 function previousCycleRange() {
   if (historyRange) return null;
   const range=selectedRange(); if (!range) return null;
-  const day=new Date(range.from+"T12:00:00"); day.setDate(day.getDate()-1);
-  return HoursCycle.rangeForMonth(HoursCycle.monthForDate(localDate(day)));
+    return HoursInsights.previousRange(range,HoursCycle);
 }
 function historyPeriodLabel() {
   const range=selectedRange();

@@ -37,6 +37,7 @@
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
     <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></symbol>
     <symbol id="i-archive" viewBox="0 0 24 24"><path d="M3 4h18v4H3zM5 8v12h14V8M10 12h4"/></symbol>
   </defs></svg>
   <header class="topbar">
@@ -120,7 +121,7 @@
   </section>
   <main id="app-content" class="page-shell" hidden>
     <section class="summary-grid" aria-label="Resumo do ciclo de 16 a 15">
-      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do ciclo</span><strong id="monthly-balance">0h 00min</strong><small id="balance-period-dates"></small><small id="balance-delta" class="balance-delta" hidden></small></article>
+      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do ciclo</span><strong id="monthly-balance">0h 00min</strong><small id="balance-period-dates"></small><small id="balance-delta" class="balance-delta" hidden></small><small id="cycle-forecast" class="balance-delta" hidden></small></article>
       <article class="summary-card summary-card--positive"><span>Horas positivas</span><strong id="monthly-positive">+0h 00min</strong></article>
       <article class="summary-card summary-card--negative"><span>Horas negativas</span><strong id="monthly-negative">-0h 00min</strong></article>
       <article class="summary-card"><span>Total trabalhado</span><strong id="monthly-worked">0h 00min</strong><div id="worked-meter" class="meter" role="progressbar" aria-label="Meta cumprida" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="meter__fill"></span></div><small id="worked-meter-label" hidden></small></article>
@@ -218,15 +219,27 @@
         <p id="history-range-message" class="history-range__message" role="status" aria-live="polite"></p>
       </form>
       <details id="cycle-calendar" class="cycle-calendar" open>
-        <summary><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span>Calendário e saldo diário</span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <summary><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span>Calendário e saldo diário</span><span id="pending-count" class="calendar-pending" hidden></span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
         <div class="calendar-body">
           <div class="calendar-weekdays" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
           <div id="calendar-grid" class="calendar-grid"></div>
-          <ul class="calendar-legend" aria-label="Legenda dos tipos de dia"><li><span class="legend-dot legend-dot--trabalho"></span>Trabalho</li><li><span class="legend-dot legend-dot--folga"></span>Folga</li><li><span class="legend-dot legend-dot--feriado"></span>Feriado</li><li><span class="legend-dot legend-dot--ferias"></span>Férias</li><li><span class="legend-dot legend-dot--falta"></span>Falta</li><li><span class="legend-dot legend-dot--compensacao"></span>Compensação</li></ul>
+          <ul class="calendar-legend" aria-label="Legenda dos tipos de dia"><li><span class="legend-dot legend-dot--pending"></span>Dia útil sem registro</li><li><span class="legend-dot legend-dot--trabalho"></span>Trabalho</li><li><span class="legend-dot legend-dot--folga"></span>Folga</li><li><span class="legend-dot legend-dot--feriado"></span>Feriado</li><li><span class="legend-dot legend-dot--ferias"></span>Férias</li><li><span class="legend-dot legend-dot--falta"></span>Falta</li><li><span class="legend-dot legend-dot--compensacao"></span>Compensação</li></ul>
           <figure class="balance-chart-figure">
             <svg id="balance-chart" class="balance-chart" viewBox="0 0 600 140" preserveAspectRatio="none" role="img" aria-label="Saldo por dia"></svg>
             <figcaption id="balance-chart-caption">Saldo por dia: barras acima da linha são horas positivas e abaixo, negativas.</figcaption>
           </figure>
+        </div>
+      </details>
+      <details id="cycle-history" class="cycle-calendar" hidden>
+        <summary><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg><span>Evolução por ciclo</span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <div class="calendar-body">
+          <div class="cycle-history-scroll">
+            <div class="cycle-history-inner">
+              <svg id="cycle-history-chart" class="cycle-history-chart" viewBox="0 0 600 150" preserveAspectRatio="none" role="img" aria-label="Saldo por ciclo"></svg>
+              <div id="cycle-history-labels" class="cycle-history-labels"></div>
+            </div>
+          </div>
+          <p id="cycle-history-caption" class="calendar-caption"></p>
         </div>
       </details>
       <div class="table-wrap history-table">
@@ -347,6 +360,7 @@
   <script src="assets/js/vendor/supabase.min.js"></script>
   <script src="assets/js/calculations.js"></script>
   <script src="assets/js/cycle.js"></script>
+  <script src="assets/js/insights.js"></script>
   <script src="assets/js/repository.js"></script>
   <script src="assets/js/use-cases.js"></script>
   <script src="assets/js/vendor/fflate.min.js"></script>
