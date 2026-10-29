@@ -105,10 +105,10 @@
   </section>
   <main id="app-content" class="page-shell" hidden>
     <section class="summary-grid" aria-label="Resumo do ciclo de 16 a 15">
-      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do ciclo</span><strong id="monthly-balance">0h 00min</strong><small id="balance-period-dates"></small></article>
+      <article class="summary-card summary-card--accent"><span id="balance-period-label">Saldo do ciclo</span><strong id="monthly-balance">0h 00min</strong><small id="balance-period-dates"></small><small id="balance-delta" class="balance-delta" hidden></small></article>
       <article class="summary-card summary-card--positive"><span>Horas positivas</span><strong id="monthly-positive">+0h 00min</strong></article>
       <article class="summary-card summary-card--negative"><span>Horas negativas</span><strong id="monthly-negative">-0h 00min</strong></article>
-      <article class="summary-card"><span>Total trabalhado</span><strong id="monthly-worked">0h 00min</strong></article>
+      <article class="summary-card"><span>Total trabalhado</span><strong id="monthly-worked">0h 00min</strong><div id="worked-meter" class="meter" role="progressbar" aria-label="Meta cumprida" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="meter__fill"></span></div><small id="worked-meter-label" hidden></small></article>
       <article class="summary-card"><span>Dias registrados</span><strong id="registered-days">0</strong></article>
       <article class="summary-card"><span>Meta diária</span><strong id="target-summary">8h 48min</strong></article>
     </section>
@@ -121,7 +121,7 @@
     <section class="panel entry-panel">
       <div class="panel__header">
         <div><span class="eyebrow">Novo apontamento</span><h2 id="form-title">Registrar jornada</h2></div>
-        <button id="settings-toggle" class="button button--ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg>Configurar jornada</button>
+        <div class="panel__actions"><button id="entry-toggle" class="icon-button entry-toggle" type="button" aria-expanded="true" aria-controls="hours-form" aria-label="Recolher formulário"><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></button><button id="settings-toggle" class="button button--ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg>Configurar jornada</button></div>
       </div>
 
       <form id="settings-form" class="settings" hidden>
@@ -202,6 +202,18 @@
         <button id="history-range-clear" class="button button--ghost" type="button">Limpar período</button>
         <p id="history-range-message" class="history-range__message" role="status" aria-live="polite"></p>
       </form>
+      <details id="cycle-calendar" class="cycle-calendar" open>
+        <summary><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span>Calendário e saldo diário</span><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <div class="calendar-body">
+          <div class="calendar-weekdays" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+          <ul class="calendar-legend" aria-label="Legenda dos tipos de dia"><li><span class="legend-dot legend-dot--trabalho"></span>Trabalho</li><li><span class="legend-dot legend-dot--folga"></span>Folga</li><li><span class="legend-dot legend-dot--feriado"></span>Feriado</li><li><span class="legend-dot legend-dot--ferias"></span>Férias</li><li><span class="legend-dot legend-dot--falta"></span>Falta</li><li><span class="legend-dot legend-dot--compensacao"></span>Compensação</li></ul>
+          <figure class="balance-chart-figure">
+            <svg id="balance-chart" class="balance-chart" viewBox="0 0 600 140" role="img" aria-label="Saldo por dia"></svg>
+            <figcaption id="balance-chart-caption">Saldo por dia: barras acima da linha são horas positivas e abaixo, negativas.</figcaption>
+          </figure>
+        </div>
+      </details>
       <div class="table-wrap history-table">
         <table><thead><tr><th>Data</th><th>Tipo</th><th>Entrada</th><th>Saída</th><th>Intervalo</th><th>Trabalhado</th><th>Saldo</th><th>Ações</th></tr></thead><tbody id="records-body"></tbody></table>
         <div id="empty-state" class="empty-state">
@@ -233,15 +245,16 @@
           <p class="field-help">O intervalo fixo de 60 minutos e a margem preventiva de 15 minutos antes do limite de 10 horas também são aplicados aqui.</p>
         </div>
         <div class="balance-simulator__result" aria-live="polite">
+          <div class="balance-simulator__suggestion"><span>Horário sugerido para sair</span><strong id="simulator-suggested-exit">17:48</strong></div>
           <div><span>Saldo dos registros</span><strong id="simulator-current-balance">0h 00min</strong></div>
           <div><span>Ajuste manual</span><strong id="simulator-adjustment">0h 00min</strong></div>
           <div class="balance-simulator__total"><span>Saldo projetado</span><strong id="simulator-projected-balance">0h 00min</strong></div>
           <div><span>Saldo após a saída informada</span><strong id="simulator-informed-balance">0h 00min</strong></div>
-          <div class="balance-simulator__suggestion"><span>Horário sugerido para sair</span><strong id="simulator-suggested-exit">17:48</strong></div>
           <p id="simulator-limit-warning" class="balance-simulator__warning" hidden></p>
         </div>
       </div>
     </section>
+    <button id="fab-add" class="fab" type="button" aria-label="Novo registro" hidden><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
   </main>
   <dialog id="clear-records-dialog" class="confirm-dialog" aria-labelledby="clear-records-title" aria-describedby="clear-records-message">
     <form id="clear-records-form">
@@ -332,6 +345,7 @@
   <script src="assets/js/app-backup.js"></script>
   <script src="assets/js/app-autobackup.js"></script>
   <script src="assets/js/app-menus.js"></script>
+  <script src="assets/js/app-calendar.js"></script>
   <script src="assets/js/app-import.js"></script>
   <script src="assets/js/app-auth.js"></script>
   <script src="assets/js/app-pwa.js"></script>

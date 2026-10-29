@@ -1,4 +1,4 @@
-const CACHE_NAME = "banco-horas-v62";
+const CACHE_NAME = "banco-horas-v63";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -24,6 +24,7 @@ const APP_SHELL = [
   "./assets/js/app-backup.js",
   "./assets/js/app-autobackup.js",
   "./assets/js/app-menus.js",
+  "./assets/js/app-calendar.js",
   "./assets/js/app-import.js",
   "./assets/js/app-auth.js",
   "./assets/js/app-pwa.js",

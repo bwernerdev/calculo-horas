@@ -31,6 +31,7 @@ form.addEventListener("submit", async (event) => {
 });
 
 function editRecord(id) {
+  setEntryCollapsed(false);
   const record=records.find((item)=>item.id===id); if (!record) return;
   $("#editing-id").value=record.id; $("#work-date").value=record.date; $("#day-type").value=record.type;
   if (record.start) $("#start-time").value=record.start; if (record.end) $("#end-time").value=record.end; $("#break-time").value=record.break;
@@ -176,4 +177,23 @@ $("#theme-toggle").addEventListener("click",async ()=>{
   } catch (error) { captureError(error,"theme-sync"); showToast("Tema salvo neste dispositivo; a sincronização com sua conta falhou.","error"); }
   finally { $("#theme-toggle").disabled=false; }
 });
-$("#empty-state-add").addEventListener("click",()=>{ $("#work-date").scrollIntoView({ block:"center", behavior:"smooth" }); $("#work-date").focus({ preventScroll:true }); });
+$("#empty-state-add").addEventListener("click",()=>focusNewRecord());
+
+const ENTRY_COLLAPSED_KEY="controle-horas-form-recolhido-v1";
+function setEntryCollapsed(collapsed) {
+  $("#hours-form").hidden=collapsed;
+  if (collapsed) $("#settings-form").hidden=true;
+  $("#entry-toggle").setAttribute("aria-expanded",String(!collapsed));
+  $("#entry-toggle").setAttribute("aria-label",collapsed ? "Expandir formulário" : "Recolher formulário");
+  appStorage.setItem(ENTRY_COLLAPSED_KEY,collapsed ? "1" : "0");
+}
+function focusNewRecord() {
+  setEntryCollapsed(false);
+  $("#work-date").scrollIntoView({ block:"center", behavior:"smooth" });
+  $("#work-date").focus({ preventScroll:true });
+}
+if (appStorage.getItem(ENTRY_COLLAPSED_KEY)==="1") setEntryCollapsed(true);
+$("#entry-toggle").addEventListener("click",()=>setEntryCollapsed(!$("#hours-form").hidden));
+$("#fab-add").addEventListener("click",focusNewRecord);
+if ("IntersectionObserver" in window) new IntersectionObserver(([entry])=>{ $("#fab-add").hidden=entry.isIntersecting; }).observe($(".entry-panel"));
+else $("#fab-add").hidden=false;
