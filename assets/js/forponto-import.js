@@ -10,6 +10,7 @@
   const MAX_PDF_PAGES = 50;
   const MAX_PDF_ITEMS_PER_PAGE = 10000;
   const clock = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+  const marker = /^(?:COMPENSA DIA|FERIAS)$/i;
   const dateCell = /^(\d{2})\/(\d{2})\/(\d{4})\s*(.*)$/;
 
   function minutes(value) {
@@ -67,6 +68,12 @@
       const type = classifyDay(label);
       return type ? { date, label, punches, status:"ready", record:withReport({ date, type, start:"", end:"", break:0 }) }
         : { date, label, status:"skipped", reason:"Sem marcações; tipo de dia não confirmado" };
+    }
+    if (filled.length === 1 && /^FERIAS$/i.test(punches[1])) {
+      return {
+        date, label, punches, status:"ready", note:"Férias indicadas na marcação",
+        record:withReport({ date, type:"ferias", start:"", end:"", break:0 })
+      };
     }
     if (filled.length === 1 && /^COMPENSA DIA$/i.test(punches[1]) && balance !== null) {
       return {
@@ -159,7 +166,7 @@
       const row={ A:anchor.text+(label ? " "+label : ""), F:"", G:"", H:"", I:"", S:"" };
       const columns=[{ x:196.8,key:"F" },{ x:226,key:"G" },{ x:255.1,key:"H" },{ x:284.3,key:"I" }];
       for (const item of line) {
-        if (item.x<180 || item.x>310 || (!clock.test(item.text) && !/^COMPENSA DIA$/i.test(item.text))) continue;
+        if (item.x<180 || item.x>310 || (!clock.test(item.text) && !marker.test(item.text))) continue;
         const nearest=columns.reduce((best,column)=>Math.abs(column.x-item.x)<Math.abs(best.x-item.x) ? column : best);
         if (Math.abs(nearest.x-item.x)<=18) row[nearest.key]=item.text;
       }
@@ -182,7 +189,7 @@
         const date=row.A.slice(0,10);
         const anchor=page.items.find((item)=>String(item.str || "").startsWith(date) && item.transform?.[4]*scale<180);
         if (!anchor) continue;
-        const observed=page.items.filter((item)=>Math.abs(item.transform?.[5]-anchor.transform[5])<2.5 && item.transform?.[4]*scale>=150 && item.transform?.[4]*scale<=330 && (clock.test(String(item.str || "").trim()) || /^COMPENSA DIA$/i.test(String(item.str || "").trim()))).length;
+        const observed=page.items.filter((item)=>Math.abs(item.transform?.[5]-anchor.transform[5])<2.5 && item.transform?.[4]*scale>=150 && item.transform?.[4]*scale<=330 && (clock.test(String(item.str || "").trim()) || marker.test(String(item.str || "").trim()))).length;
         const recognized=[row.F,row.G,row.H,row.I].filter(Boolean).length;
         recognizedTotal+=recognized;
         if (observed!==recognized) throw new Error("Layout do PDF não reconhecido: marcações fora das colunas esperadas. Nenhum dia foi importado.");

@@ -86,6 +86,19 @@ test("PDF usa as mesmas regras do XLSX e ignora páginas de resumo repetidas", (
   assert.equal(block.days[4].record.importData.officialBalanceMinutes,17);
 });
 
+test("FERIAS na coluna de marcações vira registro de férias (linhas e PDF)", () => {
+  const [rowsBlock] = parseRows([{ A:"20/10/2026 Ter-Norm", G:"FERIAS" }]);
+  assert.equal(rowsBlock.days[0].status, "ready");
+  assert.equal(rowsBlock.days[0].record.type, "ferias");
+  const item=(str,x,y)=>({ str, transform:[1,0,0,1,x,y] });
+  const [block]=parsePdfPages([{ width:792,items:[
+    item("SALDO",605.8,505.6),
+    item("20/10/2026 Ter-Norm",39.8,475.6),item("FERIAS",233,475.6),
+    item("23/10/2026 Sex-Norm",39.8,463.6),item("07:56",196.8,463.6),item("11:30",226,463.6),item("12:30",255.1,463.6),item("18:08",284.3,463.6),item("00:24",610,463.6)
+  ] }]);
+  assert.deepEqual(block.days.map((day)=>day.record.type),["ferias","trabalho"]);
+});
+
 test("PDF rejeita colunas deslocadas antes de abrir a prévia", () => {
   const item=(str,x,y)=>({ str, transform:[1,0,0,1,x,y] });
   const page={ width:792,items:[
