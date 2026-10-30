@@ -72,7 +72,7 @@
     if (filled.length === 1 && /^FERIAS$/i.test(punches[1])) {
       return {
         date, label, punches, status:"ready", note:"Férias indicadas na marcação",
-        record:withReport({ date, type:"ferias", start:"", end:"", break:0 })
+        record:{ ...withReport({ date, type:"ferias", start:"", end:"", break:0 }), importData:{ source:"forponto", label, punches:["","","",""], officialBalanceMinutes:balance } }
       };
     }
     if (filled.length === 1 && /^COMPENSA DIA$/i.test(punches[1]) && balance !== null) {

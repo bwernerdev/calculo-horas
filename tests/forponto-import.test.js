@@ -90,6 +90,7 @@ test("FERIAS na coluna de marcações vira registro de férias (linhas e PDF)", 
   const [rowsBlock] = parseRows([{ A:"20/10/2026 Ter-Norm", G:"FERIAS" }]);
   assert.equal(rowsBlock.days[0].status, "ready");
   assert.equal(rowsBlock.days[0].record.type, "ferias");
+  assert.deepEqual(rowsBlock.days[0].record.importData.punches, ["","","",""]);
   const item=(str,x,y)=>({ str, transform:[1,0,0,1,x,y] });
   const [block]=parsePdfPages([{ width:792,items:[
     item("SALDO",605.8,505.6),
